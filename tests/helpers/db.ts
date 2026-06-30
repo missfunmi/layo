@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 let prismaInstance: PrismaClient | null = null
 
-function getTestClient(): PrismaClient {
+export function getTestClient(): PrismaClient {
   if (!prismaInstance) {
     const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
     prismaInstance = new PrismaClient({ adapter })

@@ -1,7 +1,7 @@
-import { testApiHandler } from 'next-test-api-route-handler'
+import { testApiHandler, NtarhInitAppRouter } from 'next-test-api-route-handler'
 
 export async function makeRequest(
-  handler: Parameters<typeof testApiHandler>[0]['appHandler'],
+  handler: NtarhInitAppRouter['appHandler'],
   method: string,
   path: string,
   body?: unknown,
@@ -21,6 +21,6 @@ export async function makeRequest(
       if (Object.keys(allHeaders).length > 0) init.headers = allHeaders
       result = await fetch(init)
     },
-  })
+  } as NtarhInitAppRouter)
   return result
 }
