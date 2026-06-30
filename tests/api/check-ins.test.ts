@@ -171,6 +171,94 @@ describe('POST /api/check-ins', () => {
     expect(response.status).toBe(400)
   })
 
+  test('returns 400 when todaysPlannedWorkout is an empty string', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, todaysPlannedWorkout: '' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when todaysPlannedWorkout is whitespace-only', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, todaysPlannedWorkout: '   ' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when yesterdayWorkoutType is not an allowed value', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, yesterdayWorkoutType: 'skipped' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when yesterdayWorkoutType is other but yesterdayWorkoutDescription is missing', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, yesterdayWorkoutType: 'other' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when yesterdayWorkoutType is other and yesterdayWorkoutDescription exceeds 280 chars', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, yesterdayWorkoutType: 'other', yesterdayWorkoutDescription: 'a'.repeat(281) },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when yesterdayWorkoutFeedback exceeds 280 chars', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, yesterdayWorkoutFeedback: 'a'.repeat(281) },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when stressors exceeds 280 chars', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, stressors: 'a'.repeat(281) },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when periodStartedToday is a non-boolean value', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedToday: 'yes' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
   test('LLM throws before check-in is saved: returns 503 with checkInSaved false and no row in check_ins', async () => {
     vi.mocked(generateRecommendation).mockRejectedValue(new Error('LLM timeout'))
 
