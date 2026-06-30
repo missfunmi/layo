@@ -124,7 +124,7 @@ After a PR is opened, it is reviewed by a code reviewer agent before merge. The 
 3. Print the full file path of the feedback file when complete
 
 The implementing agent then:
-1. Reads the feedback file at the path provided
+1. Reads the feedback file at the feedback file located at `.notes/.code-review-feedback/<feedback-file-path>` provided
 2. Addresses feedback using the `superpowers:receiving-code-review` skill
 3. Commits fixes to the same feature branch
 4. Triggers another review round if changes were made
