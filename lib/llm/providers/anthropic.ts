@@ -19,8 +19,8 @@ export async function complete(
   })
 
   const latencyMs = Math.round(performance.now() - start)
-  const block = response.content[0]
-  const content = block.type === 'text' ? block.text : ''
+  const block = response.content?.[0]
+  const content = block?.type === 'text' ? block.text : ''
 
   return {
     content,

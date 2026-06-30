@@ -2,12 +2,12 @@ import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
 import * as anthropicProvider from '@/lib/llm/providers/anthropic'
 import * as geminiProvider from '@/lib/llm/providers/gemini'
-import type { ParsedRecommendation, InferenceParams, LLMRawResponse } from '@/lib/llm/types'
+import type { ParsedRecommendation, InferenceParams, LLMRawResponse, LLMProvider } from '@/lib/llm/types'
 
 const ALLOWED_RECOMMENDATION_TYPES = ['as_written', 'modify', 'rest'] as const
 type RecommendationType = (typeof ALLOWED_RECOMMENDATION_TYPES)[number]
 
-function getProvider(name: string) {
+function getProvider(name: string): LLMProvider {
   if (name === 'gemini') return geminiProvider
   return anthropicProvider
 }
