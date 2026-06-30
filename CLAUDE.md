@@ -39,7 +39,6 @@ The three core flows:
 - `docs/architecture.md` — authoritative reference: API routes, schema (Prisma), LLM integration, environment variables, local dev setup
 - `docs/design-brief.md` — color palette, typography, spacing, component behavior, copy conventions
 - `docs/mockups/` — HTML mockups for onboarding, check-in, and recommendation screens
-- `docs/.notes/v0.1-implementation-plan.md` — milestone-by-milestone build plan with task dependencies
 
 ## Development commands
 
@@ -110,10 +109,25 @@ For each issue:
 1. Use the Linear MCP to find the next unstarted issue in the v0.1 project, assign it to yourself, and mark it In Progress
 2. Create a feature branch: `feature/LAYO-[ID]-[short-description]`
 3. Implement following `superpowers:test-driven-development`
-4. Request code review using `superpowers:requesting-code-review`; address all Critical and Important feedback
-5. Push the branch and open a PR to `main`
-6. Mark the Linear issue Done
+4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
+5. Wait for code review (see Code Review Workflow below)
+6. Once the changes are ready to merge (i.e. all review feedback is resolved and the reviewing agent reports no outstanding feedback), mark the Linear issue Done
 7. Stop and wait — do not start the next issue until instructed
+
+## Code review workflow
+After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Whichever agent is invoked for this step should follow this process:
+
+1. Review the diff at the open PR against the requirements in the linked Linear issue
+2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR
+3. Print the full file path of the feedback file when complete
+
+The implementing agent (Claude Code) then:
+1. Reads the feedback file at the path provided
+2. Addresses feedback using the `superpowers:receiving-code-review` skill
+3. Commits fixes to the same feature branch
+4. Triggers another review round if changes were made
+
+Repeat until the reviewing agent reports no outstanding feedback. Then the PR is ready for human merge.
 
 ## Starting a new session
 When told "start the next issue", follow the per-issue workflow above from step 1.
