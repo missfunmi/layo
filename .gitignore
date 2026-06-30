@@ -14,6 +14,7 @@ next-env.d.ts
 
 # build output
 /build
+tsconfig.tsbuildinfo
 
 # misc
 .DS_Store
