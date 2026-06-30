@@ -1,13 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest'
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { setupTestDb, teardownTestDb } from '../helpers/db'
+import { setupTestDb, teardownTestDb, getTestClient } from '../helpers/db'
 import { resolveUser } from '@/lib/api'
-
-function createTestClient() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-  return new PrismaClient({ adapter })
-}
 
 describe('resolveUser', () => {
   beforeEach(setupTestDb)
@@ -32,8 +25,7 @@ describe('resolveUser', () => {
   })
 
   test('returns user with profile when device ID matches', async () => {
-    const prisma = createTestClient()
-    const created = await prisma.user.create({
+    const created = await getTestClient().user.create({
       data: {
         deviceId: 'test-device-abc',
         profile: {
@@ -46,7 +38,6 @@ describe('resolveUser', () => {
         },
       },
     })
-    await prisma.$disconnect()
 
     const request = new Request('http://localhost/api/test', {
       headers: { 'X-Device-ID': 'test-device-abc' },
@@ -59,11 +50,9 @@ describe('resolveUser', () => {
   })
 
   test('returns user with null profile when user has no profile', async () => {
-    const prisma = createTestClient()
-    const created = await prisma.user.create({
+    const created = await getTestClient().user.create({
       data: { deviceId: 'no-profile-device' },
     })
-    await prisma.$disconnect()
 
     const request = new Request('http://localhost/api/test', {
       headers: { 'X-Device-ID': 'no-profile-device' },
