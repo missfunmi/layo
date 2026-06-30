@@ -53,4 +53,12 @@ describe('calculateCycleDay', () => {
     ])
     expect(result).toBe(1)
   })
+
+  test('finds the most recent period start even if history array is out of chronological order', () => {
+    const result = calculateCycleDay(false, '2026-06-10', [
+      { checkInDate: '2026-06-01', periodStartedToday: true },
+      { checkInDate: '2026-06-05', periodStartedToday: true },
+    ])
+    expect(result).toBe(6)
+  })
 })
