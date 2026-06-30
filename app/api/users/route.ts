@@ -102,9 +102,8 @@ export async function POST(request: NextRequest) {
     if (isNaN(eventDateParsed.getTime())) {
       return bad('eventDate is invalid')
     }
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (eventDateParsed < today) {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if ((eventDate as string) <= todayStr) {
       return bad('eventDate must be in the future')
     }
   }
@@ -134,8 +133,8 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      await tx.event.deleteMany({ where: { userId: u.id } })
       if (trainingGoal === 'race') {
-        await tx.event.deleteMany({ where: { userId: u.id } })
         await tx.event.create({
           data: {
             userId: u.id,
