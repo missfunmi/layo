@@ -109,8 +109,8 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
 
-1. Use the Linear MCP to find the next unstarted issue in the v0.1 project, assign it to yourself, and mark it In Progress
-2. Create a feature branch: `feature/LAYO-[ID]-[short-description]`
+1. Use the Linear MCP to find the next unstarted issue in the v0.1 project, assign it to yourself, and mark it In Progress. If you were working on a current issue that is still marked as In Progress and not Done, double-check with the user before proceeding
+2. Create a feature branch: `feature/LAYO-[ID]-[short-description]` off the `main` default branch, unless otherwise specified
 3. Implement following `superpowers:test-driven-development`
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
 5. Wait for code review (see Code Review Workflow below)
