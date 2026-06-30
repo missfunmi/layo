@@ -108,6 +108,7 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
+
 1. Use the Linear MCP to find the next unstarted issue in the v0.1 project, assign it to yourself, and mark it In Progress
 2. Create a feature branch: `feature/LAYO-[ID]-[short-description]`
 3. Implement following `superpowers:test-driven-development`
@@ -116,26 +117,40 @@ If you are the implementing agent, for each issue:
 6. Once the changes are ready to merge (i.e. all review feedback is resolved and the reviewing agent reports no outstanding feedback), mark the Linear issue Done
 7. Stop and wait — do not start the next issue until instructed
 
-## Code review workflow
+## Code reviewer workflow
 After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Only follow these steps if you are the code review agent:
 
-1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`
+1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
 2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR
 3. Print the full file path of the feedback file when complete
 
-The implementing agent then:
-1. Reads the code review feedback file located at the `.notes/.code-review-feedback/<feedback-file-path>` provided
-2. Addresses feedback using the `superpowers:receiving-code-review` skill
-3. Commits fixes to the same feature branch
-4. Triggers another review round if changes were made
+## Addressing code review workflow
+If you are the implementing agent addressing code review feedback:
 
-This workflow repeats until the reviewing agent reports no outstanding feedback. Then the PR is ready for human merge.
+1. Read the code review feedback file located at the `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md` path provided
+2. Address feedback using the `superpowers:receiving-code-review` skill
+3. Commit fixes to the same feature branch
+4. Write a response summary to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-response-[counter].md`, using the same counter as the review file you are responding to. For each piece of feedback, state what was changed (or, if not changed, why) and reference the relevant commit(s).
+5. Print the full file path of the response file when complete
+6. Stop and wait — do not trigger another review round yourself. The user will initiate the next review round.
+
+The two code review workflows above repeat until the reviewing agent reports no outstanding feedback. Then the PR is ready for human merge.
+
+## Code review file naming
+All code review artifacts live in `.notes/.code-review-feedback/`:
+- Review: `YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`
+- Response: `YYYY-MM-DD-LAYO-[ID]-PR-[number]-response-[counter].md`
+
+`counter` starts at 1 and increments once per review round. A review and its response share the same counter — `review-1.md` is addressed by `response-1.md`, then `review-2.md` follows. The date reflects when each file was written and may differ between a review and its response.
 
 ## Starting a new session
 When told "start the next issue", assume the role of the implementing agent and follow the "Per-issue workflow" above from step 1.
 
 ## Starting a code review
-When told "code review PR", assume the role of the code review agent and follow the "Code review workflow" above from step 1.
+When told "code review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
+
+## Addressing code review
+When told "review the code review feedback", assume the role of the implementing agent and follow the "Addressing code review workflow" above from step 1.
 
 ## Copy conventions
 No em-dashes in any generated copy, UI strings, or LLM prompt strings. Use commas or restructure the sentence instead.
