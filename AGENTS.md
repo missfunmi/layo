@@ -105,6 +105,7 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 - Commit messages must reference the Linear issue ID (e.g. `feat: implement Prisma schema [LAYO-16]`)
 - Do not merge PRs — PRs are reviewed and merged by the human
 - Do not combine issues in a single commit or PR
+- If implementation introduces a new environment variable, library module, or architectural decision not already reflected in `AGENTS.md` or `docs/architecture.md`, update both files in the same PR
 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
