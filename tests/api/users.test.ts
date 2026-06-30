@@ -72,6 +72,22 @@ describe('POST /api/users', () => {
     expect(response.status).toBe(400)
   })
 
+  test('returns 400 when name is empty string', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/users', {
+      ...BASE_BODY,
+      name: '',
+    })
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when name exceeds 50 chars', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/users', {
+      ...BASE_BODY,
+      name: 'A'.repeat(51),
+    })
+    expect(response.status).toBe(400)
+  })
+
   test('returns 400 when birthYear is missing', async () => {
     const { birthYear: _birthYear, ...body } = BASE_BODY
     const response = await makeRequest(handler, 'POST', '/api/users', body)
@@ -102,8 +118,22 @@ describe('POST /api/users', () => {
     expect(response.status).toBe(400)
   })
 
+  test('returns 400 when hormonalLifeStage contains an invalid value', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/users', {
+      ...BASE_BODY,
+      hormonalLifeStage: ['not_a_valid_stage'],
+    })
+    expect(response.status).toBe(400)
+  })
+
   test('returns 400 when trainingGoal is missing', async () => {
     const { trainingGoal: _trainingGoal, ...body } = BASE_BODY
+    const response = await makeRequest(handler, 'POST', '/api/users', body)
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when trainingGoal is race but eventName is missing', async () => {
+    const { eventName: _eventName, ...body } = RACE_BODY
     const response = await makeRequest(handler, 'POST', '/api/users', body)
     expect(response.status).toBe(400)
   })
@@ -112,6 +142,22 @@ describe('POST /api/users', () => {
     const response = await makeRequest(handler, 'POST', '/api/users', {
       ...RACE_BODY,
       eventDate: '2020-01-01',
+    })
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when trainingGoal is race but eventType is invalid', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/users', {
+      ...RACE_BODY,
+      eventType: 'not_a_valid_type',
+    })
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when trainingGoal is race with eventType other but eventTypeOther is missing', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/users', {
+      ...RACE_BODY,
+      eventType: 'other' as const,
     })
     expect(response.status).toBe(400)
   })
