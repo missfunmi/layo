@@ -105,6 +105,7 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 - Commit messages must reference the Linear issue ID (e.g. `feat: implement Prisma schema [LAYO-16]`)
 - Do not merge PRs — PRs are reviewed and merged by the human
 - Do not combine issues in a single commit or PR
+- If implementation introduces a new environment variable, library module, or architectural decision not already reflected in `AGENTS.md` or `docs/architecture.md`, update both files in the same PR
 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
@@ -147,7 +148,7 @@ All code review artifacts live in `.notes/.code-review-feedback/`:
 When told "start the next issue", assume the role of the implementing agent and follow the "Per-issue workflow" above from step 1.
 
 ## Starting a code review
-When told "code review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
+When told "code review PR" or "re-review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
 
 ## Addressing code review
 When told "review the code review feedback", assume the role of the implementing agent and follow the "Addressing code review workflow" above from step 1.
