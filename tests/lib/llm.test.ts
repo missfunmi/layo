@@ -12,9 +12,14 @@ vi.mock('@/lib/llm/providers/anthropic', () => ({
   complete: vi.fn(),
 }))
 
+vi.mock('@/lib/llm/providers/gemini', () => ({
+  complete: vi.fn(),
+}))
+
 import { generateRecommendation } from '@/lib/llm/index'
 import { prisma } from '@/lib/db'
 import * as anthropicProvider from '@/lib/llm/providers/anthropic'
+import * as geminiProvider from '@/lib/llm/providers/gemini'
 
 const MOCK_PROMPT_CONFIG = {
   id: 'config-1',
@@ -45,6 +50,7 @@ const MOCK_RAW_RESPONSE = {
 describe('generateRecommendation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    delete process.env.LLM_PROVIDER
     vi.mocked(prisma.promptConfig.findFirst).mockResolvedValue(MOCK_PROMPT_CONFIG)
     vi.mocked(anthropicProvider.complete).mockResolvedValue(MOCK_RAW_RESPONSE)
   })
@@ -118,5 +124,14 @@ describe('generateRecommendation', () => {
     const result = await generateRecommendation('Test user message')
 
     expect(result.promptVersion).toBe('test-v1')
+  })
+
+  test('selects Gemini provider when LLM_PROVIDER is gemini', async () => {
+    process.env.LLM_PROVIDER = 'gemini'
+    vi.mocked(geminiProvider.complete).mockResolvedValue(MOCK_RAW_RESPONSE)
+
+    await generateRecommendation('Test user message')
+
+    expect(vi.mocked(geminiProvider.complete)).toHaveBeenCalled()
   })
 })
