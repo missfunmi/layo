@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String           @id @default(uuid())
+  deviceId        String           @unique @map("device_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  profile         UserProfile?
+  events          Event[]
+  checkIns        CheckIn[]
+  recommendations Recommendation[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id                String       @id @default(uuid())
+  userId            String       @unique @map("user_id")
+  user              User         @relation(fields: [userId], references: [id])
+  name              String
+  birthYear         Int          @map("birth_year")
+  hormonalLifeStage String[]     @map("hormonal_life_stage")
+  trainingGoal      TrainingGoal @map("training_goal")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  @@map("user_profiles")
+}
+
+model Event {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  user           User      @relation(fields: [userId], references: [id])
+  eventName      String    @map("event_name")
+  eventType      EventType @map("event_type")
+  eventTypeOther String?   @map("event_type_other")
+  eventDate      DateTime  @map("event_date") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("events")
+}
+
+model CheckIn {
+  id                          String                @id @default(uuid())
+  userId                      String                @map("user_id")
+  user                        User                  @relation(fields: [userId], references: [id])
+  checkInDate                 DateTime              @map("check_in_date") @db.Date
+  yesterdayWorkoutType        YesterdayWorkoutType? @map("yesterday_workout_type")
+  yesterdayWorkoutDescription String?               @map("yesterday_workout_description")
+  yesterdayWorkoutFeedback    String?               @map("yesterday_workout_feedback")
+  todaysPlannedWorkout        String                @map("todays_planned_workout")
+  sleepScore                  Int                   @map("sleep_score")
+  feelScore                   Int                   @map("feel_score")
+  periodStartedToday          Boolean?              @map("period_started_today")
+  cycleDay                    Int?                  @map("cycle_day")
+  stressors                   String?
+  createdAt                   DateTime              @default(now()) @map("created_at")
+  recommendation              Recommendation?
+
+  @@unique([userId, checkInDate])
+  @@index([userId])
+  @@index([checkInDate])
+  @@map("check_ins")
+}
+
+model Recommendation {
+  id                 String             @id @default(uuid())
+  checkInId          String             @unique @map("check_in_id")
+  checkIn            CheckIn            @relation(fields: [checkInId], references: [id])
+  userId             String             @map("user_id")
+  user               User               @relation(fields: [userId], references: [id])
+  recommendationType RecommendationType @map("recommendation_type")
+  modificationDetail String?            @map("modification_detail")
+  rationale          String
+  createdAt          DateTime           @default(now()) @map("created_at")
+  llmInferenceLog    LlmInferenceLog?
+
+  @@index([userId])
+  @@map("recommendations")
+}
+
+model PromptConfig {
+  id               String   @id @default(uuid())
+  version          String   @unique
+  systemPrompt     String   @map("system_prompt") @db.Text
+  temperature      Float
+  maxTokens        Int      @map("max_tokens")
+  additionalParams Json?    @map("additional_params")
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("prompt_configs")
+}
+
+model LlmInferenceLog {
+  id                String         @id @default(uuid())
+  recommendationId  String         @unique @map("recommendation_id")
+  recommendation    Recommendation @relation(fields: [recommendationId], references: [id])
+  model             String
+  promptVersion     String         @map("prompt_version")
+  rawResponse       String         @map("raw_response") @db.Text
+  rationaleInternal String         @map("rationale_internal") @db.Text
+  readinessScore    Int            @map("readiness_score")
+  inputTokens       Int            @map("input_tokens")
+  outputTokens      Int            @map("output_tokens")
+  latencyMs         Int            @map("latency_ms")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  @@map("llm_inference_logs")
+}
+
+enum TrainingGoal {
+  race
+  non_race
+}
+
+enum EventType {
+  running
+  cycling
+  swimming
+  triathlon
+  skiing
+  other
+}
+
+enum YesterdayWorkoutType {
+  planned
+  suggested
+  other
+}
+
+enum RecommendationType {
+  as_written
+  modify
+  rest
+}
