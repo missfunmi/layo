@@ -96,6 +96,8 @@ Local development uses `.env.local`. See `.env.local.example` for the full list.
 
 Follow the `superpowers:test-driven-development` skill for all implementation tasks. Write failing tests before writing any production code. No exceptions.
 
+Do not invoke the `superpowers:brainstorming` skill for implementation tasks in this project. Design decisions are finalized in `docs/architecture.md` and `docs/prd.md`, and each Linear issue's acceptance criteria define the task scope. If a task's requirements are genuinely ambiguous or contradict the architecture doc, ask directly in chat rather than running the brainstorming workflow.
+
 ## Implementation approach
 
 - One Linear issue at a time
