@@ -148,7 +148,7 @@ All code review artifacts live in `.notes/.code-review-feedback/`:
 When told "start the next issue", assume the role of the implementing agent and follow the "Per-issue workflow" above from step 1.
 
 ## Starting a code review
-When told "code review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
+When told "code review PR" or "re-review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
 
 ## Addressing code review
 When told "review the code review feedback", assume the role of the implementing agent and follow the "Addressing code review workflow" above from step 1.
