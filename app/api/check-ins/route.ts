@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
   }
 
   const priorCheckIns = await prisma.checkIn.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, checkInDate: { lt: new Date(checkInDate) } },
     orderBy: { checkInDate: 'desc' },
     take: 14,
     select: {

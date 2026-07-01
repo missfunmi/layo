@@ -11,6 +11,7 @@ import { generateRecommendation } from '@/lib/llm/index'
 
 const DEVICE_ID = 'test-device-checkin'
 const TODAY = new Date().toISOString().slice(0, 10)
+const YESTERDAY = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
 const MOCK_RECOMMENDATION = {
   recommendationType: 'as_written' as const,
@@ -294,6 +295,32 @@ describe('POST /api/check-ins', () => {
 
     const checkIns = await getTestClient().checkIn.findMany()
     expect(checkIns).toHaveLength(1)
+  })
+
+  test('upsert retry: cycleDay is computed from prior history, not stale today check-in', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(YESTERDAY),
+        todaysPlannedWorkout: '5km easy',
+        sleepScore: 4,
+        feelScore: 4,
+        periodStartedToday: true,
+      },
+    })
+
+    // First submission: periodStartedToday: true (cycle day 1)
+    await makeRequest(handler, 'POST', '/api/check-ins', { ...BASE_BODY, periodStartedToday: true }, { 'X-Device-ID': DEVICE_ID })
+
+    // Second submission (retry): periodStartedToday: false — cycle day should be 2 (day after yesterday's period start)
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', { ...BASE_BODY, periodStartedToday: false }, { 'X-Device-ID': DEVICE_ID })
+
+    expect(response.status).toBe(201)
+    const checkIn = await getTestClient().checkIn.findFirstOrThrow({
+      where: { userId: testUser.id, checkInDate: new Date(TODAY) },
+    })
+    expect(checkIn.cycleDay).toBe(2)
   })
 
   test('upsert: second submission for same date overwrites first, returns new recommendation, only 1 row in check_ins', async () => {
