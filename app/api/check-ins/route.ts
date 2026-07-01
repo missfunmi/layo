@@ -11,6 +11,71 @@ function bad(message: string) {
   return NextResponse.json({ error: message }, { status: 400 })
 }
 
+function parseDateParam(request: NextRequest): { date: Date } | NextResponse {
+  const { searchParams } = new URL(request.url)
+  const dateStr = searchParams.get('date')
+  if (!dateStr) return bad('date is required')
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return bad('date is invalid')
+  return { date }
+}
+
+export async function GET(request: NextRequest) {
+  let user: Awaited<ReturnType<typeof resolveUser>>
+  try {
+    user = await resolveUser(request)
+  } catch (err) {
+    if (err instanceof Response) return err
+    throw err
+  }
+
+  const parsed = parseDateParam(request)
+  if (parsed instanceof NextResponse) return parsed
+
+  const checkIn = await prisma.checkIn.findUnique({
+    where: { userId_checkInDate: { userId: user.id, checkInDate: parsed.date } },
+  })
+
+  return NextResponse.json({ checkIn })
+}
+
+export async function DELETE(request: NextRequest) {
+  let user: Awaited<ReturnType<typeof resolveUser>>
+  try {
+    user = await resolveUser(request)
+  } catch (err) {
+    if (err instanceof Response) return err
+    throw err
+  }
+
+  const parsed = parseDateParam(request)
+  if (parsed instanceof NextResponse) return parsed
+
+  const checkIn = await prisma.checkIn.findUnique({
+    where: { userId_checkInDate: { userId: user.id, checkInDate: parsed.date } },
+    include: { recommendation: { include: { llmInferenceLog: true } } },
+  })
+
+  if (checkIn) {
+    await prisma.$transaction(async (tx) => {
+      if (checkIn.recommendation?.llmInferenceLog) {
+        await tx.llmInferenceLog.delete({ where: { id: checkIn.recommendation.llmInferenceLog.id } })
+      }
+      if (checkIn.recommendation) {
+        await tx.recommendation.delete({ where: { id: checkIn.recommendation.id } })
+      }
+      await tx.checkIn.delete({ where: { id: checkIn.id } })
+    })
+
+    Sentry.captureMessage('Check-in deleted (redo)', {
+      level: 'info',
+      extra: { userId: user.id, checkInDate: parsed.date.toISOString().slice(0, 10) },
+    })
+  }
+
+  return new NextResponse(null, { status: 204 })
+}
+
 export async function POST(request: NextRequest) {
   let user: Awaited<ReturnType<typeof resolveUser>>
   try {
