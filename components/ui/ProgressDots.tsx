@@ -7,17 +7,15 @@ interface ProgressDotsProps {
 
 export function ProgressDots({ total, active }: ProgressDotsProps) {
   return (
-    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+    <div className="flex gap-[6px] items-center">
       {Array.from({ length: total }, (_, i) => (
         <div
           key={i}
-          style={{
-            width: i === active ? '18px' : '6px',
-            height: '6px',
-            borderRadius: i === active ? '3px' : '50%',
-            background: i === active ? '#0F6E56' : '#D3D1C7',
-            transition: 'width 0.2s, border-radius 0.2s',
-          }}
+          className={`h-[6px] transition-all duration-200 ${
+            i === active
+              ? 'w-[18px] rounded-[3px] bg-[#0F6E56]'
+              : 'w-[6px] rounded-full bg-[#D3D1C7]'
+          }`}
         />
       ))}
     </div>

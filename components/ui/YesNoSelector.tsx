@@ -12,7 +12,7 @@ export function YesNoSelector({ value, onChange }: YesNoSelectorProps) {
   ]
 
   return (
-    <div style={{ display: 'flex', gap: '10px' }}>
+    <div className="flex gap-[10px]">
       {options.map(({ label, val }) => {
         const isSelected = value === val
         return (
@@ -20,19 +20,11 @@ export function YesNoSelector({ value, onChange }: YesNoSelectorProps) {
             key={label}
             type="button"
             onClick={() => onChange(val)}
-            style={{
-              flex: 1,
-              padding: '16px',
-              borderRadius: '14px',
-              border: `1.5px solid ${isSelected ? '#0F6E56' : '#D3D1C7'}`,
-              background: isSelected ? '#E1F5EE' : '#fff',
-              fontFamily: 'var(--font-inter), sans-serif',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: isSelected ? '#085041' : '#2C2C2A',
-              cursor: 'pointer',
-              textAlign: 'center',
-            }}
+            className={`flex-1 py-[16px] rounded-[14px] border-[1.5px] border-solid font-sans text-[14px] font-medium cursor-pointer text-center ${
+              isSelected
+                ? 'bg-[#E1F5EE] border-[#0F6E56] text-[#085041]'
+                : 'bg-white border-[#D3D1C7] text-[#2C2C2A]'
+            }`}
           >
             {label}
           </button>

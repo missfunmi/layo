@@ -9,19 +9,9 @@ export function CloseButton({ onClick }: CloseButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '8px',
-        color: '#B4B2A9',
-        cursor: 'pointer',
-        background: 'none',
-        border: 'none',
-        flexShrink: 0,
-      }}
+      className="flex items-center justify-center p-[8px] text-[#B4B2A9] cursor-pointer bg-transparent border-0 flex-shrink-0"
     >
-      <i className="ti ti-x" style={{ fontSize: '16px' }} />
+      <i className="ti ti-x text-[16px]" />
     </button>
   )
 }

@@ -10,7 +10,7 @@ interface ScaleInputProps {
 export function ScaleInput({ value, onChange, labelLeft, labelRight }: ScaleInputProps) {
   return (
     <div>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+      <div className="flex gap-[8px] mb-[8px]">
         {[1, 2, 3, 4, 5].map((n) => {
           const isSelected = value === n
           return (
@@ -18,21 +18,11 @@ export function ScaleInput({ value, onChange, labelLeft, labelRight }: ScaleInpu
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              style={{
-                flex: 1,
-                height: '54px',
-                borderRadius: '13px',
-                background: isSelected ? '#E1F5EE' : '#fff',
-                border: `1.5px solid ${isSelected ? '#0F6E56' : '#D3D1C7'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--font-inter), sans-serif',
-                fontSize: '17px',
-                fontWeight: 500,
-                color: isSelected ? '#085041' : '#5F5E5A',
-                cursor: 'pointer',
-              }}
+              className={`flex-1 h-[54px] rounded-[13px] border-[1.5px] border-solid flex items-center justify-center font-sans text-[17px] font-medium cursor-pointer ${
+                isSelected
+                  ? 'bg-[#E1F5EE] border-[#0F6E56] text-[#085041]'
+                  : 'bg-white border-[#D3D1C7] text-[#5F5E5A]'
+              }`}
             >
               {n}
             </button>
@@ -40,15 +30,7 @@ export function ScaleInput({ value, onChange, labelLeft, labelRight }: ScaleInpu
         })}
       </div>
       {(labelLeft || labelRight) && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-inter), sans-serif',
-            fontSize: '11px',
-            color: '#B4B2A9',
-          }}
-        >
+        <div className="flex justify-between font-sans text-[11px] text-[#B4B2A9]">
           <span>{labelLeft}</span>
           <span>{labelRight}</span>
         </div>

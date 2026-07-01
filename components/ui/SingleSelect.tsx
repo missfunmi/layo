@@ -8,7 +8,7 @@ interface SingleSelectProps {
 
 export function SingleSelect({ options, selected, onChange }: SingleSelectProps) {
   return (
-    <div style={{ display: 'flex', gap: '10px' }}>
+    <div className="flex gap-[10px]">
       {options.map((option) => {
         const isSelected = selected === option
         return (
@@ -16,19 +16,11 @@ export function SingleSelect({ options, selected, onChange }: SingleSelectProps)
             key={option}
             type="button"
             onClick={() => onChange(option)}
-            style={{
-              flex: 1,
-              padding: '14px 12px',
-              borderRadius: '14px',
-              border: `1.5px solid ${isSelected ? '#0F6E56' : '#D3D1C7'}`,
-              background: isSelected ? '#E1F5EE' : '#fff',
-              fontFamily: 'var(--font-inter), sans-serif',
-              fontSize: '13px',
-              fontWeight: 500,
-              color: isSelected ? '#085041' : '#2C2C2A',
-              cursor: 'pointer',
-              textAlign: 'center',
-            }}
+            className={`flex-1 py-[14px] px-[12px] rounded-[14px] border-[1.5px] border-solid font-sans text-[13px] font-medium cursor-pointer text-center ${
+              isSelected
+                ? 'bg-[#E1F5EE] border-[#0F6E56] text-[#085041]'
+                : 'bg-white border-[#D3D1C7] text-[#2C2C2A]'
+            }`}
           >
             {option}
           </button>

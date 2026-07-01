@@ -9,22 +9,9 @@ export function BackButton({ onClick }: BackButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      style={{
-        width: '34px',
-        height: '34px',
-        borderRadius: '50%',
-        border: '1.5px solid #D3D1C7',
-        background: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#5F5E5A',
-        flexShrink: 0,
-        cursor: 'pointer',
-        padding: 0,
-      }}
+      className="w-[34px] h-[34px] rounded-full border-[1.5px] border-solid border-[#D3D1C7] bg-white flex items-center justify-center text-[#5F5E5A] flex-shrink-0 cursor-pointer p-0"
     >
-      <i className="ti ti-arrow-left" style={{ fontSize: '16px' }} />
+      <i className="ti ti-arrow-left text-[16px]" />
     </button>
   )
 }

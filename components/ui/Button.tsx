@@ -13,19 +13,9 @@ export function Button({ children, onClick, disabled = false, type = 'button' }:
       type={type}
       onClick={onClick}
       disabled={disabled}
-      style={{
-        width: '100%',
-        padding: '15px',
-        borderRadius: '100px',
-        border: 'none',
-        background: disabled ? '#B4B2A9' : '#0F6E56',
-        color: '#fff',
-        fontFamily: 'var(--font-inter), sans-serif',
-        fontSize: '15px',
-        fontWeight: 500,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        marginTop: 'auto',
-      }}
+      className={`w-full py-[15px] rounded-full border-0 font-sans text-[15px] font-medium text-white mt-auto ${
+        disabled ? 'bg-[#B4B2A9] cursor-not-allowed' : 'bg-[#0F6E56] cursor-pointer'
+      }`}
     >
       {children}
     </button>

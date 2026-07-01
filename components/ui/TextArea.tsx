@@ -11,7 +11,7 @@ interface TextAreaProps {
 
 export function TextArea({ value, onChange, placeholder, maxLength = 280 }: TextAreaProps) {
   const [focused, setFocused] = useState(false)
-  const isFilled = value.length > 0
+  const isActive = focused || value.length > 0
 
   return (
     <div>
@@ -22,30 +22,11 @@ export function TextArea({ value, onChange, placeholder, maxLength = 280 }: Text
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{
-          width: '100%',
-          background: '#fff',
-          border: `1.5px solid ${focused || isFilled ? '#0F6E56' : '#D3D1C7'}`,
-          borderRadius: '14px',
-          padding: '13px 15px',
-          fontFamily: 'var(--font-inter), sans-serif',
-          fontSize: '13px',
-          color: isFilled ? '#2C2C2A' : '#B4B2A9',
-          outline: 'none',
-          minHeight: '110px',
-          resize: 'none',
-          lineHeight: 1.5,
-          boxSizing: 'border-box',
-        }}
+        className={`w-full bg-white rounded-[14px] py-[13px] px-[15px] font-sans text-[13px] outline-none min-h-[110px] resize-none leading-[1.5] box-border border-[1.5px] border-solid ${
+          isActive ? 'border-[#0F6E56] text-[#2C2C2A]' : 'border-[#D3D1C7] text-[#B4B2A9]'
+        }`}
       />
-      <div
-        style={{
-          fontFamily: 'var(--font-inter), sans-serif',
-          fontSize: '11px',
-          color: '#B4B2A9',
-          textAlign: 'right',
-        }}
-      >
+      <div className="font-sans text-[11px] text-[#B4B2A9] text-right">
         {value.length}/{maxLength}
       </div>
     </div>

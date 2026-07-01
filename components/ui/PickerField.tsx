@@ -13,25 +13,12 @@ export function PickerField({ value, onClick, placeholder }: PickerFieldProps) {
     <button
       type="button"
       onClick={onClick}
-      style={{
-        width: '100%',
-        background: '#fff',
-        border: '1.5px solid #0F6E56',
-        borderRadius: '14px',
-        padding: '13px 15px',
-        fontFamily: 'var(--font-inter), sans-serif',
-        fontSize: '14px',
-        color: isFilled ? '#2C2C2A' : '#B4B2A9',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        cursor: 'pointer',
-        textAlign: 'left',
-        boxSizing: 'border-box',
-      }}
+      className={`w-full bg-white rounded-[14px] py-[13px] px-[15px] font-sans text-[14px] flex items-center justify-between cursor-pointer text-left box-border border-[1.5px] border-solid ${
+        isFilled ? 'border-[#0F6E56] text-[#2C2C2A]' : 'border-[#D3D1C7] text-[#B4B2A9]'
+      }`}
     >
       <span>{isFilled ? value : placeholder}</span>
-      <i className="ti ti-chevron-down" style={{ fontSize: '16px', color: '#B4B2A9', flexShrink: 0 }} />
+      <i className="ti ti-chevron-down text-[16px] text-[#B4B2A9] flex-shrink-0" />
     </button>
   )
 }

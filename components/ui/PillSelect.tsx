@@ -16,7 +16,7 @@ export function PillSelect({ options, selected, onChange }: PillSelectProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+    <div className="flex flex-wrap gap-[8px]">
       {options.map((option) => {
         const isSelected = selected.includes(option)
         return (
@@ -24,17 +24,11 @@ export function PillSelect({ options, selected, onChange }: PillSelectProps) {
             key={option}
             type="button"
             onClick={() => toggle(option)}
-            style={{
-              fontFamily: 'var(--font-inter), sans-serif',
-              fontSize: '13px',
-              fontWeight: 500,
-              padding: '9px 16px',
-              borderRadius: '100px',
-              border: `1.5px solid ${isSelected ? '#0F6E56' : '#D3D1C7'}`,
-              background: isSelected ? '#E1F5EE' : '#fff',
-              color: isSelected ? '#085041' : '#5F5E5A',
-              cursor: 'pointer',
-            }}
+            className={`font-sans text-[13px] font-medium py-[9px] px-[16px] rounded-full border-[1.5px] border-solid cursor-pointer ${
+              isSelected
+                ? 'bg-[#E1F5EE] border-[#0F6E56] text-[#085041]'
+                : 'bg-white border-[#D3D1C7] text-[#5F5E5A]'
+            }`}
           >
             {option}
           </button>

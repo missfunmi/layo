@@ -13,55 +13,23 @@ export function OptionCard({ icon, label, detail, selected, onClick }: OptionCar
     <button
       type="button"
       onClick={onClick}
-      style={{
-        width: '100%',
-        background: selected ? '#E1F5EE' : '#fff',
-        border: `1.5px solid ${selected ? '#0F6E56' : '#D3D1C7'}`,
-        borderRadius: '16px',
-        padding: '13px 15px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        cursor: 'pointer',
-        textAlign: 'left',
-      }}
+      className={`w-full rounded-2xl border-[1.5px] border-solid py-[13px] px-[15px] flex items-center gap-[12px] cursor-pointer text-left ${
+        selected ? 'bg-[#E1F5EE] border-[#0F6E56]' : 'bg-white border-[#D3D1C7]'
+      }`}
     >
       <div
-        style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '10px',
-          background: selected ? '#9FE1CB' : '#F1EFE8',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: selected ? '#085041' : '#0F6E56',
-        }}
+        className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center flex-shrink-0 ${
+          selected ? 'bg-[#9FE1CB] text-[#085041]' : 'bg-[#F1EFE8] text-[#0F6E56]'
+        }`}
       >
-        <i className={`ti ${icon}`} style={{ fontSize: '16px' }} />
+        <i className={`ti ${icon} text-[16px]`} />
       </div>
       <div>
-        <div
-          style={{
-            fontFamily: 'var(--font-inter), sans-serif',
-            fontSize: '13px',
-            fontWeight: 500,
-            color: '#2C2C2A',
-            marginBottom: detail ? '2px' : 0,
-          }}
-        >
+        <div className={`font-sans text-[13px] font-medium text-[#2C2C2A] ${detail ? 'mb-[2px]' : ''}`}>
           {label}
         </div>
         {detail && (
-          <div
-            style={{
-              fontFamily: 'var(--font-inter), sans-serif',
-              fontSize: '12px',
-              color: '#888780',
-              lineHeight: 1.4,
-            }}
-          >
+          <div className="font-sans text-[12px] text-[#888780] leading-[1.4]">
             {detail}
           </div>
         )}
