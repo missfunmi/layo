@@ -351,3 +351,135 @@ describe('POST /api/check-ins', () => {
     expect(checkIns[0].todaysPlannedWorkout).toBe('10km tempo run')
   })
 })
+
+describe('GET /api/check-ins', () => {
+  beforeEach(async () => {
+    await setupTestDb()
+    await seedTestUser()
+  })
+
+  afterEach(teardownTestDb)
+
+  test('check-in found: returns 200 with checkIn fields', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(TODAY),
+        todaysPlannedWorkout: '5km easy run',
+        sleepScore: 4,
+        feelScore: 4,
+      },
+    })
+
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.checkIn).not.toBeNull()
+    expect(body.checkIn.todaysPlannedWorkout).toBe('5km easy run')
+    expect(body.checkIn.sleepScore).toBe(4)
+    expect(body.checkIn.feelScore).toBe(4)
+  })
+
+  test('no check-in for date: returns 200 with checkIn null', async () => {
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.checkIn).toBeNull()
+  })
+
+  test('returns 401 when X-Device-ID header is missing', async () => {
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`)
+    expect(response.status).toBe(401)
+  })
+
+  test('returns 400 when date param is missing', async () => {
+    const response = await makeRequest(handler, 'GET', '/api/check-ins', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when date param is invalid', async () => {
+    const response = await makeRequest(handler, 'GET', '/api/check-ins?date=not-a-date', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(400)
+  })
+})
+
+describe('DELETE /api/check-ins', () => {
+  beforeEach(async () => {
+    await setupTestDb()
+    await seedTestUser()
+  })
+
+  afterEach(teardownTestDb)
+
+  test('check-in exists: returns 204 and deletes check_in, recommendation, and llm_inference_log rows', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    const checkIn = await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(TODAY),
+        todaysPlannedWorkout: '5km easy run',
+        sleepScore: 4,
+        feelScore: 4,
+      },
+    })
+    const rec = await getTestClient().recommendation.create({
+      data: {
+        checkInId: checkIn.id,
+        userId: testUser.id,
+        recommendationType: 'as_written',
+        rationale: 'Test rationale',
+      },
+    })
+    await getTestClient().llmInferenceLog.create({
+      data: {
+        recommendationId: rec.id,
+        model: 'claude-opus-4-6',
+        promptVersion: 'test-v1',
+        rawResponse: '{}',
+        rationaleInternal: 'internal',
+        readinessScore: 80,
+        inputTokens: 0,
+        outputTokens: 0,
+        latencyMs: 0,
+      },
+    })
+
+    const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+
+    expect(response.status).toBe(204)
+
+    const checkIns = await getTestClient().checkIn.findMany()
+    expect(checkIns).toHaveLength(0)
+
+    const recommendations = await getTestClient().recommendation.findMany()
+    expect(recommendations).toHaveLength(0)
+
+    const logs = await getTestClient().llmInferenceLog.findMany()
+    expect(logs).toHaveLength(0)
+  })
+
+  test('no check-in exists for date: returns 204 (idempotent)', async () => {
+    const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(204)
+  })
+
+  test('returns 401 when X-Device-ID header is missing', async () => {
+    const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`)
+    expect(response.status).toBe(401)
+  })
+})
