@@ -482,4 +482,18 @@ describe('DELETE /api/check-ins', () => {
     const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`)
     expect(response.status).toBe(401)
   })
+
+  test('returns 400 when date param is missing', async () => {
+    const response = await makeRequest(handler, 'DELETE', '/api/check-ins', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when date param is invalid', async () => {
+    const response = await makeRequest(handler, 'DELETE', '/api/check-ins?date=not-a-date', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(400)
+  })
 })
