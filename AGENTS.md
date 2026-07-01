@@ -106,6 +106,8 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 - Do not merge PRs — PRs are reviewed and merged by the human
 - Do not combine issues in a single commit or PR
 - If implementation introduces a new environment variable, library module, or architectural decision not already reflected in `AGENTS.md` or `docs/architecture.md`, update both files in the same PR
+- Always run `git fetch origin && git pull origin main` to sync the latest remote main before creating a feature branch. Do not branch off a stale local main
+- Do not create git worktrees at any point during implementation or code review. Always work directly on the designated feature branch (`feature/LAYO-[ID]-[short-description]`). If any skill or tool attempts to create a worktree, do not invoke it in that mode. If a stray branch is created as a side effect (e.g. `pr-[number]`), delete it from remote immediately with `git push origin --delete [branch-name]` and do not push it
 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
