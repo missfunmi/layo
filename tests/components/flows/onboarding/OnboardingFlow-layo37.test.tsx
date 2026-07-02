@@ -4,6 +4,10 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 
 afterEach(cleanup)
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
 import { OnboardingFlow } from '@/components/flows/onboarding/OnboardingFlow'
 
 const HORMONAL_OPTIONS = [

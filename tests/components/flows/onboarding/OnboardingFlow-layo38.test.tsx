@@ -1,10 +1,22 @@
 // @vitest-environment jsdom
-import { describe, test, expect, vi, afterEach } from 'vitest'
+import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 
 afterEach(cleanup)
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
+vi.mock('@/lib/device', () => ({
+  getOrCreateDeviceId: () => 'test-device-id',
+}))
+
 import { OnboardingFlow } from '@/components/flows/onboarding/OnboardingFlow'
+
+beforeEach(() => {
+  global.fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 500 }))
+})
 
 function navigateTo(step: 'training_goal' | 'race_details') {
   render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
@@ -72,9 +84,8 @@ describe('OnboardingFlow — step 4: training goal', () => {
     expect(screen.getByText(/tell us about your race/i)).toBeInTheDocument()
   })
 
-  test('"Other reasons" + Continue calls onComplete without showing race details', () => {
-    const onComplete = vi.fn()
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={onComplete} />)
+  test('"Other reasons" + Continue shows confirmation screen without race details', () => {
+    render(<OnboardingFlow onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -84,7 +95,8 @@ describe('OnboardingFlow — step 4: training goal', () => {
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Other reasons' }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(onComplete).toHaveBeenCalledOnce()
+    expect(screen.queryByText(/tell us about your race/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/you're all set, funmi/i)).toBeInTheDocument()
   })
 
   test('back button navigates to hormonal life stage step', () => {
@@ -239,9 +251,8 @@ describe('OnboardingFlow — step 5: race details', () => {
     expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
   })
 
-  test('Continue calls onComplete with all valid fields', () => {
-    const onComplete = vi.fn()
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={onComplete} />)
+  test('Continue with all valid fields shows confirmation screen', () => {
+    render(<OnboardingFlow onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -255,7 +266,7 @@ describe('OnboardingFlow — step 5: race details', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /event type/i }), { target: { value: 'Running' } })
     fireEvent.change(screen.getByLabelText(/event date/i), { target: { value: tomorrow } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(onComplete).toHaveBeenCalledOnce()
+    expect(screen.getByText(/you're all set, funmi/i)).toBeInTheDocument()
   })
 
   test('back button navigates to training goal step', () => {
