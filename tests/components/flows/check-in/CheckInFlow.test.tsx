@@ -318,3 +318,112 @@ describe('CheckInFlow — step yesterday_feedback: layout', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 })
+
+// ─── Today's planned workout step ────────────────────────────────────────────
+
+function navigateToTodayWorkout(previousCheckIn = PREV) {
+  navigateToYesterdayFeedback(previousCheckIn)
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+}
+
+describe('CheckInFlow — step today_workout: entry paths', () => {
+  test('yesterday_feedback Continue navigates to today_workout', () => {
+    navigateToYesterdayFeedback()
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.getByText(/what workout do you have planned today/i)).toBeInTheDocument()
+  })
+
+  test('landing CTA navigates to today_workout when no previousCheckIn', () => {
+    render(<CheckInFlow name="Funmi" previousCheckIn={null} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    expect(screen.getByText(/what workout do you have planned today/i)).toBeInTheDocument()
+  })
+
+  test('landing CTA navigates to today_workout when previousCheckIn is undefined', () => {
+    render(<CheckInFlow name="Funmi" />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    expect(screen.getByText(/what workout do you have planned today/i)).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step today_workout: layout', () => {
+  test('shows heading "What workout do you have planned today?"', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/what workout do you have planned today/i)
+  })
+
+  test('shows subtext "Be as specific as you like"', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByText(/be as specific as you like/i)).toBeInTheDocument()
+  })
+
+  test('shows progress dots', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByTestId('progress-dots')).toBeInTheDocument()
+  })
+
+  test('shows back button', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument()
+  })
+
+  test('shows close button', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+  })
+
+  test('shows a textarea for the planned workout', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+  })
+
+  test('shows Continue button', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step today_workout: Continue validation', () => {
+  test('Continue is disabled when textarea is empty', () => {
+    navigateToTodayWorkout()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is disabled when textarea contains only whitespace', () => {
+    navigateToTodayWorkout()
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '   ' } })
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is enabled when textarea has at least 1 non-whitespace character', () => {
+    navigateToTodayWorkout()
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+})
+
+describe('CheckInFlow — step today_workout: back navigation', () => {
+  test('back button navigates to yesterday_feedback when previousCheckIn is provided', () => {
+    navigateToTodayWorkout()
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByText(/how did it go/i)).toBeInTheDocument()
+  })
+
+  test('back button navigates to landing when no previousCheckIn', () => {
+    render(<CheckInFlow name="Funmi" previousCheckIn={null} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByRole('button', { name: /start today's check-in/i })).toBeInTheDocument()
+  })
+
+  test('close button calls onClose', () => {
+    const onClose = vi.fn()
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})
