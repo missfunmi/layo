@@ -44,13 +44,26 @@ describe('OnboardingFlow — step 1: name', () => {
     expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
   })
 
-  test('back button is not visible on step 1', () => {
+  test('back button is visible on step 1', () => {
     renderAtNameStep()
-    expect(screen.queryByRole('button', { name: /go back/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument()
+  })
+
+  test('back button on step 1 navigates to welcome screen', () => {
+    renderAtNameStep()
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument()
   })
 
   test('Continue is disabled when name is empty', () => {
     renderAtNameStep()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is disabled when name is whitespace only', () => {
+    renderAtNameStep()
+    const input = screen.getByRole('textbox')
+    fireEvent.change(input, { target: { value: '   ' } })
     expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
   })
 
