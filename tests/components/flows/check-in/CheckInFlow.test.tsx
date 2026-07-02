@@ -687,3 +687,160 @@ describe('CheckInFlow — step cycle_tracking: back navigation', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 })
+
+// ─── Stressors step ───────────────────────────────────────────────────────────
+
+function navigateToStressors(previousCheckIn = PREV) {
+  render(<CheckInFlow name="Funmi" previousCheckIn={previousCheckIn} hormonalLifeStage={['menstruating']} />)
+  fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+  fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+  fireEvent.click(scaleButtons[3])
+  fireEvent.click(scaleButtons[7])
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+}
+
+describe('CheckInFlow — step stressors: entry', () => {
+  test('cycle_tracking Continue navigates to stressors', () => {
+    navigateToStressors()
+    expect(screen.getByText(/anything new since yesterday/i)).toBeInTheDocument()
+  })
+
+  test('sleep_feel Continue navigates to stressors when hormonalLifeStage does not include menstruating', () => {
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} hormonalLifeStage={['post_menopausal']} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.getByText(/anything new since yesterday/i)).toBeInTheDocument()
+  })
+
+  test('sleep_feel Continue navigates to stressors when hormonalLifeStage is not provided', () => {
+    navigateToSleepFeel()
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.getByText(/anything new since yesterday/i)).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step stressors: layout', () => {
+  test('shows heading "Anything new since yesterday?"', () => {
+    navigateToStressors()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/anything new since yesterday\?/i)
+  })
+
+  test('shows subtext about travel and illness', () => {
+    navigateToStressors()
+    expect(screen.getByText(/travel, illness, bad news/i)).toBeInTheDocument()
+  })
+
+  test('shows a textarea', () => {
+    navigateToStressors()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+  })
+
+  test('textarea has the correct placeholder', () => {
+    navigateToStressors()
+    expect(screen.getByPlaceholderText(/e\.g\. bad night's sleep/i)).toBeInTheDocument()
+  })
+
+  test('shows character count display', () => {
+    navigateToStressors()
+    expect(screen.getByText('0/280')).toBeInTheDocument()
+  })
+
+  test('shows progress dots', () => {
+    navigateToStressors()
+    expect(screen.getByTestId('progress-dots')).toBeInTheDocument()
+  })
+
+  test('shows back button', () => {
+    navigateToStressors()
+    expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument()
+  })
+
+  test('shows close button', () => {
+    navigateToStressors()
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+  })
+
+  test('shows Continue button', () => {
+    navigateToStressors()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
+  })
+
+  test('shows Skip link', () => {
+    navigateToStressors()
+    expect(screen.getByText(/skip/i)).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step stressors: Continue validation', () => {
+  test('Continue is enabled when textarea is empty (stressors is optional)', () => {
+    navigateToStressors()
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+
+  test('Continue is enabled when textarea has text', () => {
+    navigateToStressors()
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Stressful day at work' } })
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+})
+
+describe('CheckInFlow — step stressors: back navigation', () => {
+  test('back button navigates to cycle_tracking when hormonalLifeStage includes menstruating', () => {
+    navigateToStressors()
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByText(/did your period start today/i)).toBeInTheDocument()
+  })
+
+  test('back button navigates to sleep_feel when hormonalLifeStage does not include menstruating', () => {
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} hormonalLifeStage={['post_menopausal']} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+  })
+
+  test('close button calls onClose', () => {
+    const onClose = vi.fn()
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} hormonalLifeStage={['menstruating']} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})

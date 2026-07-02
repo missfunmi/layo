@@ -10,7 +10,7 @@ import { TextArea } from '@/components/ui/TextArea'
 import { ScaleInput } from '@/components/ui/ScaleInput'
 import { YesNoSelector } from '@/components/ui/YesNoSelector'
 
-type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking'
+type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking' | 'stressors'
 
 interface PreviousCheckIn {
   plannedWorkout?: string
@@ -83,6 +83,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose 
   const [sleepScore, setSleepScore] = useState<number | null>(null)
   const [feelScore, setFeelScore] = useState<number | null>(null)
   const [periodStartedToday, setPeriodStartedToday] = useState<boolean | null>(null)
+  const [stressorsText, setStressorsText] = useState('')
 
   const greeting = getGreeting(new Date().getHours())
   const headerDate = getHeaderDate()
@@ -255,7 +256,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose 
             <ScaleInput value={feelScore} onChange={setFeelScore} labelLeft="dragging" labelRight="ready to go" />
           </div>
           <Button
-            onClick={() => setStep(hormonalLifeStage?.includes('menstruating') ? 'cycle_tracking' : 'landing')}
+            onClick={() => setStep(hormonalLifeStage?.includes('menstruating') ? 'cycle_tracking' : 'stressors')}
             disabled={!isSleepFeelValid}
           >
             Continue
@@ -280,9 +281,42 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose 
           <div className="mb-6">
             <YesNoSelector value={periodStartedToday} onChange={setPeriodStartedToday} />
           </div>
-          <Button onClick={() => setStep('landing')} disabled={!isCycleValid}>
+          <Button onClick={() => setStep('stressors')} disabled={!isCycleValid}>
             Continue
           </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'stressors') {
+    const backStep = hormonalLifeStage?.includes('menstruating') ? 'cycle_tracking' : 'sleep_feel'
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <StepHeader onBack={() => setStep(backStep)} active={5} onClose={onClose} headerDate={headerDate} />
+        <div className="flex flex-col flex-1 px-6 pb-7">
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
+            Anything new since yesterday?
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+            Travel, illness, bad news, a harder-than-usual day? This helps Láyo read the full picture.
+          </p>
+          <TextArea
+            value={stressorsText}
+            onChange={setStressorsText}
+            placeholder="E.g. bad night's sleep, stressful day at work, feeling under the weather..."
+            maxLength={280}
+          />
+          <Button onClick={() => setStep('landing')}>
+            Continue
+          </Button>
+          <button
+            type="button"
+            onClick={() => setStep('landing')}
+            className="font-sans text-[12px] text-[#B4B2A9] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
+          >
+            Skip
+          </button>
         </div>
       </div>
     )
