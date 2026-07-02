@@ -15,16 +15,26 @@ function getGreeting(hour: number): string {
   return 'Good evening'
 }
 
+function getHeaderDate(): string {
+  return new Date()
+    .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    .replace(',', '')
+}
+
 export function CheckInFlow({ name }: CheckInFlowProps) {
   const [step, setStep] = useState<Step>('landing')
   const greeting = getGreeting(new Date().getHours())
+  const headerDate = getHeaderDate()
 
   if (step === 'landing') {
     return (
       <div className="flex flex-col min-h-screen bg-layo-bg">
-        <div className="px-6 pt-[22px] flex items-center" style={{ minHeight: '52px' }}>
+        <div className="px-6 pt-[22px] flex items-center justify-between" style={{ minHeight: '52px' }}>
           <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
             láyo
+          </div>
+          <div className="font-sans text-[11px] text-[#B4B2A9]">
+            {headerDate}
           </div>
         </div>
         <div className="flex flex-col flex-1 px-6 pb-7 justify-between">

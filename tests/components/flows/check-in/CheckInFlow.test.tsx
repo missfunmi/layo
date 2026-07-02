@@ -38,6 +38,22 @@ describe('CheckInFlow — landing screen: wordmark and layout', () => {
   })
 })
 
+describe('CheckInFlow — landing screen: header date', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('renders the current date formatted as "Weekday Mon Day" in the header', () => {
+    vi.setSystemTime(new Date('2026-07-02T08:00:00'))
+    render(<CheckInFlow name="Funmi" />)
+    expect(screen.getByText('Thu Jul 2')).toBeInTheDocument()
+  })
+})
+
 describe('CheckInFlow — landing screen: time-based greeting', () => {
   beforeEach(() => {
     vi.useFakeTimers()
