@@ -8,7 +8,7 @@ import { ProgressDots } from '@/components/ui/ProgressDots'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { TextArea } from '@/components/ui/TextArea'
 
-type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback'
+type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout'
 
 interface PreviousCheckIn {
   plannedWorkout?: string
@@ -76,6 +76,7 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
   const [yesterdayWorkout, setYesterdayWorkout] = useState<string | null>(null)
   const [somethingElseText, setSomethingElseText] = useState('')
   const [yesterdayFeedback, setYesterdayFeedback] = useState('')
+  const [todayWorkout, setTodayWorkout] = useState('')
 
   const greeting = getGreeting(new Date().getHours())
   const headerDate = getHeaderDate()
@@ -102,7 +103,7 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
               It takes about two minutes. Láyo will take it from there.
             </p>
           </div>
-          <Button onClick={() => setStep(hasPreviousRecord ? 'yesterday_workout' : 'landing')}>
+          <Button onClick={() => setStep(hasPreviousRecord ? 'yesterday_workout' : 'today_workout')}>
             Start today&apos;s check-in
           </Button>
         </div>
@@ -179,16 +180,45 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
             placeholder="E.g. felt strong, legs were heavy..."
             maxLength={280}
           />
-          <Button onClick={() => setStep('landing')}>
+          <Button onClick={() => setStep('today_workout')}>
             Continue
           </Button>
           <button
             type="button"
-            onClick={() => setStep('landing')}
+            onClick={() => setStep('today_workout')}
             className="font-sans text-[12px] text-[#B4B2A9] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
           >
             Skip
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'today_workout') {
+    const isTodayWorkoutValid = todayWorkout.trim().length >= 1
+    const backStep = hasPreviousRecord ? 'yesterday_feedback' : 'landing'
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <StepHeader onBack={() => setStep(backStep)} active={2} onClose={onClose} headerDate={headerDate} />
+        <div className="flex flex-col flex-1 px-6 pb-7">
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
+            What workout do you have planned today?
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+            Be as specific as you like — distance, pace, intensity.
+          </p>
+          <div className="mb-4">
+            <TextArea
+              value={todayWorkout}
+              onChange={setTodayWorkout}
+              placeholder="E.g. 10mi tempo run, 2mi warmup, 6mi at marathon pace..."
+              maxLength={280}
+            />
+          </div>
+          <Button onClick={() => setStep('landing')} disabled={!isTodayWorkoutValid}>
+            Continue
+          </Button>
         </div>
       </div>
     )
