@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/TextInput'
 import { BackButton } from '@/components/ui/BackButton'
@@ -10,6 +11,7 @@ import { PillSelect } from '@/components/ui/PillSelect'
 import { SingleSelect } from '@/components/ui/SingleSelect'
 import { PickerField } from '@/components/ui/PickerField'
 import { DateField } from '@/components/ui/DateField'
+import { getOrCreateDeviceId } from '@/lib/device'
 
 type Step =
   | 'welcome'
@@ -18,6 +20,7 @@ type Step =
   | 'hormonal_life_stage'
   | 'training_goal'
   | 'race_details'
+  | 'confirmation'
 
 const HORMONAL_OPTIONS = [
   'Menstruating',
@@ -28,13 +31,21 @@ const HORMONAL_OPTIONS = [
   'On HRT',
 ]
 
+const HORMONAL_STAGE_MAP: Record<string, string> = {
+  'Menstruating': 'menstruating',
+  'Pregnant': 'pregnant',
+  'Menopausal': 'menopausal',
+  'Post-menopausal': 'post-menopausal',
+  'On birth control': 'on_birth_control',
+  'On HRT': 'on_hrt',
+}
+
 const TRAINING_GOAL_OPTIONS = ['A specific race', 'Other reasons']
 
 const EVENT_TYPES = ['Running', 'Cycling', 'Swimming', 'Triathlon', 'Skiing', 'Other']
 
 interface OnboardingFlowProps {
   onClose: () => void
-  onComplete: () => void
 }
 
 function StepHeader({ onBack, active, onClose }: { onBack: () => void; active: number; onClose: () => void }) {
@@ -56,7 +67,8 @@ function StepHeader({ onBack, active, onClose }: { onBack: () => void; active: n
   )
 }
 
-export function OnboardingFlow({ onClose, onComplete }: OnboardingFlowProps) {
+export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
+  const router = useRouter()
   const [step, setStep] = useState<Step>('welcome')
   const [name, setName] = useState('')
   const [birthYear, setBirthYear] = useState('')
@@ -66,11 +78,49 @@ export function OnboardingFlow({ onClose, onComplete }: OnboardingFlowProps) {
   const [eventType, setEventType] = useState('')
   const [eventTypeDetail, setEventTypeDetail] = useState('')
   const [eventDate, setEventDate] = useState('')
+  const [confirmationError, setConfirmationError] = useState(false)
 
   const currentYear = new Date().getFullYear()
   const minYear = currentYear - 100
   const maxYear = currentYear - 13
   const today = new Date().toLocaleDateString('en-CA')
+
+  async function submitOnboarding() {
+    setConfirmationError(false)
+    const deviceId = getOrCreateDeviceId()
+
+    const payload: Record<string, unknown> = {
+      deviceId,
+      name: name.trim(),
+      birthYear: parseInt(birthYear, 10),
+      hormonalLifeStage: hormonalLifeStage.map(s => HORMONAL_STAGE_MAP[s] ?? s.toLowerCase()),
+      trainingGoal: trainingGoal === 'A specific race' ? 'race' : 'non_race',
+    }
+
+    if (trainingGoal === 'A specific race') {
+      payload.eventName = eventName.trim()
+      payload.eventType = eventType.toLowerCase()
+      if (eventType === 'Other') {
+        payload.eventTypeOther = eventTypeDetail.trim()
+      }
+      payload.eventDate = eventDate
+    }
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        router.push('/check-in')
+      } else {
+        setConfirmationError(true)
+      }
+    } catch {
+      setConfirmationError(true)
+    }
+  }
 
   const isNameValid = name.trim().length >= 1 && name.trim().length <= 50
 
@@ -184,7 +234,14 @@ export function OnboardingFlow({ onClose, onComplete }: OnboardingFlowProps) {
             onChange={setTrainingGoal}
           />
           <Button
-            onClick={() => trainingGoal === 'A specific race' ? setStep('race_details') : onComplete()}
+            onClick={() => {
+              if (trainingGoal === 'A specific race') {
+                setStep('race_details')
+              } else {
+                setStep('confirmation')
+                void submitOnboarding()
+              }
+            }}
             disabled={trainingGoal === null}
           >
             Continue
@@ -247,9 +304,74 @@ export function OnboardingFlow({ onClose, onComplete }: OnboardingFlowProps) {
               className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
             />
           </div>
-          <Button onClick={onComplete} disabled={!isRaceDetailsValid}>
+          <Button
+            onClick={() => {
+              setStep('confirmation')
+              void submitOnboarding()
+            }}
+            disabled={!isRaceDetailsValid}
+          >
             Continue
           </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'confirmation') {
+    if (confirmationError) {
+      return (
+        <div className="flex flex-col min-h-screen bg-layo-bg">
+          <div className="px-6 pt-[22px] flex items-center" style={{ minHeight: '52px' }}>
+            <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
+              láyo
+            </div>
+          </div>
+          <div className="flex flex-col flex-1 items-center justify-center text-center px-6">
+            <div
+              className="flex items-center justify-center rounded-full mb-5 mx-auto"
+              style={{ width: '56px', height: '56px', backgroundColor: '#FAECE7' }}
+            >
+              <i className="ti ti-alert-circle" style={{ fontSize: '24px', color: '#D85A30' }} />
+            </div>
+            <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-2">
+              Something went wrong.
+            </h2>
+            <p className="font-sans text-[#888780] text-[13px] leading-[1.6] mb-7">
+              We could not save your profile. Tap to try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => void submitOnboarding()}
+              className="px-7 py-[14px] rounded-full bg-[#0F6E56] text-white font-sans text-[14px] font-medium cursor-pointer border-0"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <div className="px-6 pt-[22px] flex items-center" style={{ minHeight: '52px' }}>
+          <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
+            láyo
+          </div>
+        </div>
+        <div className="flex flex-col flex-1 items-center justify-center text-center px-6">
+          <div
+            className="flex items-center justify-center rounded-full mb-5 mx-auto"
+            style={{ width: '60px', height: '60px', backgroundColor: '#E1F5EE' }}
+          >
+            <i className="ti ti-check" style={{ fontSize: '28px', color: '#0F6E56' }} />
+          </div>
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[24px] mb-3">
+            You&apos;re all set, {name.trim()}.
+          </h2>
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.65] max-w-[220px]">
+            Come back tomorrow morning and Láyo will be ready for your first check-in.
+          </p>
         </div>
       </div>
     )

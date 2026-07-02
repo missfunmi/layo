@@ -4,6 +4,10 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 
 afterEach(cleanup)
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
 import { OnboardingFlow } from '@/components/flows/onboarding/OnboardingFlow'
 
 const HORMONAL_OPTIONS = [
@@ -16,7 +20,7 @@ const HORMONAL_OPTIONS = [
 ]
 
 function renderAtHormonalStep() {
-  render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+  render(<OnboardingFlow onClose={vi.fn()} />)
   fireEvent.click(screen.getByRole('button', { name: /get started/i }))
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -27,7 +31,7 @@ function renderAtHormonalStep() {
 
 describe('OnboardingFlow — step 3: hormonal life stage', () => {
   test('birth year Continue advances to hormonal life stage step', () => {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -96,7 +100,7 @@ describe('OnboardingFlow — step 3: hormonal life stage', () => {
 
   test('close button calls onClose', () => {
     const onClose = vi.fn()
-    render(<OnboardingFlow onClose={onClose} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
