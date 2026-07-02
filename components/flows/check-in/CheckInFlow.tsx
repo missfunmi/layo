@@ -8,8 +8,9 @@ import { ProgressDots } from '@/components/ui/ProgressDots'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { TextArea } from '@/components/ui/TextArea'
 import { ScaleInput } from '@/components/ui/ScaleInput'
+import { YesNoSelector } from '@/components/ui/YesNoSelector'
 
-type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel'
+type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking'
 
 interface PreviousCheckIn {
   plannedWorkout?: string
@@ -19,6 +20,7 @@ interface PreviousCheckIn {
 interface CheckInFlowProps {
   name: string
   previousCheckIn?: PreviousCheckIn | null
+  hormonalLifeStage?: string[]
   onClose?: () => void
 }
 
@@ -72,7 +74,7 @@ function StepHeader({
   )
 }
 
-export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps) {
+export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose }: CheckInFlowProps) {
   const [step, setStep] = useState<Step>('landing')
   const [yesterdayWorkout, setYesterdayWorkout] = useState<string | null>(null)
   const [somethingElseText, setSomethingElseText] = useState('')
@@ -80,6 +82,7 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
   const [todayWorkout, setTodayWorkout] = useState('')
   const [sleepScore, setSleepScore] = useState<number | null>(null)
   const [feelScore, setFeelScore] = useState<number | null>(null)
+  const [periodStartedToday, setPeriodStartedToday] = useState<boolean | null>(null)
 
   const greeting = getGreeting(new Date().getHours())
   const headerDate = getHeaderDate()
@@ -251,7 +254,33 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
           <div className="mb-6">
             <ScaleInput value={feelScore} onChange={setFeelScore} labelLeft="dragging" labelRight="ready to go" />
           </div>
-          <Button onClick={() => setStep('landing')} disabled={!isSleepFeelValid}>
+          <Button
+            onClick={() => setStep(hormonalLifeStage?.includes('menstruating') ? 'cycle_tracking' : 'landing')}
+            disabled={!isSleepFeelValid}
+          >
+            Continue
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'cycle_tracking') {
+    const isCycleValid = periodStartedToday !== null
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <StepHeader onBack={() => setStep('sleep_feel')} active={4} onClose={onClose} headerDate={headerDate} />
+        <div className="flex flex-col flex-1 px-6 pb-7">
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
+            Did your period start today?
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+            Láyo uses this to track where you are in your cycle. It stays private.
+          </p>
+          <div className="mb-6">
+            <YesNoSelector value={periodStartedToday} onChange={setPeriodStartedToday} />
+          </div>
+          <Button onClick={() => setStep('landing')} disabled={!isCycleValid}>
             Continue
           </Button>
         </div>
