@@ -427,3 +427,130 @@ describe('CheckInFlow — step today_workout: back navigation', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 })
+
+// ─── Sleep and feel step ──────────────────────────────────────────────────────
+
+function navigateToSleepFeel(previousCheckIn = PREV) {
+  navigateToTodayWorkout(previousCheckIn)
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+}
+
+describe('CheckInFlow — step sleep_feel: entry', () => {
+  test('today_workout Continue navigates to sleep_feel', () => {
+    navigateToTodayWorkout()
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step sleep_feel: layout', () => {
+  test('shows sleep heading "How did you sleep?"', () => {
+    navigateToSleepFeel()
+    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+  })
+
+  test('shows sleep subtext "1 = rough night, 5 = slept great"', () => {
+    navigateToSleepFeel()
+    expect(screen.getByText(/1 = rough night, 5 = slept great/i)).toBeInTheDocument()
+  })
+
+  test('shows feel heading "How do you feel?"', () => {
+    navigateToSleepFeel()
+    expect(screen.getByText(/how do you feel/i)).toBeInTheDocument()
+  })
+
+  test('shows feel subtext "1 = dragging, 5 = ready to go"', () => {
+    navigateToSleepFeel()
+    expect(screen.getByText(/1 = dragging, 5 = ready to go/i)).toBeInTheDocument()
+  })
+
+  test('shows sleep scale labels "rough" and "great"', () => {
+    navigateToSleepFeel()
+    expect(screen.getByText('rough')).toBeInTheDocument()
+    expect(screen.getByText('great')).toBeInTheDocument()
+  })
+
+  test('shows feel scale labels "dragging" and "ready to go"', () => {
+    navigateToSleepFeel()
+    expect(screen.getByText('dragging')).toBeInTheDocument()
+    expect(screen.getByText('ready to go')).toBeInTheDocument()
+  })
+
+  test('shows ten scale buttons (5 for sleep, 5 for feel)', () => {
+    navigateToSleepFeel()
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    expect(scaleButtons).toHaveLength(10)
+  })
+
+  test('shows progress dots', () => {
+    navigateToSleepFeel()
+    expect(screen.getByTestId('progress-dots')).toBeInTheDocument()
+  })
+
+  test('shows back button', () => {
+    navigateToSleepFeel()
+    expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument()
+  })
+
+  test('shows close button', () => {
+    navigateToSleepFeel()
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+  })
+
+  test('shows Continue button', () => {
+    navigateToSleepFeel()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step sleep_feel: Continue validation', () => {
+  test('Continue is disabled when neither scale has a selection', () => {
+    navigateToSleepFeel()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is disabled when only sleep is selected', () => {
+    navigateToSleepFeel()
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3]) // sleep: 4
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is disabled when only feel is selected', () => {
+    navigateToSleepFeel()
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[7]) // feel: 3
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is enabled when both sleep and feel are selected', () => {
+    navigateToSleepFeel()
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3]) // sleep: 4
+    fireEvent.click(scaleButtons[7]) // feel: 3
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+})
+
+describe('CheckInFlow — step sleep_feel: back navigation', () => {
+  test('back button navigates to today_workout', () => {
+    navigateToSleepFeel()
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByText(/what workout do you have planned today/i)).toBeInTheDocument()
+  })
+
+  test('close button calls onClose', () => {
+    const onClose = vi.fn()
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})

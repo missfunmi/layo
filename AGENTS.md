@@ -100,14 +100,33 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 
 ## Implementation approach
 
-- One Linear issue at a time
+- One Linear issue at a time; do not combine issues in a single commit or PR
 - Run the full test suite before committing
 - Commit messages must reference the Linear issue ID (e.g. `feat: implement Prisma schema [LAYO-16]`)
-- Do not merge PRs — PRs are reviewed and merged by the human
-- Do not combine issues in a single commit or PR
-- If implementation introduces a new environment variable, library module, or architectural decision not already reflected in `AGENTS.md` or `docs/architecture.md`, update both files in the same PR
-- Always run `git fetch origin && git pull origin main` to sync the latest remote main before creating a feature branch. Do not branch off a stale local main
-- Do not create git worktrees at any point during implementation or code review. Always work directly on the designated feature branch (`feature/LAYO-[ID]-[short-description]`). If any skill or tool attempts to create a worktree, do not invoke it in that mode. If a stray branch is created as a side effect (e.g. `pr-[number]`), delete it from remote immediately with `git push origin --delete [branch-name]` and do not push it. Note: `gh pr create` automatically creates a local `pr-[number]` tracking branch as a side effect — the branch may be created slightly after the command returns, so always run `sleep 2 && git checkout feature/LAYO-[ID]-[short-description] && git branch -d pr-[number]` after opening a PR, and verify with `git branch --show-current` that the feature branch is active
+- Do not merge PRs; PRs are reviewed and merged by the human
+- If implementation introduces a new environment variable, library module, or architectural decision not already in `AGENTS.md` or `docs/architecture.md`, update both in the same PR
+
+## Git workflow
+
+**Before creating a new feature branch**, run the following and confirm both assertions before proceeding:
+
+```bash
+git fetch origin && git checkout main && git pull origin main
+# Assert: output shows "On branch main" and "Your branch is up to date with 'origin/main'"
+# If not, stop and resolve before continuing
+```
+
+**Branch naming:** `feature/LAYO-[ID]-[short-description]`
+
+**After opening a PR with `gh pr create`**, run the following immediately:
+
+```bash
+sleep 2 && git checkout feature/LAYO-[ID]-[short-description] && git branch -d pr-[number]
+git branch --show-current
+# Assert: output shows the feature branch name, not pr-[number] or main
+```
+
+**No worktrees.** Never create a git worktree at any point. If any skill or tool attempts to create one, do not invoke it in that mode.
 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:

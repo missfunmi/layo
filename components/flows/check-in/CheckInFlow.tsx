@@ -7,8 +7,9 @@ import { CloseButton } from '@/components/ui/CloseButton'
 import { ProgressDots } from '@/components/ui/ProgressDots'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { TextArea } from '@/components/ui/TextArea'
+import { ScaleInput } from '@/components/ui/ScaleInput'
 
-type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout'
+type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel'
 
 interface PreviousCheckIn {
   plannedWorkout?: string
@@ -77,6 +78,8 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
   const [somethingElseText, setSomethingElseText] = useState('')
   const [yesterdayFeedback, setYesterdayFeedback] = useState('')
   const [todayWorkout, setTodayWorkout] = useState('')
+  const [sleepScore, setSleepScore] = useState<number | null>(null)
+  const [feelScore, setFeelScore] = useState<number | null>(null)
 
   const greeting = getGreeting(new Date().getHours())
   const headerDate = getHeaderDate()
@@ -216,7 +219,39 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
               maxLength={280}
             />
           </div>
-          <Button onClick={() => setStep('landing')} disabled={!isTodayWorkoutValid}>
+          <Button onClick={() => setStep('sleep_feel')} disabled={!isTodayWorkoutValid}>
+            Continue
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'sleep_feel') {
+    const isSleepFeelValid = sleepScore !== null && feelScore !== null
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <StepHeader onBack={() => setStep('today_workout')} active={3} onClose={onClose} headerDate={headerDate} />
+        <div className="flex flex-col flex-1 px-6 pb-7">
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
+            How did you sleep?
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-4">
+            1 = rough night, 5 = slept great
+          </p>
+          <div className="mb-6">
+            <ScaleInput value={sleepScore} onChange={setSleepScore} labelLeft="rough" labelRight="great" />
+          </div>
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
+            How do you feel?
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-4">
+            1 = dragging, 5 = ready to go
+          </p>
+          <div className="mb-6">
+            <ScaleInput value={feelScore} onChange={setFeelScore} labelLeft="dragging" labelRight="ready to go" />
+          </div>
+          <Button onClick={() => setStep('landing')} disabled={!isSleepFeelValid}>
             Continue
           </Button>
         </div>
