@@ -113,8 +113,8 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 If you are the implementing agent, for each issue:
 
 1. Use the Linear MCP to find the next unstarted issue in the v0.1 project, assign it to yourself, and mark it In Progress. If you were working on a current issue that is still marked as In Progress and not Done, double-check with the user before proceeding
-2. Create a feature branch: `feature/LAYO-[ID]-[short-description]` off the `main` default branch, unless otherwise specified
-3. Implement following `superpowers:test-driven-development`
+2. Create a feature branch: `feature/LAYO-[ID]-[short-description]` off the latest `main` default branch, unless otherwise specified
+3. Implement following the `superpowers:test-driven-development` skill
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
 5. Wait for code review (see Code Review Workflow below)
 6. Once the changes are ready to merge (i.e. all review feedback is resolved and the reviewing agent reports no outstanding feedback), mark the Linear issue Done
@@ -125,12 +125,13 @@ After a PR is opened, it is reviewed by a code reviewer agent before merge. The 
 
 1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
 2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR
-3. Print the full file path of the feedback file when complete
+3. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete
+4. After writing the feedback file, clean up: run `git branch -d pr-[number] && git checkout -` to delete the local PR branch and return the workspace to the previously active branch.
 
 ## Addressing code review workflow
 If you are the implementing agent addressing code review feedback:
 
-1. Read the code review feedback file located at the `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md` path provided
+1. Read the code review feedback file located at the `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md` path
 2. Address feedback using the `superpowers:receiving-code-review` skill
 3. Commit fixes to the same feature branch
 4. Write a response summary to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-response-[counter].md`, using the same counter as the review file you are responding to. For each piece of feedback, state what was changed (or, if not changed, why) and reference the relevant commit(s).
