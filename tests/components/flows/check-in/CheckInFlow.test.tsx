@@ -554,3 +554,136 @@ describe('CheckInFlow — step sleep_feel: back navigation', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 })
+
+// ─── Cycle tracking step ──────────────────────────────────────────────────────
+
+function navigateToCycleTracking(previousCheckIn = PREV) {
+  render(<CheckInFlow name="Funmi" previousCheckIn={previousCheckIn} hormonalLifeStage={['menstruating']} />)
+  fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+  fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+  const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+  fireEvent.click(scaleButtons[3]) // sleep: 4
+  fireEvent.click(scaleButtons[7]) // feel: 3
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+}
+
+describe('CheckInFlow — step cycle_tracking: entry', () => {
+  test('sleep_feel Continue navigates to cycle_tracking when hormonalLifeStage includes menstruating', () => {
+    navigateToCycleTracking()
+    expect(screen.getByText(/did your period start today/i)).toBeInTheDocument()
+  })
+
+  test('sleep_feel Continue skips cycle_tracking when hormonalLifeStage does not include menstruating', () => {
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} hormonalLifeStage={['post_menopausal']} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.queryByText(/did your period start today/i)).not.toBeInTheDocument()
+  })
+
+  test('sleep_feel Continue skips cycle_tracking when hormonalLifeStage is not provided', () => {
+    navigateToSleepFeel()
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.queryByText(/did your period start today/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step cycle_tracking: layout', () => {
+  test('shows heading "Did your period start today?"', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/did your period start today\?/i)
+  })
+
+  test('shows subtext about cycle tracking', () => {
+    navigateToCycleTracking()
+    expect(screen.getByText(/láyo uses this to track where you are in your cycle/i)).toBeInTheDocument()
+  })
+
+  test('shows "Yes" button', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /^yes$/i })).toBeInTheDocument()
+  })
+
+  test('shows "No" button', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /^no$/i })).toBeInTheDocument()
+  })
+
+  test('shows progress dots', () => {
+    navigateToCycleTracking()
+    expect(screen.getByTestId('progress-dots')).toBeInTheDocument()
+  })
+
+  test('shows back button', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument()
+  })
+
+  test('shows close button', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+  })
+
+  test('shows Continue button', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
+  })
+})
+
+describe('CheckInFlow — step cycle_tracking: Continue validation', () => {
+  test('Continue is disabled when no option selected', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  test('Continue is enabled after selecting Yes', () => {
+    navigateToCycleTracking()
+    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+
+  test('Continue is enabled after selecting No', () => {
+    navigateToCycleTracking()
+    fireEvent.click(screen.getByRole('button', { name: /^no$/i }))
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+})
+
+describe('CheckInFlow — step cycle_tracking: back navigation', () => {
+  test('back button navigates to sleep_feel', () => {
+    navigateToCycleTracking()
+    fireEvent.click(screen.getByRole('button', { name: /go back/i }))
+    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+  })
+
+  test('close button calls onClose', () => {
+    const onClose = vi.fn()
+    render(<CheckInFlow name="Funmi" previousCheckIn={PREV} hormonalLifeStage={['menstruating']} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /your planned workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    const scaleButtons = screen.getAllByRole('button', { name: /^[1-5]$/ })
+    fireEvent.click(scaleButtons[3])
+    fireEvent.click(scaleButtons[7])
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})
