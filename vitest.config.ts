@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     tsconfigPaths: true,
   },
@@ -9,5 +11,6 @@ export default defineConfig({
     fileParallelism: false,
     globalSetup: ['./tests/global-setup.ts'],
     setupFiles: ['./tests/setup.ts'],
+    environmentMatchGlobs: [['tests/components/**', 'jsdom']],
   },
 })
