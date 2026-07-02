@@ -19,7 +19,7 @@ beforeEach(() => {
 })
 
 function navigateTo(step: 'training_goal' | 'race_details') {
-  render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+  render(<OnboardingFlow onClose={vi.fn()} />)
   fireEvent.click(screen.getByRole('button', { name: /get started/i }))
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -107,7 +107,7 @@ describe('OnboardingFlow — step 4: training goal', () => {
 
   test('close button calls onClose', () => {
     const onClose = vi.fn()
-    render(<OnboardingFlow onClose={onClose} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -277,7 +277,7 @@ describe('OnboardingFlow — step 5: race details', () => {
 
   test('close button calls onClose', () => {
     const onClose = vi.fn()
-    render(<OnboardingFlow onClose={onClose} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Funmi' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))

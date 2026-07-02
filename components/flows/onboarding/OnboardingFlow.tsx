@@ -46,7 +46,6 @@ const EVENT_TYPES = ['Running', 'Cycling', 'Swimming', 'Triathlon', 'Skiing', 'O
 
 interface OnboardingFlowProps {
   onClose: () => void
-  onComplete?: () => void
 }
 
 function StepHeader({ onBack, active, onClose }: { onBack: () => void; active: number; onClose: () => void }) {
@@ -329,11 +328,17 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
             </div>
           </div>
           <div className="flex flex-col flex-1 items-center justify-center text-center px-6">
+            <div
+              className="flex items-center justify-center rounded-full mb-5 mx-auto"
+              style={{ width: '56px', height: '56px', backgroundColor: '#FAECE7' }}
+            >
+              <i className="ti ti-alert-circle" style={{ fontSize: '24px', color: '#D85A30' }} />
+            </div>
             <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-2">
               Something went wrong.
             </h2>
             <p className="font-sans text-[#888780] text-[13px] leading-[1.6] mb-7">
-              Tap to try again.
+              We could not save your profile. Tap to try again.
             </p>
             <button
               type="button"

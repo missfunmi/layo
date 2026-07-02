@@ -12,22 +12,22 @@ import { OnboardingFlow } from '@/components/flows/onboarding/OnboardingFlow'
 
 describe('OnboardingFlow — welcome screen', () => {
   test('renders wordmark on welcome screen', () => {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     expect(screen.getByText('láyo')).toBeInTheDocument()
   })
 
   test('renders tagline on welcome screen', () => {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     expect(screen.getByText(/your daily training companion/i)).toBeInTheDocument()
   })
 
   test('renders "Get started" CTA on welcome screen', () => {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument()
   })
 
   test('"Get started" advances to name step', () => {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     expect(screen.getByText(/what should we call you/i)).toBeInTheDocument()
   })
@@ -35,7 +35,7 @@ describe('OnboardingFlow — welcome screen', () => {
 
 describe('OnboardingFlow — step 1: name', () => {
   function renderAtNameStep() {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
   }
 
@@ -95,7 +95,7 @@ describe('OnboardingFlow — step 1: name', () => {
 
   test('close button calls onClose', () => {
     const onClose = vi.fn()
-    render(<OnboardingFlow onClose={onClose} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     fireEvent.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalledOnce()
@@ -112,7 +112,7 @@ describe('OnboardingFlow — step 1: name', () => {
 
 describe('OnboardingFlow — step 2: birth year', () => {
   function renderAtBirthYearStep() {
-    render(<OnboardingFlow onClose={vi.fn()} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     const input = screen.getByRole('textbox')
     fireEvent.change(input, { target: { value: 'Funmi' } })
@@ -187,7 +187,7 @@ describe('OnboardingFlow — step 2: birth year', () => {
 
   test('close button calls onClose', () => {
     const onClose = vi.fn()
-    render(<OnboardingFlow onClose={onClose} onComplete={vi.fn()} />)
+    render(<OnboardingFlow onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /get started/i }))
     const input = screen.getByRole('textbox')
     fireEvent.change(input, { target: { value: 'Funmi' } })
