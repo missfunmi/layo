@@ -109,7 +109,7 @@ const PREV = {
   recommendationHeading: '6mi easy run, no strides',
 }
 
-function navigateToYesterdayWorkout(previousCheckIn = PREV) {
+function navigateToYesterdayWorkout(previousCheckIn: { plannedWorkout?: string; recommendationHeading?: string } = PREV) {
   render(<CheckInFlow name="Funmi" previousCheckIn={previousCheckIn} />)
   fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
 }
