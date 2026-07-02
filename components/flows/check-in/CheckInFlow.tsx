@@ -206,7 +206,7 @@ export function CheckInFlow({ name, previousCheckIn, onClose }: CheckInFlowProps
             What workout do you have planned today?
           </h2>
           <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
-            Be as specific as you like — distance, pace, intensity.
+            Be as specific as you like, distance, pace, intensity.
           </p>
           <div className="mb-4">
             <TextArea
