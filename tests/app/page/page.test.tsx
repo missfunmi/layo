@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react'
 
 afterEach(cleanup)
 
@@ -126,6 +126,41 @@ describe('app/page.tsx — 401 response', () => {
     render(<HomePage />)
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/onboarding')
+    })
+  })
+})
+
+// ─── Error state ──────────────────────────────────────────────────────────────
+
+describe('app/page.tsx — error state', () => {
+  test('shows error UI when fetch throws a network error', async () => {
+    vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
+    render(<HomePage />)
+    await waitFor(() => {
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+    })
+  })
+
+  test('shows error UI when fetch returns a non-2xx non-401 response', async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response('Internal Server Error', { status: 500 })
+    )
+    render(<HomePage />)
+    await waitFor(() => {
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+    })
+  })
+
+  test('clicking "Try again" re-fetches check-ins', async () => {
+    vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
+    render(<HomePage />)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
+    })
+    const callsBefore = vi.mocked(global.fetch).mock.calls.length
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }))
+    await waitFor(() => {
+      expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(callsBefore)
     })
   })
 })
