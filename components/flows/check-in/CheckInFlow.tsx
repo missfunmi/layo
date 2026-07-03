@@ -112,7 +112,6 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   const greeting = getGreeting(new Date().getHours())
   const headerDate = getHeaderDate()
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (step !== 'generating') return
 
@@ -163,6 +162,9 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
     }
 
     submit()
+  // Reads form state as a snapshot when step transitions to 'generating'. Listing all
+  // state variables would re-fire the submission on every keystroke before that point.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
   const hasPreviousRecord = previousCheckIn != null
