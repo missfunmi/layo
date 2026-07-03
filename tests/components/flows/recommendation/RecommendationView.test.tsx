@@ -1,0 +1,240 @@
+// @vitest-environment jsdom
+import { describe, test, expect, afterEach } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
+
+afterEach(cleanup)
+
+import { RecommendationView } from '@/components/flows/recommendation/RecommendationView'
+
+const AS_WRITTEN_REC = {
+  recommendationType: 'as_written' as const,
+  modificationDetail: null as string | null,
+  rationale: 'You slept well and you are feeling good this morning.',
+}
+const MODIFY_REC = {
+  recommendationType: 'modify' as const,
+  modificationDetail: 'Cut the run to 6 miles and keep it fully easy.',
+  rationale: 'Sleep was solid but you are sitting at a 3.',
+}
+const REST_REC = {
+  recommendationType: 'rest' as const,
+  modificationDetail: null as string | null,
+  rationale: 'Poor sleep, a 2 on feel, and you have been fighting a cold.',
+}
+const BASE_CHECK_IN = {
+  sleepScore: 5,
+  feelScore: 3,
+  todaysPlannedWorkout: '10mi tempo run',
+}
+
+// ─── Overline ────────────────────────────────────────────────────────────────
+
+describe('RecommendationView — overline', () => {
+  test('renders "Today\'s recommendation" overline text', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('overline')).toHaveTextContent("Today's recommendation")
+  })
+
+  test('as_written overline has color #0F6E56', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('overline')).toHaveStyle({ color: '#0F6E56' })
+  })
+
+  test('modify overline has color #BA7517', () => {
+    render(<RecommendationView recommendation={MODIFY_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('overline')).toHaveStyle({ color: '#BA7517' })
+  })
+
+  test('rest overline has color #993C1D', () => {
+    render(<RecommendationView recommendation={REST_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('overline')).toHaveStyle({ color: '#993C1D' })
+  })
+})
+
+// ─── Heading ─────────────────────────────────────────────────────────────────
+
+describe('RecommendationView — heading', () => {
+  test('as_written heading is "Do your workout as planned."', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByRole('heading')).toHaveTextContent('Do your workout as planned.')
+  })
+
+  test('modify heading shows modificationDetail', () => {
+    render(<RecommendationView recommendation={MODIFY_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByRole('heading')).toHaveTextContent(
+      'Cut the run to 6 miles and keep it fully easy.'
+    )
+  })
+
+  test('rest heading is "Take a rest day today."', () => {
+    render(<RecommendationView recommendation={REST_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByRole('heading')).toHaveTextContent('Take a rest day today.')
+  })
+})
+
+// ─── Divider ─────────────────────────────────────────────────────────────────
+
+describe('RecommendationView — verdict divider', () => {
+  test('as_written divider has backgroundColor #5DCAA5', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('verdict-divider')).toHaveStyle({ backgroundColor: '#5DCAA5' })
+  })
+
+  test('modify divider has backgroundColor #FAC775', () => {
+    render(<RecommendationView recommendation={MODIFY_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('verdict-divider')).toHaveStyle({ backgroundColor: '#FAC775' })
+  })
+
+  test('rest divider has backgroundColor #F0997B', () => {
+    render(<RecommendationView recommendation={REST_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('verdict-divider')).toHaveStyle({ backgroundColor: '#F0997B' })
+  })
+})
+
+// ─── Rationale ───────────────────────────────────────────────────────────────
+
+describe('RecommendationView — rationale', () => {
+  test('renders rationale text', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByText(AS_WRITTEN_REC.rationale)).toBeInTheDocument()
+  })
+})
+
+// ─── Summary card ─────────────────────────────────────────────────────────────
+
+describe('RecommendationView — check-in summary card', () => {
+  test('renders "Today\'s check-in" card label', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByText("Today's check-in")).toBeInTheDocument()
+  })
+
+  test('shows sleep score as "{n} / 5"', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByText('Sleep')).toBeInTheDocument()
+    expect(screen.getByText('5 / 5')).toBeInTheDocument()
+  })
+
+  test('shows feel score as "{n} / 5"', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, feelScore: 4 }}
+      />
+    )
+    expect(screen.getByText('Feel')).toBeInTheDocument()
+    expect(screen.getByText('4 / 5')).toBeInTheDocument()
+  })
+
+  test('shows cycle day row when cycleDay is present', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, cycleDay: 7 }}
+      />
+    )
+    expect(screen.getByText('Cycle day')).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
+  })
+
+  test('does not show cycle day row when cycleDay is null', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, cycleDay: null }}
+      />
+    )
+    expect(screen.queryByText('Cycle day')).not.toBeInTheDocument()
+  })
+
+  test('shows planned workout row', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByText('Planned workout')).toBeInTheDocument()
+    expect(screen.getByText('10mi tempo run')).toBeInTheDocument()
+  })
+
+  test('truncates planned workout at 40 chars with ellipsis', () => {
+    const longWorkout = 'A very long workout description that exceeds forty characters'
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
+      />
+    )
+    expect(screen.getByText('A very long workout description that exc...')).toBeInTheDocument()
+  })
+
+  test('shows yesterday row with "Planned workout" when type is planned', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, yesterdayWorkoutType: 'planned' }}
+      />
+    )
+    expect(screen.getByText('Yesterday')).toBeInTheDocument()
+    expect(screen.getAllByText('Planned workout')).toHaveLength(2)
+  })
+
+  test('shows yesterday row with "Láyo\'s suggestion" when type is suggested', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, yesterdayWorkoutType: 'suggested' }}
+      />
+    )
+    expect(screen.getByText('Yesterday')).toBeInTheDocument()
+    expect(screen.getByText("Láyo's suggestion")).toBeInTheDocument()
+  })
+
+  test('shows yesterday row with "Other workout" when type is other', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, yesterdayWorkoutType: 'other' }}
+      />
+    )
+    expect(screen.getByText('Yesterday')).toBeInTheDocument()
+    expect(screen.getByText('Other workout')).toBeInTheDocument()
+  })
+
+  test('does not show yesterday row when yesterdayWorkoutType is null', () => {
+    render(
+      <RecommendationView
+        recommendation={REST_REC}
+        checkIn={{ ...BASE_CHECK_IN, yesterdayWorkoutType: null }}
+      />
+    )
+    expect(screen.queryByText('Yesterday')).not.toBeInTheDocument()
+  })
+
+  test('shows stressors row when stressors is present', () => {
+    render(
+      <RecommendationView
+        recommendation={REST_REC}
+        checkIn={{ ...BASE_CHECK_IN, stressors: 'Fighting a cold' }}
+      />
+    )
+    expect(screen.getByText('Stressors')).toBeInTheDocument()
+    expect(screen.getByText('Fighting a cold')).toBeInTheDocument()
+  })
+
+  test('does not show stressors row when stressors is null', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, stressors: null }}
+      />
+    )
+    expect(screen.queryByText('Stressors')).not.toBeInTheDocument()
+  })
+})
+
+// ─── Redo link ────────────────────────────────────────────────────────────────
+
+describe('RecommendationView — redo link', () => {
+  test('renders "Redo today\'s check-in" button', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(
+      screen.getByRole('button', { name: /redo today's check-in/i })
+    ).toBeInTheDocument()
+  })
+})
