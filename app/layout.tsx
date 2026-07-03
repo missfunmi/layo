@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Space_Grotesk, Inter } from 'next/font/google'
 import { SentryErrorBoundary } from '@/components/sentry-error-boundary'
 import './globals.css'
@@ -18,6 +18,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Láyo',
   description: 'Fitness coaching assistant for female endurance athletes',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

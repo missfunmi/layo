@@ -175,7 +175,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
 
   if (step === 'landing') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <Header headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7 justify-between">
           <div>
@@ -199,7 +199,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
 
   if (step === 'yesterday_workout') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('landing')} active={0} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -251,7 +251,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
 
   if (step === 'yesterday_feedback') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('yesterday_workout')} active={1} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -285,7 +285,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
     const isTodayWorkoutValid = todayWorkout.trim().length >= 1
     const backStep = hasPreviousRecord ? 'yesterday_feedback' : 'landing'
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep(backStep)} active={2} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -313,7 +313,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   if (step === 'sleep_feel') {
     const isSleepFeelValid = sleepScore !== null && feelScore !== null
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('today_workout')} active={3} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -348,7 +348,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   if (step === 'cycle_tracking') {
     const isCycleValid = periodStartedToday !== null
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('sleep_feel')} active={4} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -371,7 +371,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   if (step === 'stressors') {
     const backStep = hormonalLifeStage?.includes('menstruating') ? 'cycle_tracking' : 'sleep_feel'
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep(backStep)} active={5} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -403,7 +403,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
 
   if (step === 'generating') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <Header headerDate={headerDate} />
         <div className="flex flex-col flex-1 items-center justify-center text-center px-6 pb-7">
           <div
@@ -435,7 +435,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
         : 'We could not save your check-in. Tap to try again.'
 
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <Header headerDate={headerDate} />
         <div className="flex flex-col flex-1 items-center justify-center text-center px-6 pb-7">
           <div

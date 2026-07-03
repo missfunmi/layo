@@ -84,7 +84,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#F1EFE8] flex flex-col">
+      <div className="min-h-dvh bg-[#F1EFE8] flex flex-col">
         <Header />
         <div className="flex-1 flex flex-col items-center justify-center px-6">
           <h1 className="font-display font-bold text-[24px] leading-[1.2] text-[#2C2C2A] mb-4 text-center">
@@ -117,7 +117,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
   }
 
   return (
-    <div className="min-h-screen bg-[#F1EFE8] flex flex-col relative">
+    <div className="min-h-dvh bg-[#F1EFE8] flex flex-col relative">
       <Header />
       <div className="flex-1 flex flex-col px-6 pb-7 pt-[22px]">
         <div
