@@ -22,9 +22,11 @@ interface CheckIn {
 }
 
 interface RecommendationViewProps {
-  recommendation: Recommendation
-  checkIn: CheckIn
+  recommendation?: Recommendation
+  checkIn?: CheckIn
   onRedo?: () => void
+  isError?: boolean
+  onRetry?: () => void
 }
 
 const STATE_COLORS: Record<RecommendationType, { overline: string; divider: string }> = {
@@ -77,10 +79,31 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function RecommendationView({ recommendation, checkIn, onRedo }: RecommendationViewProps) {
+export function RecommendationView({ recommendation, checkIn, onRedo, isError, onRetry }: RecommendationViewProps) {
   const [showRedoModal, setShowRedoModal] = useState(false)
 
-  const { recommendationType, rationale, modificationDetail } = recommendation
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-[#F1EFE8] flex flex-col">
+        <Header />
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          <h1 className="font-display font-bold text-[24px] leading-[1.2] text-[#2C2C2A] mb-4 text-center">
+            Something went wrong.
+          </h1>
+          <button
+            onClick={onRetry}
+            className="font-sans text-[14px] font-medium text-white py-[14px] px-8 rounded-full border-0 cursor-pointer"
+            style={{ background: '#0F6E56' }}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const { recommendationType, rationale, modificationDetail } = recommendation!
+  const safeCheckIn = checkIn!
   const colors = STATE_COLORS[recommendationType]
   const heading = STATE_HEADINGS[recommendationType] ?? modificationDetail ?? ''
 
@@ -123,20 +146,20 @@ export function RecommendationView({ recommendation, checkIn, onRedo }: Recommen
           <div className="font-sans text-[10px] font-medium uppercase tracking-[0.08em] text-[#B4B2A9] mb-[10px]">
             Today&apos;s check-in
           </div>
-          <SummaryRow label="Sleep" value={`${checkIn.sleepScore} / 5`} />
-          <SummaryRow label="Feel" value={`${checkIn.feelScore} / 5`} />
-          {checkIn.cycleDay != null && (
-            <SummaryRow label="Cycle day" value={String(checkIn.cycleDay)} />
+          <SummaryRow label="Sleep" value={`${safeCheckIn.sleepScore} / 5`} />
+          <SummaryRow label="Feel" value={`${safeCheckIn.feelScore} / 5`} />
+          {safeCheckIn.cycleDay != null && (
+            <SummaryRow label="Cycle day" value={String(safeCheckIn.cycleDay)} />
           )}
-          <SummaryRow label="Planned workout" value={truncate(checkIn.todaysPlannedWorkout, 40)} />
-          {checkIn.yesterdayWorkoutType != null && (
+          <SummaryRow label="Planned workout" value={truncate(safeCheckIn.todaysPlannedWorkout, 40)} />
+          {safeCheckIn.yesterdayWorkoutType != null && (
             <SummaryRow
               label="Yesterday"
-              value={YESTERDAY_LABELS[checkIn.yesterdayWorkoutType]}
+              value={YESTERDAY_LABELS[safeCheckIn.yesterdayWorkoutType]}
             />
           )}
-          {checkIn.stressors != null && (
-            <SummaryRow label="Stressors" value={checkIn.stressors} />
+          {safeCheckIn.stressors != null && (
+            <SummaryRow label="Stressors" value={safeCheckIn.stressors} />
           )}
         </div>
 
