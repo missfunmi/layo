@@ -13,7 +13,7 @@ function getProvider(name: string): LLMProvider {
 }
 
 function stripCodeFences(content: string): string {
-  return content.trim().replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/s, '$1').trim()
+  return content.trim().replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/, '$1').trim()
 }
 
 function parseAndValidate(raw: LLMRawResponse, promptVersion: string): ParsedRecommendation {
