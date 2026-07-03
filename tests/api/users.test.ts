@@ -185,3 +185,33 @@ describe('POST /api/users', () => {
     expect(users).toHaveLength(1)
   })
 })
+
+describe('GET /api/users', () => {
+  beforeEach(setupTestDb)
+  afterEach(teardownTestDb)
+
+  test('returns 200 with user name and hormonalLifeStage', async () => {
+    await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': BASE_BODY.deviceId })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.user.name).toBe('Ada Lovelace')
+    expect(body.user.hormonalLifeStage).toEqual(['premenopausal'])
+  })
+
+  test('returns 401 when X-Device-ID header is missing', async () => {
+    const response = await makeRequest(handler, 'GET', '/api/users')
+    expect(response.status).toBe(401)
+  })
+
+  test('returns 401 when device ID is unknown', async () => {
+    const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': 'unknown-device' })
+    expect(response.status).toBe(401)
+  })
+
+  test('returns 404 when user exists but has no profile', async () => {
+    await getTestClient().user.create({ data: { deviceId: 'no-profile-device' } })
+    const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': 'no-profile-device' })
+    expect(response.status).toBe(404)
+  })
+})

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
+import { resolveUser } from '@/lib/api'
 
 const ALLOWED_HORMONAL_STAGES = [
   'premenopausal',
@@ -159,4 +160,26 @@ export async function POST(request: NextRequest) {
     Sentry.captureException(err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+export async function GET(request: NextRequest) {
+  let user: Awaited<ReturnType<typeof resolveUser>>
+  try {
+    user = await resolveUser(request)
+  } catch (err) {
+    if (err instanceof Response) return err
+    throw err
+  }
+
+  const profile = await prisma.userProfile.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+    select: { name: true, hormonalLifeStage: true },
+  })
+
+  if (!profile) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 })
+  }
+
+  return NextResponse.json({ user: { name: profile.name, hormonalLifeStage: profile.hormonalLifeStage } })
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { BackButton } from '@/components/ui/BackButton'
 import { CloseButton } from '@/components/ui/CloseButton'
@@ -9,8 +9,11 @@ import { OptionCard } from '@/components/ui/OptionCard'
 import { TextArea } from '@/components/ui/TextArea'
 import { ScaleInput } from '@/components/ui/ScaleInput'
 import { YesNoSelector } from '@/components/ui/YesNoSelector'
+import { getOrCreateDeviceId } from '@/lib/device'
 
-type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking' | 'stressors'
+type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking' | 'stressors' | 'generating' | 'error'
+
+type SubmissionError = 'check_in_failed' | 'recommendation_failed' | null
 
 interface PreviousCheckIn {
   plannedWorkout?: string
@@ -22,6 +25,23 @@ interface CheckInFlowProps {
   previousCheckIn?: PreviousCheckIn | null
   hormonalLifeStage?: string[]
   onClose?: () => void
+  onSuccess?: () => void
+}
+
+const GENERATING_HEADERS = [
+  'Reading the full picture...',
+  "Let's see what we've got...",
+  'Putting it all together...',
+  'Give us just a moment...',
+  'Almost ready for you...',
+  'Working out the details...',
+  'Checking in on everything...',
+]
+
+const WORKOUT_TYPE_MAP: Record<string, string> = {
+  planned: 'planned',
+  suggested: 'suggested',
+  something_else: 'other',
 }
 
 function getGreeting(hour: number): string {
@@ -74,7 +94,7 @@ function StepHeader({
   )
 }
 
-export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose }: CheckInFlowProps) {
+export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose, onSuccess }: CheckInFlowProps) {
   const [step, setStep] = useState<Step>('landing')
   const [yesterdayWorkout, setYesterdayWorkout] = useState<string | null>(null)
   const [somethingElseText, setSomethingElseText] = useState('')
@@ -84,9 +104,66 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose 
   const [feelScore, setFeelScore] = useState<number | null>(null)
   const [periodStartedToday, setPeriodStartedToday] = useState<boolean | null>(null)
   const [stressorsText, setStressorsText] = useState('')
+  const [submissionError, setSubmissionError] = useState<SubmissionError>(null)
+  const [generatingHeader] = useState(
+    () => GENERATING_HEADERS[Math.floor(Math.random() * GENERATING_HEADERS.length)]
+  )
 
   const greeting = getGreeting(new Date().getHours())
   const headerDate = getHeaderDate()
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (step !== 'generating') return
+
+    const submit = async () => {
+      try {
+        const payload: Record<string, unknown> = {
+          checkInDate: new Date().toLocaleDateString('en-CA'),
+          todaysPlannedWorkout: todayWorkout,
+          sleepScore,
+          feelScore,
+        }
+        if (yesterdayWorkout) {
+          payload.yesterdayWorkoutType = WORKOUT_TYPE_MAP[yesterdayWorkout]
+          if (yesterdayWorkout === 'something_else') {
+            payload.yesterdayWorkoutDescription = somethingElseText
+          }
+        }
+        if (yesterdayFeedback) {
+          payload.yesterdayWorkoutFeedback = yesterdayFeedback
+        }
+        if (hormonalLifeStage?.includes('menstruating')) {
+          payload.periodStartedToday = periodStartedToday
+        }
+        if (stressorsText) {
+          payload.stressors = stressorsText
+        }
+
+        const response = await fetch('/api/check-ins', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Device-ID': getOrCreateDeviceId(),
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (response.ok) {
+          onSuccess?.()
+        } else {
+          const data = await response.json().catch(() => ({}))
+          setSubmissionError(data.checkInSaved ? 'recommendation_failed' : 'check_in_failed')
+          setStep('error')
+        }
+      } catch {
+        setSubmissionError('check_in_failed')
+        setStep('error')
+      }
+    }
+
+    submit()
+  }, [step])
 
   const hasPreviousRecord = previousCheckIn != null
 
@@ -307,15 +384,82 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose 
             placeholder="E.g. bad night's sleep, stressful day at work, feeling under the weather..."
             maxLength={280}
           />
-          <Button onClick={() => setStep('landing')}>
+          <Button onClick={() => setStep('generating')}>
             Continue
           </Button>
           <button
             type="button"
-            onClick={() => setStep('landing')}
+            onClick={() => setStep('generating')}
             className="font-sans text-[12px] text-[#B4B2A9] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
           >
             Skip
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'generating') {
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <Header headerDate={headerDate} />
+        <div className="flex flex-col flex-1 items-center justify-center text-center px-6 pb-7">
+          <div
+            className="rounded-full mb-[22px]"
+            style={{
+              width: '64px',
+              height: '64px',
+              border: '3px solid #E1F5EE',
+              borderTopColor: '#0F6E56',
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-[10px]">
+            {generatingHeader}
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.65]" style={{ maxWidth: '210px' }}>
+            Láyo is working on your recommendation for today.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'error') {
+    const bodyText =
+      submissionError === 'recommendation_failed'
+        ? 'We saved your check-in but could not generate a recommendation. Tap to try again.'
+        : 'We could not save your check-in. Tap to try again.'
+
+    return (
+      <div className="flex flex-col min-h-screen bg-layo-bg">
+        <Header headerDate={headerDate} />
+        <div className="flex flex-col flex-1 items-center justify-center text-center px-6 pb-7">
+          <div
+            className="rounded-full flex items-center justify-center mb-[18px]"
+            style={{ width: '56px', height: '56px', background: '#FAECE7', color: '#D85A30' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-2">
+            Something went wrong.
+          </h2>
+          <p className="font-sans text-[#888780] text-[13px] leading-[1.6] mb-7" style={{ maxWidth: '220px' }}>
+            {bodyText}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSubmissionError(null)
+              setStep('generating')
+            }}
+            className="px-7 py-[14px] rounded-full border-0 font-sans text-[14px] font-medium text-white bg-[#0F6E56] cursor-pointer"
+          >
+            Try again
           </button>
         </div>
       </div>

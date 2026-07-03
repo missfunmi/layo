@@ -52,7 +52,7 @@ layo/
 │           ├── anthropic.ts        # Anthropic SDK invocation
 │           └── gemini.ts           # Gemini SDK invocation (placeholder)
 ├── app/api/
-│   ├── users/route.ts              # POST /api/users
+│   ├── users/route.ts              # POST /api/users, GET /api/users
 │   ├── check-ins/
 │   │   └── route.ts                # POST /api/check-ins, GET /api/check-ins?date=, DELETE /api/check-ins?date=
 │   └── recommendations/
@@ -290,6 +290,13 @@ Prisma `@unique` directives automatically create unique indexes. Additional non-
 ## API routes
 
 All routes return JSON. All routes except `POST /api/users` require the `X-Device-ID` header. Missing header or unknown deviceId returns `401`.
+
+### GET /api/users
+Returns the authenticated user's profile. Called on check-in page mount to obtain `name` and `hormonalLifeStage` for the check-in flow.
+
+**Response:** `200` with `{ user: { name: string, hormonalLifeStage: string[] } }`. Returns `404` if the user exists but has no profile (unexpected in normal usage after onboarding).
+
+---
 
 ### Upsert semantics
 
