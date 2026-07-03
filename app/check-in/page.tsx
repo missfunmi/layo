@@ -50,12 +50,12 @@ export default function CheckInPage() {
   }, [retryCount])
 
   if (state.status === 'loading') {
-    return <div className="min-h-screen bg-layo-bg" />
+    return <div className="min-h-dvh bg-layo-bg" />
   }
 
   if (state.status === 'error') {
     return (
-      <div className="min-h-screen bg-[#F1EFE8] flex flex-col items-center justify-center px-6 gap-4">
+      <div className="min-h-dvh bg-[#F1EFE8] flex flex-col items-center justify-center px-6 gap-4">
         <h1 className="font-display font-bold text-[24px] text-[#D85A30] text-center">
           Something went wrong
         </h1>

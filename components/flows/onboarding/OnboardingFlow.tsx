@@ -140,7 +140,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
 
   if (step === 'welcome') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-layo-bg">
+      <div className="flex flex-col items-center justify-center min-h-dvh bg-layo-bg">
         <div className="text-center px-8 py-10">
           <div className="font-display font-bold text-[#0F6E56] text-[52px] tracking-[-1.5px] mb-[10px]">
             láyo
@@ -158,7 +158,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
 
   if (step === 'name') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('welcome')} active={0} onClose={onClose} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -178,7 +178,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
 
   if (step === 'birth_year') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('name')} active={1} onClose={onClose} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -198,7 +198,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
 
   if (step === 'hormonal_life_stage') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('birth_year')} active={2} onClose={onClose} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -222,7 +222,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
 
   if (step === 'training_goal') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('hormonal_life_stage')} active={3} onClose={onClose} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-6">
@@ -253,7 +253,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
 
   if (step === 'race_details') {
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('training_goal')} active={4} onClose={onClose} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
@@ -321,7 +321,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
   if (step === 'confirmation') {
     if (confirmationError) {
       return (
-        <div className="flex flex-col min-h-screen bg-layo-bg">
+        <div className="flex flex-col min-h-dvh bg-layo-bg">
           <div className="px-6 pt-[22px] flex items-center" style={{ minHeight: '52px' }}>
             <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
               láyo
@@ -353,7 +353,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
     }
 
     return (
-      <div className="flex flex-col min-h-screen bg-layo-bg">
+      <div className="flex flex-col min-h-dvh bg-layo-bg">
         <div className="px-6 pt-[22px] flex items-center" style={{ minHeight: '52px' }}>
           <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
             láyo

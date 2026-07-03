@@ -22,7 +22,7 @@ export function TextArea({ value, onChange, placeholder, maxLength = 280 }: Text
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`w-full bg-white rounded-[14px] py-[13px] px-[15px] font-sans text-[13px] outline-none min-h-[110px] resize-none leading-[1.5] box-border border-[1.5px] border-solid ${
+        className={`w-full bg-white rounded-[14px] py-[13px] px-[15px] font-sans text-[16px] outline-none min-h-[110px] resize-none leading-[1.5] box-border border-[1.5px] border-solid ${
           isActive ? 'border-[#0F6E56] text-[#2C2C2A]' : 'border-[#D3D1C7] text-[#B4B2A9]'
         }`}
       />

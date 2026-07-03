@@ -49,7 +49,7 @@ export default function Home() {
 
   if (state === 'error') {
     return (
-      <div className="min-h-screen bg-[#F1EFE8] flex flex-col items-center justify-center px-6 gap-4">
+      <div className="min-h-dvh bg-[#F1EFE8] flex flex-col items-center justify-center px-6 gap-4">
         <h1 className="font-display font-bold text-[24px] text-[#D85A30] text-center">
           Something went wrong
         </h1>
@@ -61,7 +61,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1EFE8] flex items-center justify-center">
+    <div className="min-h-dvh bg-[#F1EFE8] flex items-center justify-center">
       <div className="font-display font-bold text-[52px] text-[#0F6E56] tracking-[-0.5px]">
         láyo
       </div>
