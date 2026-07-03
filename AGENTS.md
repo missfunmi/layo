@@ -143,7 +143,7 @@ git branch --show-current
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
 
-1. Use the Linear MCP to find the next unstarted issue in the v0.1 project, assign it to yourself, and mark it In Progress. If you were working on a current issue that is still marked as In Progress and not Done, double-check with the user before proceeding
+1. Use the Linear MCP to find the next unstarted issue in the v0.1 project containing the label "Claude", assign it, and mark it In Progress. Do not pick an issue that does not contain the "Claude" label. If you were working on a current issue that is still marked as In Progress and not Done, double-check with the user before proceeding
 2. Create a feature branch: `feature/LAYO-[ID]-[short-description]` off the latest `main` default branch, unless otherwise specified
 3. Implement following the `superpowers:test-driven-development` skill
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
