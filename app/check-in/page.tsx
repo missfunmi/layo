@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckInFlow } from '@/components/flows/check-in/CheckInFlow'
 import { getOrCreateDeviceId } from '@/lib/device'
+import { Button } from '@/components/ui/Button'
 
 type PageState =
   | { status: 'loading' }
+  | { status: 'error' }
   | {
       status: 'ready'
       name: string
@@ -17,8 +19,10 @@ type PageState =
 export default function CheckInPage() {
   const router = useRouter()
   const [state, setState] = useState<PageState>({ status: 'loading' })
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
+    setState({ status: 'loading' })
     const deviceId = getOrCreateDeviceId()
     const headers = { 'X-Device-ID': deviceId }
 
@@ -29,20 +33,37 @@ export default function CheckInPage() {
     Promise.all([
       fetch('/api/users', { headers }).then((r) => r.json()),
       fetch(`/api/check-ins?date=${yesterdayStr}`, { headers }).then((r) => r.json()),
-    ]).then(([userData, checkInData]) => {
-      setState({
-        status: 'ready',
-        name: userData.user.name,
-        hormonalLifeStage: userData.user.hormonalLifeStage,
-        previousCheckIn: checkInData.checkIn
-          ? { plannedWorkout: checkInData.checkIn.todaysPlannedWorkout }
-          : null,
+    ])
+      .then(([userData, checkInData]) => {
+        setState({
+          status: 'ready',
+          name: userData.user.name,
+          hormonalLifeStage: userData.user.hormonalLifeStage,
+          previousCheckIn: checkInData.checkIn
+            ? { plannedWorkout: checkInData.checkIn.todaysPlannedWorkout }
+            : null,
+        })
       })
-    })
-  }, [])
+      .catch(() => {
+        setState({ status: 'error' })
+      })
+  }, [retryCount])
 
   if (state.status === 'loading') {
     return <div className="min-h-screen bg-layo-bg" />
+  }
+
+  if (state.status === 'error') {
+    return (
+      <div className="min-h-screen bg-[#F1EFE8] flex flex-col items-center justify-center px-6 gap-4">
+        <h1 className="font-display font-bold text-[24px] text-[#D85A30] text-center">
+          Something went wrong
+        </h1>
+        <div className="w-full max-w-[343px]">
+          <Button onClick={() => setRetryCount((c) => c + 1)}>Try again</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
