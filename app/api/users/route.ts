@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
     return bad('deviceId is required')
   }
 
+  console.log('[POST /api/users] deviceId:', deviceId)
+
   const name = typeof rawName === 'string' ? rawName.trim() : ''
   if (!rawName || name.length < 1 || name.length > 50) {
     return bad('name must be 1-50 characters')
@@ -150,11 +152,6 @@ export async function POST(request: NextRequest) {
       return u
     })
 
-    Sentry.captureMessage('New user created', {
-      level: 'info',
-      extra: { deviceId, userId: user.id },
-    })
-
     return NextResponse.json({ userId: user.id }, { status: 201 })
   } catch (err) {
     Sentry.captureException(err)
@@ -163,6 +160,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('[GET /api/users] deviceId:', request.headers.get('X-Device-ID'))
+
   let user: Awaited<ReturnType<typeof resolveUser>>
   try {
     user = await resolveUser(request)

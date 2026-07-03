@@ -1,7 +1,12 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setupTestDb, teardownTestDb, getTestClient } from '../helpers/db'
 import { makeRequest } from '../helpers/api'
 import * as handler from '@/app/api/users/route'
+
+vi.mock('@sentry/nextjs', () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}))
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -168,6 +173,13 @@ describe('POST /api/users', () => {
       eventName: 'A'.repeat(101),
     })
     expect(response.status).toBe(400)
+  })
+
+  test('does not call Sentry.captureMessage on successful user creation', async () => {
+    const sentry = await import('@sentry/nextjs')
+    vi.mocked(sentry.captureMessage).mockClear()
+    await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    expect(sentry.captureMessage).not.toHaveBeenCalled()
   })
 
   test('upsert: second identical request returns 201 with same userId, no duplicate row', async () => {
