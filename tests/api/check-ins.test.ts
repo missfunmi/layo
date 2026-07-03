@@ -4,6 +4,11 @@ vi.mock('@/lib/llm/index', () => ({
   generateRecommendation: vi.fn(),
 }))
 
+vi.mock('@sentry/nextjs', () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}))
+
 import { setupTestDb, teardownTestDb, getTestClient } from '../helpers/db'
 import { makeRequest } from '../helpers/api'
 import * as handler from '@/app/api/check-ins/route'
@@ -323,6 +328,15 @@ describe('POST /api/check-ins', () => {
     expect(checkIn.cycleDay).toBe(2)
   })
 
+  test('does not call Sentry.captureMessage on successful check-in submission', async () => {
+    const sentry = await import('@sentry/nextjs')
+    vi.mocked(sentry.captureMessage).mockClear()
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(sentry.captureMessage).not.toHaveBeenCalled()
+  })
+
   test('upsert: second submission for same date overwrites first, returns new recommendation, only 1 row in check_ins', async () => {
     // First submission
     await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
@@ -469,6 +483,26 @@ describe('DELETE /api/check-ins', () => {
 
     const logs = await getTestClient().llmInferenceLog.findMany()
     expect(logs).toHaveLength(0)
+  })
+
+  test('does not call Sentry.captureMessage when check-in is deleted (redo)', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(TODAY),
+        todaysPlannedWorkout: '5km easy run',
+        sleepScore: 4,
+        feelScore: 4,
+      },
+    })
+
+    const sentry = await import('@sentry/nextjs')
+    vi.mocked(sentry.captureMessage).mockClear()
+    await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(sentry.captureMessage).not.toHaveBeenCalled()
   })
 
   test('no check-in exists for date: returns 204 (idempotent)', async () => {
