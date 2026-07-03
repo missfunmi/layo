@@ -69,10 +69,6 @@ export async function DELETE(request: NextRequest) {
       await tx.checkIn.delete({ where: { id: checkIn.id } })
     })
 
-    Sentry.captureMessage('Check-in deleted (redo)', {
-      level: 'info',
-      extra: { userId: user.id, checkInDate: parsed.date.toISOString().slice(0, 10) },
-    })
   }
 
   return new NextResponse(null, { status: 204 })
@@ -296,15 +292,6 @@ export async function POST(request: NextRequest) {
         latencyMs: 0,
       },
     })
-  })
-
-  Sentry.captureMessage('Check-in submitted', {
-    level: 'info',
-    extra: { userId: user.id, checkInDate },
-  })
-  Sentry.captureMessage('Recommendation generated', {
-    level: 'info',
-    extra: { userId: user.id, recommendationType: recommendation.recommendationType, model, promptVersion: recommendation.promptVersion },
   })
 
   return NextResponse.json(
