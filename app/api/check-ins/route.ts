@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
+
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 import { resolveUser } from '@/lib/api'
 import { calculateCycleDay } from '@/lib/cycle'
 import { generateRecommendation } from '@/lib/llm/index'
@@ -57,7 +59,7 @@ export async function DELETE(request: NextRequest) {
   })
 
   if (checkIn) {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: TransactionClient) => {
       if (checkIn.recommendation?.llmInferenceLog) {
         await tx.llmInferenceLog.delete({ where: { id: checkIn.recommendation.llmInferenceLog.id } })
       }

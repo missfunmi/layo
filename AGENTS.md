@@ -15,6 +15,14 @@ The three core flows:
 
 - **GitHub:** https://github.com/missfunmi/layo
 - **Local path:** `/Users/funmi/Development/projects/layo`
+- **Vercel project:** `layo` (missfunmi) — production and preview deployments
+
+## MCP tools available
+
+The following MCP servers are connected to this Claude Code session:
+
+- **Linear** — use for issue management (assigned throughout the per-issue workflow above)
+- **Vercel** — use for deployment work: checking deployment status, inspecting build logs for failures, and verifying environment variable configuration. Use `ToolSearch` with query `"vercel"` at the start of any session that touches deployments to discover the available tools.
 
 ## Tech stack
 
@@ -87,6 +95,8 @@ LLM_MODEL            # default: claude-opus-4-6
 ANTHROPIC_API_KEY    # required when LLM_PROVIDER=anthropic
 GEMINI_API_KEY       # required when LLM_PROVIDER=gemini
 SENTRY_DSN           # required in production
+SENTRY_ORG           # Sentry org slug, used for source map uploads at build time (optional)
+SENTRY_PROJECT       # Sentry project slug, used for source map uploads at build time (optional)
 NEXT_PUBLIC_APP_URL  # optional
 ```
 

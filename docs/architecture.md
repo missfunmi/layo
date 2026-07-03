@@ -517,6 +517,8 @@ In all error cases the check-in record is persisted. The client shows a retry op
 | `ANTHROPIC_API_KEY` | Anthropic API key — required when `LLM_PROVIDER` is `anthropic` | Conditional |
 | `GEMINI_API_KEY` | Gemini API key — required when `LLM_PROVIDER` is `gemini` | Conditional |
 | `SENTRY_DSN` | Sentry DSN | Yes (production) |
+| `SENTRY_ORG` | Sentry organization slug — used by `next.config.mjs` for source map uploads at build time | No |
+| `SENTRY_PROJECT` | Sentry project slug — used by `next.config.mjs` for source map uploads at build time | No |
 | `NEXT_PUBLIC_APP_URL` | Public app URL | No |
 
 Local development uses `.env.local`. Production variables are set in the Vercel dashboard.
