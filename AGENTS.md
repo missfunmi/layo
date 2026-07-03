@@ -87,6 +87,8 @@ LLM_MODEL            # default: claude-opus-4-6
 ANTHROPIC_API_KEY    # required when LLM_PROVIDER=anthropic
 GEMINI_API_KEY       # required when LLM_PROVIDER=gemini
 SENTRY_DSN           # required in production
+SENTRY_ORG           # Sentry org slug, used for source map uploads at build time (optional)
+SENTRY_PROJECT       # Sentry project slug, used for source map uploads at build time (optional)
 NEXT_PUBLIC_APP_URL  # optional
 ```
 
