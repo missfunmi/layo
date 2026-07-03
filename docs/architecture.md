@@ -527,18 +527,12 @@ Local development uses `.env.local`. Production variables are set in the Vercel 
 
 ## Logging
 
-Sentry is initialized in `instrumentation.ts` and used for both error and informational logging.
+Sentry is initialized in `instrumentation.ts` and used for error logging only.
 
 **Error events:**
 - LLM response parse failures (include raw response in Sentry context)
 - LLM API errors (include status code and model identifier)
 - Any `POST /api/check-ins` failure after the check-in record has been persisted
-
-**Informational events** (logged at info level for troubleshooting):
-- New user created (deviceId, userId)
-- Check-in submitted (userId, checkInDate)
-- Recommendation generated (userId, recommendationType, model, promptVersion, latencyMs)
-- Redo action confirmed (userId, checkInDate)
 
 ---
 
