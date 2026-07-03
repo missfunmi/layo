@@ -104,7 +104,9 @@ Local development uses `.env.local`. See `.env.local.example` for the full list.
 
 ## Development methodology
 
-Follow the `superpowers:test-driven-development` skill for all implementation tasks. Write failing tests before writing any production code. No exceptions.
+Follow the `superpowers:test-driven-development` skill for all feature implementation tasks. Write failing tests before writing any production code. No exceptions.
+
+Follow the `superpowers:systematic-debugging` skill for all debugging tasks. No exceptions.
 
 TDD is scoped to API routes (`app/api/`) and critical business logic (`lib/cycle.ts`, `lib/llm/`). These require tests written first, proven to fail, then implemented to pass without modifying the tests. UI components, page wrappers, and trivial utility modules (e.g. `lib/device.ts`, `lib/db.ts`) are exempt from TDD. They may be implemented directly without a preceding test-writing step.
 
@@ -114,13 +116,13 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 
 - One Linear issue at a time; do not combine issues in a single commit or PR
 - Run the full test suite before committing
-- Commit messages must reference the Linear issue ID (e.g. `feat: implement Prisma schema [LAYO-16]`)
+- Commit messages must reference the nature of the commit and the Linear issue ID (e.g. `feat: implement Prisma schema [LAYO-16]` or `fix: move eslint-disable comment to correct line for exhaustive-deps [LAYO-61]`)
 - Do not merge PRs; PRs are reviewed and merged by the human
 - If implementation introduces a new environment variable, library module, or architectural decision not already in `AGENTS.md` or `docs/architecture.md`, update both in the same PR
 
 ## Git workflow
 
-**Before creating a new feature branch**, run the following and confirm both assertions before proceeding:
+**Before creating a new feature or bugfix branch**, run the following and confirm both assertions before proceeding:
 
 ```bash
 git fetch origin && git checkout main && git pull origin main
@@ -128,24 +130,16 @@ git fetch origin && git checkout main && git pull origin main
 # If not, stop and resolve before continuing
 ```
 
-**Branch naming:** `feature/LAYO-[ID]-[short-description]`
-
-**After opening a PR with `gh pr create`**, run the following immediately:
-
-```bash
-sleep 2 && git checkout feature/LAYO-[ID]-[short-description] && git branch -d pr-[number]
-git branch --show-current
-# Assert: output shows the feature branch name, not pr-[number] or main
-```
+**Branch naming:** `feature/LAYO-[ID]-[short-description]` or `bugfix/LAYO-[ID]-[short-description]`
 
 **No worktrees.** Never create a git worktree at any point. If any skill or tool attempts to create one, do not invoke it in that mode.
 
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
 
-1. Use the Linear MCP to find the next unstarted issue in the v0.1 project containing the label "Claude", assign it, and mark it In Progress. Do not pick an issue that does not contain the "Claude" label. If you were working on a current issue that is still marked as In Progress and not Done, double-check with the user before proceeding
-2. Create a feature branch: `feature/LAYO-[ID]-[short-description]` off the latest `main` default branch, unless otherwise specified
-3. Implement following the `superpowers:test-driven-development` skill
+1. Use the Linear MCP to find the next unstarted issue in the v0.1 project containing the label "Claude", assign it, and mark it In Progress. Do not pick an issue that does not contain the "Claude" label. If you were working on a current issue that is still marked as "In Progress" or "In Review" and not Done, double-check with the user before proceeding
+2. If the issue is labeled "Bug", create a bugfix branch: `bugfix/LAYO-[ID]-[short-description]` off the latest `main` branch. Otherwise, if the issue is a feature, create a feature branch: `feature/LAYO-[ID]-[short-description]` off the latest `main` branch.
+3. Implement following the `superpowers:test-driven-development` skill for features and `superpowers:systematic-debugging` skill for bugs
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
 5. Wait for code review (see Code Review Workflow below)
 6. Once the changes are ready to merge (i.e. all review feedback is resolved and the reviewing agent reports no outstanding feedback), mark the Linear issue Done
@@ -155,8 +149,8 @@ If you are the implementing agent, for each issue:
 After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Only follow these steps if you are the code review agent:
 
 1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
-2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR
-3. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete
+2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR.
+3. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete.
 4. After writing the feedback file, clean up: run `git branch -d pr-[number] && git checkout -` to delete the local PR branch and return the workspace to the previously active branch.
 
 ## Addressing code review workflow
@@ -164,7 +158,7 @@ If you are the implementing agent addressing code review feedback:
 
 1. Read the code review feedback file located at the `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md` path
 2. Address feedback using the `superpowers:receiving-code-review` skill
-3. Commit fixes to the same feature branch
+3. Commit code review feedback fixes to the same branch already in flight for this issue and PR
 4. Write a response summary to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-response-[counter].md`, using the same counter as the review file you are responding to. For each piece of feedback, state what was changed (or, if not changed, why) and reference the relevant commit(s).
 5. Print the full file path of the response file when complete
 6. Stop and wait — do not trigger another review round yourself. The user will initiate the next review round.
@@ -180,6 +174,8 @@ All code review artifacts live in `.notes/.code-review-feedback/`:
 
 ## Starting a new session
 When told "start the next issue", assume the role of the implementing agent and follow the "Per-issue workflow" above from step 1.
+
+When told "work on LAYO-[ID]", assume the role of the implementing agent, skip step 1 (issue selection), go directly to that issue, assign it, mark it In Progress, and follow the rest of the "Per-issue workflow" from step 2 onward.
 
 ## Starting a code review
 When told "code review PR" or "re-review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.

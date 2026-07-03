@@ -83,6 +83,39 @@ describe('generateRecommendation', () => {
     await expect(generateRecommendation('Test user message')).rejects.toThrow()
   })
 
+  test('parses JSON wrapped in ```json code fences', async () => {
+    vi.mocked(anthropicProvider.complete).mockResolvedValue({
+      ...MOCK_RAW_RESPONSE,
+      content: `\`\`\`json\n${JSON.stringify(VALID_LLM_RESPONSE)}\n\`\`\``,
+    })
+
+    const result = await generateRecommendation('Test user message')
+    expect(result.recommendationType).toBe('as_written')
+    expect(result.readinessScore).toBe(85)
+  })
+
+  test('parses JSON wrapped in plain ``` code fences', async () => {
+    vi.mocked(anthropicProvider.complete).mockResolvedValue({
+      ...MOCK_RAW_RESPONSE,
+      content: `\`\`\`\n${JSON.stringify(VALID_LLM_RESPONSE)}\n\`\`\``,
+    })
+
+    const result = await generateRecommendation('Test user message')
+    expect(result.recommendationType).toBe('as_written')
+    expect(result.readinessScore).toBe(85)
+  })
+
+  test('parses JSON wrapped in ```json code fences with leading/trailing whitespace', async () => {
+    vi.mocked(anthropicProvider.complete).mockResolvedValue({
+      ...MOCK_RAW_RESPONSE,
+      content: `\n\n  \`\`\`json\n${JSON.stringify(VALID_LLM_RESPONSE)}\n\`\`\`\n  `,
+    })
+
+    const result = await generateRecommendation('Test user message')
+    expect(result.recommendationType).toBe('as_written')
+    expect(result.readinessScore).toBe(85)
+  })
+
   test('throws when modification_detail is null but recommendation_type is modify', async () => {
     vi.mocked(anthropicProvider.complete).mockResolvedValue({
       ...MOCK_RAW_RESPONSE,
