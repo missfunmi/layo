@@ -18,6 +18,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Láyo',
   description: 'Fitness coaching assistant for female endurance athletes',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon.svg', sizes: '180x180' }],
+  },
 }
 
 export const viewport: Viewport = {
