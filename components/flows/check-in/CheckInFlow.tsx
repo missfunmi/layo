@@ -405,6 +405,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
         <Header headerDate={headerDate} />
         <div className="flex flex-col flex-1 items-center justify-center text-center px-6 pb-7">
           <div
+            data-testid="generating-spinner"
             className="rounded-full mb-[22px]"
             style={{
               width: '64px',
