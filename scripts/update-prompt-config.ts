@@ -10,7 +10,7 @@ const configFilePath = process.argv[2]
 
 if (!configFilePath) {
   console.error('Error: No config file specified.')
-  console.error('Usage: npm run update-prompt <path-to-config.json>')
+  console.error('Usage: npm run update-prompt -- <path-to-config.json>')
   process.exit(1)
 }
 
@@ -28,6 +28,11 @@ try {
   process.exit(1)
 }
 
+if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
+  console.error('Error: Root JSON value must be a non-array object')
+  process.exit(1)
+}
+
 const parsed = rawConfig as Record<string, unknown>
 const errors: string[] = []
 
@@ -42,6 +47,12 @@ if (typeof parsed.temperature !== 'number') {
 }
 if (typeof parsed.maxTokens !== 'number') {
   errors.push('maxTokens: must be a number')
+}
+if ('notes' in parsed && parsed.notes !== undefined && typeof parsed.notes !== 'string') {
+  errors.push('notes: must be a string if provided')
+}
+if ('additionalParams' in parsed && parsed.additionalParams !== undefined && (typeof parsed.additionalParams !== 'object' || Array.isArray(parsed.additionalParams) || parsed.additionalParams === null)) {
+  errors.push('additionalParams: must be a non-array object if provided')
 }
 
 if (errors.length > 0) {
@@ -67,6 +78,8 @@ async function main() {
       systemPrompt: parsed.systemPrompt as string,
       temperature: parsed.temperature as number,
       maxTokens: parsed.maxTokens as number,
+      ...(parsed.notes !== undefined && { notes: parsed.notes as string }),
+      ...(parsed.additionalParams !== undefined && { additionalParams: parsed.additionalParams as object }),
     },
   })
   console.log('Inserted PromptConfig:')
@@ -78,6 +91,6 @@ async function main() {
 main()
   .catch((e) => {
     console.error('Error:', (e as Error).message)
-    process.exit(1)
+    process.exitCode = 1
   })
   .finally(() => prisma.$disconnect())
