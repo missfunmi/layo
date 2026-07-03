@@ -150,11 +150,6 @@ export async function POST(request: NextRequest) {
       return u
     })
 
-    Sentry.captureMessage('New user created', {
-      level: 'info',
-      extra: { deviceId, userId: user.id },
-    })
-
     return NextResponse.json({ userId: user.id }, { status: 201 })
   } catch (err) {
     Sentry.captureException(err)
