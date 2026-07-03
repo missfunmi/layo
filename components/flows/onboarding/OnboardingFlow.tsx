@@ -262,12 +262,14 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-6">
             Láyo uses this to pace your recommendations as you get closer. If you&apos;re training for more than one race, tell us about the one coming up next. You can add others later.
           </p>
-          <TextInput
-            value={eventName}
-            onChange={setEventName}
-            placeholder="Event name"
-            maxLength={100}
-          />
+          <div className="mb-3">
+            <TextInput
+              value={eventName}
+              onChange={setEventName}
+              placeholder="Event name"
+              maxLength={100}
+            />
+          </div>
           <div className="relative mb-3">
             <div className="pointer-events-none">
               <PickerField value={eventType} onClick={() => {}} placeholder="Event type" />
@@ -285,12 +287,14 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
             </select>
           </div>
           {eventType === 'Other' && (
-            <TextInput
-              value={eventTypeDetail}
-              onChange={setEventTypeDetail}
-              placeholder="Type of event"
-              maxLength={50}
-            />
+            <div className="mb-3">
+              <TextInput
+                value={eventTypeDetail}
+                onChange={setEventTypeDetail}
+                placeholder="Type of event"
+                maxLength={50}
+              />
+            </div>
           )}
           <div className="relative mb-3">
             <div className="pointer-events-none">
