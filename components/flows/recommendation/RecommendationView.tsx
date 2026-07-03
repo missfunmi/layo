@@ -63,7 +63,7 @@ function Header() {
       <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
         láyo
       </div>
-      <div className="font-sans text-[11px] text-[#B4B2A9]">{getHeaderDate()}</div>
+      <div className="font-sans text-[12px] text-[#888780]">{getHeaderDate()}</div>
     </div>
   )
 }
@@ -166,7 +166,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
         <div className="flex justify-end pt-[18px]">
           <button
             onClick={() => setShowRedoModal(true)}
-            className="font-sans text-[12px] text-[#888780] flex items-center gap-[5px] bg-transparent border-0 p-0 cursor-pointer no-underline"
+            className="font-sans text-[14px] text-[#888780] flex items-center gap-[5px] bg-transparent border-0 p-0 cursor-pointer no-underline"
             style={{ textDecoration: 'none' }}
           >
             <i className="ti ti-reload" />
@@ -184,7 +184,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
             <div className="font-display font-bold text-[18px] text-[#2C2C2A] mb-2">
               Redo today&apos;s check-in?
             </div>
-            <div className="font-sans text-[13px] text-[#888780] leading-[1.6] mb-6">
+            <div className="font-sans text-[14px] text-[#888780] leading-[1.6] mb-6">
               This will delete your check-in and recommendation for today. This cannot be undone.
             </div>
             <button

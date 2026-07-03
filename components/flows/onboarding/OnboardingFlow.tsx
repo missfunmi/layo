@@ -163,7 +163,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             What should we call you?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-6">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-6">
             This is how Láyo will address you.
           </p>
           <TextInput value={name} onChange={setName} placeholder="Your name" maxLength={50} />
@@ -183,7 +183,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             What year were you born?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-6">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-6">
             We use this to tailor recommendations to your life stage, nothing else.
           </p>
           <TextInput value={birthYear} onChange={setBirthYear} placeholder="e.g. 1988" type="number" />
@@ -203,7 +203,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             Which of these applies to you?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-6">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-6">
             Hormones affect training more than most plans account for, and this helps Láyo give you better guidance.
           </p>
           <PillSelect
@@ -238,7 +238,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           />
           {trainingGoal === 'A specific race' && (
             <div className="mt-6">
-              <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-4">
+              <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-4">
                 Láyo uses this to pace your recommendations as you get closer. If you&apos;re training for more than one race, tell us about the one coming up next. You can add others later.
               </p>
               <div className="mb-3">
@@ -322,7 +322,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
             <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-2">
               Something went wrong.
             </h2>
-            <p className="font-sans text-[#888780] text-[13px] leading-[1.6] mb-7">
+            <p className="font-sans text-[#888780] text-[14px] leading-[1.6] mb-7">
               We could not save your profile. Tap to try again.
             </p>
             <button
