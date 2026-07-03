@@ -408,13 +408,12 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
         <div className="flex flex-col flex-1 items-center justify-center text-center px-6 pb-7">
           <div
             data-testid="generating-spinner"
-            className="rounded-full mb-[22px]"
+            className="animate-spin rounded-full mb-[22px]"
             style={{
               width: '64px',
               height: '64px',
               border: '3px solid #E1F5EE',
               borderTopColor: '#0F6E56',
-              animation: 'spin 1s linear infinite',
             }}
           />
           <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-[10px]">
