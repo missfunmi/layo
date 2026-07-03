@@ -19,7 +19,6 @@ type Step =
   | 'birth_year'
   | 'hormonal_life_stage'
   | 'training_goal'
-  | 'race_details'
   | 'confirmation'
 
 const HORMONAL_OPTIONS = [
@@ -59,7 +58,7 @@ function StepHeader({ onBack, active, onClose }: { onBack: () => void; active: n
       <div className="flex items-center gap-[10px] mb-6 px-6 pt-[22px]">
         <BackButton onClick={onBack} />
         <div data-testid="progress-dots" className="flex-1">
-          <ProgressDots total={5} active={active} />
+          <ProgressDots total={4} active={active} />
         </div>
         <CloseButton onClick={onClose} />
       </div>
@@ -221,6 +220,10 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
   }
 
   if (step === 'training_goal') {
+    const isContinueDisabled =
+      trainingGoal === null ||
+      (trainingGoal === 'A specific race' && !isRaceDetailsValid)
+
     return (
       <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('hormonal_life_stage')} active={3} onClose={onClose} />
@@ -233,87 +236,65 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
             selected={trainingGoal}
             onChange={setTrainingGoal}
           />
-          <Button
-            onClick={() => {
-              if (trainingGoal === 'A specific race') {
-                setStep('race_details')
-              } else {
-                setStep('confirmation')
-                void submitOnboarding()
-              }
-            }}
-            disabled={trainingGoal === null}
-          >
-            Continue
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (step === 'race_details') {
-    return (
-      <div className="flex flex-col min-h-dvh bg-layo-bg">
-        <StepHeader onBack={() => setStep('training_goal')} active={4} onClose={onClose} />
-        <div className="flex flex-col flex-1 px-6 pb-7">
-          <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
-            Tell us about your race.
-          </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-6">
-            Láyo uses this to pace your recommendations as you get closer. If you&apos;re training for more than one race, tell us about the one coming up next. You can add others later.
-          </p>
-          <div className="mb-3">
-            <TextInput
-              value={eventName}
-              onChange={setEventName}
-              placeholder="Event name"
-              maxLength={100}
-            />
-          </div>
-          <div className="relative mb-3">
-            <div className="pointer-events-none">
-              <PickerField value={eventType} onClick={() => {}} placeholder="Event type" />
-            </div>
-            <select
-              aria-label="Event type"
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
-            >
-              <option value="" disabled>Event type</option>
-              {EVENT_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-          {eventType === 'Other' && (
-            <div className="mb-3">
-              <TextInput
-                value={eventTypeDetail}
-                onChange={setEventTypeDetail}
-                placeholder="Type of event"
-                maxLength={50}
-              />
+          {trainingGoal === 'A specific race' && (
+            <div className="mt-6">
+              <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-4">
+                Láyo uses this to pace your recommendations as you get closer. If you&apos;re training for more than one race, tell us about the one coming up next. You can add others later.
+              </p>
+              <div className="mb-3">
+                <TextInput
+                  value={eventName}
+                  onChange={setEventName}
+                  placeholder="Event name"
+                  maxLength={100}
+                />
+              </div>
+              <div className="relative mb-3">
+                <div className="pointer-events-none">
+                  <PickerField value={eventType} onClick={() => {}} placeholder="Event type" />
+                </div>
+                <select
+                  aria-label="Event type"
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
+                >
+                  <option value="" disabled>Event type</option>
+                  {EVENT_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              {eventType === 'Other' && (
+                <div className="mb-3">
+                  <TextInput
+                    value={eventTypeDetail}
+                    onChange={setEventTypeDetail}
+                    placeholder="Type of event"
+                    maxLength={50}
+                  />
+                </div>
+              )}
+              <div className="relative mb-3">
+                <div className="pointer-events-none">
+                  <DateField value={eventDate} onClick={() => {}} placeholder="Event date" />
+                </div>
+                <input
+                  type="date"
+                  aria-label="Event date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
+                />
+              </div>
             </div>
           )}
-          <div className="relative mb-3">
-            <div className="pointer-events-none">
-              <DateField value={eventDate} onClick={() => {}} placeholder="Event date" />
-            </div>
-            <input
-              type="date"
-              aria-label="Event date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
-            />
-          </div>
           <Button
             onClick={() => {
               setStep('confirmation')
               void submitOnboarding()
             }}
-            disabled={!isRaceDetailsValid}
+            disabled={isContinueDisabled}
           >
             Continue
           </Button>
