@@ -96,6 +96,8 @@ Local development uses `.env.local`. See `.env.local.example` for the full list.
 
 Follow the `superpowers:test-driven-development` skill for all implementation tasks. Write failing tests before writing any production code. No exceptions.
 
+TDD is scoped to API routes (`app/api/`) and critical business logic (`lib/cycle.ts`, `lib/llm/`). These require tests written first, proven to fail, then implemented to pass without modifying the tests. UI components, page wrappers, and trivial utility modules (e.g. `lib/device.ts`, `lib/db.ts`) are exempt from TDD. They may be implemented directly without a preceding test-writing step.
+
 Do not invoke the `superpowers:brainstorming` skill for implementation tasks in this project. Design decisions are finalized in `docs/architecture.md` and `docs/prd.md`, and each Linear issue's acceptance criteria define the task scope. If a task's requirements are genuinely ambiguous or contradict the architecture doc, ask directly in chat rather than running the brainstorming workflow.
 
 ## Implementation approach
