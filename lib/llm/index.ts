@@ -12,10 +12,15 @@ function getProvider(name: string): LLMProvider {
   return anthropicProvider
 }
 
+function stripCodeFences(content: string): string {
+  return content.replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/s, '$1').trim()
+}
+
 function parseAndValidate(raw: LLMRawResponse, promptVersion: string): ParsedRecommendation {
   let parsed: Record<string, unknown>
+  const content = stripCodeFences(raw.content)
   try {
-    parsed = JSON.parse(raw.content)
+    parsed = JSON.parse(content)
   } catch {
     throw new Error(`LLM response is not valid JSON: ${raw.content}`)
   }
