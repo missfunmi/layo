@@ -1,5 +1,8 @@
 'use client'
 
+import { useState } from 'react'
+import { getOrCreateDeviceId } from '@/lib/device'
+
 type RecommendationType = 'as_written' | 'modify' | 'rest'
 type YesterdayWorkoutType = 'planned' | 'suggested' | 'other'
 
@@ -75,12 +78,23 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 export function RecommendationView({ recommendation, checkIn, onRedo }: RecommendationViewProps) {
+  const [showRedoModal, setShowRedoModal] = useState(false)
+
   const { recommendationType, rationale, modificationDetail } = recommendation
   const colors = STATE_COLORS[recommendationType]
   const heading = STATE_HEADINGS[recommendationType] ?? modificationDetail ?? ''
 
+  async function handleConfirmRedo() {
+    const today = new Date().toLocaleDateString('en-CA')
+    await fetch(`/api/check-ins?date=${today}`, {
+      method: 'DELETE',
+      headers: { 'X-Device-ID': getOrCreateDeviceId() },
+    })
+    onRedo?.()
+  }
+
   return (
-    <div className="min-h-screen bg-[#F1EFE8] flex flex-col">
+    <div className="min-h-screen bg-[#F1EFE8] flex flex-col relative">
       <Header />
       <div className="flex-1 flex flex-col px-6 pb-7 pt-[22px]">
         <div
@@ -128,26 +142,45 @@ export function RecommendationView({ recommendation, checkIn, onRedo }: Recommen
 
         <div className="flex justify-end pt-[18px]">
           <button
-            onClick={onRedo}
-            className="font-sans text-[12px] text-[#888780] flex items-center gap-[5px] bg-transparent border-0 p-0 cursor-pointer"
+            onClick={() => setShowRedoModal(true)}
+            className="font-sans text-[12px] text-[#888780] flex items-center gap-[5px] bg-transparent border-0 p-0 cursor-pointer no-underline"
+            style={{ textDecoration: 'none' }}
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="1 4 1 10 7 10" />
-              <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
-            </svg>
+            <i className="ti ti-reload" />
             Redo today&apos;s check-in
           </button>
         </div>
       </div>
+
+      {showRedoModal && (
+        <div
+          className="absolute inset-0 flex items-end"
+          style={{ background: 'rgba(44,44,42,0.5)' }}
+        >
+          <div className="w-full bg-white rounded-t-[24px] px-6 py-8">
+            <div className="font-display font-bold text-[18px] text-[#2C2C2A] mb-2">
+              Redo today&apos;s check-in?
+            </div>
+            <div className="font-sans text-[13px] text-[#888780] leading-[1.6] mb-6">
+              This will delete your check-in and recommendation for today. This cannot be undone.
+            </div>
+            <button
+              onClick={handleConfirmRedo}
+              className="w-full py-[14px] rounded-full border-0 font-sans text-[14px] font-medium text-white cursor-pointer mb-[10px]"
+              style={{ background: '#D85A30' }}
+            >
+              Delete and redo
+            </button>
+            <button
+              onClick={() => setShowRedoModal(false)}
+              className="w-full py-[14px] rounded-full font-sans text-[14px] font-medium bg-transparent cursor-pointer"
+              style={{ border: '1.5px solid #D3D1C7', color: '#5F5E5A' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
