@@ -2,19 +2,18 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getDeviceId, getOrCreateDeviceId } from '@/lib/device'
+import { getDeviceId } from '@/lib/device'
 
 export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    const existingId = getDeviceId()
-    if (!existingId) {
+    const deviceId = getDeviceId()
+    if (!deviceId) {
       router.push('/onboarding')
       return
     }
 
-    const deviceId = getOrCreateDeviceId()
     const today = new Date().toLocaleDateString('en-CA')
 
     fetch(`/api/check-ins?date=${today}`, {
@@ -31,8 +30,7 @@ export default function Home() {
         router.push('/check-in')
       }
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [router])
 
   return (
     <div className="min-h-screen bg-[#F1EFE8] flex items-center justify-center">

@@ -11,24 +11,21 @@ vi.mock('next/navigation', () => ({
 }))
 
 const mockGetDeviceId = vi.fn<() => string | null>()
-const mockGetOrCreateDeviceId = vi.fn<() => string>()
 
 vi.mock('@/lib/device', () => ({
   getDeviceId: () => mockGetDeviceId(),
-  getOrCreateDeviceId: () => mockGetOrCreateDeviceId(),
 }))
 
 beforeEach(() => {
   mockPush.mockReset()
   mockGetDeviceId.mockReturnValue('test-device-id')
-  mockGetOrCreateDeviceId.mockReturnValue('test-device-id')
   global.fetch = vi.fn()
 })
 
 import HomePage from '@/app/page'
 
 function simulateFirstLaunch() {
-  mockGetDeviceId.mockReturnValue(null as unknown as string)
+  mockGetDeviceId.mockReturnValue(null)
 }
 
 function mockCheckInFetch(checkIn: object | null) {
