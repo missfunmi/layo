@@ -329,8 +329,8 @@ function navigateTo(step: 'training_goal' | 'race_details') {
   fireEvent.click(screen.getByRole('button', { name: 'Menstruating' }))
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   if (step === 'race_details') {
+    // race detail fields appear inline when "A specific race" is selected
     fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   }
 }
 
@@ -366,10 +366,10 @@ describe('OnboardingFlow — step 4: training goal', () => {
     expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
   })
 
-  test('Continue is enabled after selecting "A specific race"', () => {
+  test('Continue is disabled when "A specific race" is selected but race details are empty', () => {
     navigateTo('training_goal')
     fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
-    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
   })
 
   test('Continue is enabled after selecting "Other reasons"', () => {
@@ -378,11 +378,19 @@ describe('OnboardingFlow — step 4: training goal', () => {
     expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
   })
 
-  test('"A specific race" + Continue advances to race details step', () => {
+  test('selecting "A specific race" shows race detail fields inline', () => {
     navigateTo('training_goal')
     fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(screen.getByText(/tell us about your race/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Event name')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /event type/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/event date/i)).toBeInTheDocument()
+  })
+
+  test('race detail fields are hidden when "Other reasons" is selected', () => {
+    navigateTo('training_goal')
+    fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Other reasons' }))
+    expect(screen.queryByPlaceholderText('Event name')).not.toBeInTheDocument()
   })
 
   test('"Other reasons" + Continue shows confirmation screen without race details', () => {
@@ -421,7 +429,7 @@ describe('OnboardingFlow — step 4: training goal', () => {
   })
 })
 
-describe('OnboardingFlow — step 5: race details', () => {
+describe('OnboardingFlow — step 4: race details (inline)', () => {
   const tomorrow = (() => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
@@ -434,9 +442,8 @@ describe('OnboardingFlow — step 5: race details', () => {
   })()
   const today = new Date().toLocaleDateString('en-CA')
 
-  test('shows heading and subtext', () => {
+  test('shows subtext when race fields are shown', () => {
     navigateTo('race_details')
-    expect(screen.getByText(/tell us about your race/i)).toBeInTheDocument()
     expect(screen.getByText(/láyo uses this to pace your recommendations/i)).toBeInTheDocument()
   })
 
@@ -562,7 +569,6 @@ describe('OnboardingFlow — step 5: race details', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Menstruating' }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.change(screen.getByPlaceholderText('Event name'), { target: { value: 'NYC Marathon' } })
     fireEvent.change(screen.getByRole('combobox', { name: /event type/i }), { target: { value: 'Running' } })
     fireEvent.change(screen.getByLabelText(/event date/i), { target: { value: tomorrow } })
@@ -570,10 +576,10 @@ describe('OnboardingFlow — step 5: race details', () => {
     expect(screen.getByText(/you're all set, funmi/i)).toBeInTheDocument()
   })
 
-  test('back button navigates to training goal step', () => {
+  test('back button navigates to hormonal life stage step', () => {
     navigateTo('race_details')
     fireEvent.click(screen.getByRole('button', { name: /go back/i }))
-    expect(screen.getByText(/what are you training for/i)).toBeInTheDocument()
+    expect(screen.getByText(/which of these applies to you/i)).toBeInTheDocument()
   })
 
   test('close button calls onClose', () => {
@@ -587,7 +593,6 @@ describe('OnboardingFlow — step 5: race details', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Menstruating' }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalledOnce()
   })
@@ -612,7 +617,6 @@ function navigateToConfirmation(path: 'non_race' | 'race' = 'non_race') {
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   if (path === 'race') {
     fireEvent.click(screen.getByRole('button', { name: 'A specific race' }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.change(screen.getByPlaceholderText('Event name'), { target: { value: 'NYC Marathon' } })
     fireEvent.change(screen.getByRole('combobox', { name: /event type/i }), { target: { value: 'Running' } })
     fireEvent.change(screen.getByLabelText(/event date/i), { target: { value: tomorrowDate } })

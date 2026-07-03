@@ -38,17 +38,20 @@ Triggered on first launch when no deviceId is found in localStorage.
 5. "What are you training for?" — single select (two large tappable cards):
    - A specific race
    - Other reasons
-6. (If "A specific race") Three inputs:
+
+   (If "A specific race") Three input fields appear inline on the same page without requiring a Continue tap:
    - Event name (free-form text)
    - Event type (picker/dropdown): Running, Cycling, Swimming, Triathlon, Skiing, Other
    - (If "Other") Event type detail (free-form text)
    - Event date (date picker)
    Subtext: "Láyo uses this to pace your recommendations as you get closer. If you're training for more than one race, tell us about the one coming up next. You can add others later."
-7. Confirmation screen with Láyo wordmark, checkmark icon, and copy: "You're all set, [name]. Come back tomorrow morning and Láyo will be ready for your first check-in."
+
+   Continue is disabled until all race fields are valid when "A specific race" is selected.
+6. Confirmation screen with Láyo wordmark, checkmark icon, and copy: "You're all set, [name]. Come back tomorrow morning and Láyo will be ready for your first check-in."
 
 The onboarding flow is fully client-side — see Flow 2 for flow architecture notes. The same applies here.
 
-All onboarding question screens (steps 2 through 6) include a back button (top-left) and a close/exit button (top-right). Tapping close abandons the onboarding session without saving; the user will be returned to onboarding on next launch.
+All onboarding question screens (steps 2 through 5) include a back button (top-left) and a close/exit button (top-right). Tapping close abandons the onboarding session without saving; the user will be returned to onboarding on next launch.
 
 Onboarding data is only written to the database when the user reaches and completes the confirmation screen (step 7). Abandoning mid-flow discards all entered data.
 
