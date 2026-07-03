@@ -62,7 +62,7 @@ function Header({ headerDate }: { headerDate: string }) {
       <div className="font-display font-bold text-[#0F6E56] text-[21px] tracking-[-0.5px]">
         láyo
       </div>
-      <div className="font-sans text-[11px] text-[#B4B2A9]">
+      <div className="font-sans text-[12px] text-[#888780]">
         {headerDate}
       </div>
     </div>
@@ -185,7 +185,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
             <h1 className="font-display font-bold text-[#2C2C2A] text-[28px] leading-[1.2] mb-[14px]">
               Ready for today, {name}?
             </h1>
-            <p className="font-sans text-[#888780] text-[13px] leading-[1.6]">
+            <p className="font-sans text-[#888780] text-[14px] leading-[1.6]">
               It takes about two minutes. Láyo will take it from there.
             </p>
           </div>
@@ -205,7 +205,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             What did you do yesterday?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-5">
             Pick the closest match.
           </p>
           <div className="flex flex-col gap-[10px] mb-4">
@@ -257,7 +257,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             How did it go?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-5">
             Anything worth noting about the session.
           </p>
           <TextArea
@@ -272,7 +272,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <button
             type="button"
             onClick={() => setStep('today_workout')}
-            className="font-sans text-[12px] text-[#B4B2A9] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
+            className="font-sans text-[14px] text-[#888780] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
           >
             Skip
           </button>
@@ -291,7 +291,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             What workout do you have planned today?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-5">
             Be as specific as you like, distance, pace, intensity.
           </p>
           <div className="mb-4">
@@ -319,7 +319,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             How did you sleep?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-4">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-4">
             1 = rough night, 5 = slept great
           </p>
           <div className="mb-6">
@@ -328,7 +328,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             How do you feel?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-4">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-4">
             1 = dragging, 5 = ready to go
           </p>
           <div className="mb-6">
@@ -354,7 +354,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             Did your period start today?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-5">
             Láyo uses this to track where you are in your cycle. It stays private.
           </p>
           <div className="mb-6">
@@ -377,7 +377,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             Anything new since yesterday?
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.55] mb-5">
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-5">
             Travel, illness, bad news, a harder-than-usual day? This helps Láyo read the full picture.
           </p>
           <TextArea
@@ -392,7 +392,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <button
             type="button"
             onClick={() => setStep('generating')}
-            className="font-sans text-[12px] text-[#B4B2A9] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
+            className="font-sans text-[14px] text-[#888780] text-center mt-[10px] bg-transparent border-0 cursor-pointer"
           >
             Skip
           </button>
@@ -419,7 +419,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-[10px]">
             {generatingHeader}
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.65]" style={{ maxWidth: '210px' }}>
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.65]" style={{ maxWidth: '210px' }}>
             Láyo is working on your recommendation for today.
           </p>
         </div>
@@ -450,7 +450,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <h2 className="font-display font-bold text-[#2C2C2A] text-[20px] mb-2">
             Something went wrong.
           </h2>
-          <p className="font-sans text-[#888780] text-[13px] leading-[1.6] mb-7" style={{ maxWidth: '220px' }}>
+          <p className="font-sans text-[#888780] text-[14px] leading-[1.6] mb-7" style={{ maxWidth: '220px' }}>
             {bodyText}
           </p>
           <button
