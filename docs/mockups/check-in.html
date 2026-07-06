@@ -1,291 +1,959 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Láyo , Daily Check-in Screens</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #E8E6DF; font-family: 'Inter', sans-serif; padding: 48px 32px; }
-    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888780; margin-bottom: 32px; text-align: center; }
-    .screens-row { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
-    .screen-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .screen-name { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #B4B2A9; }
-    .phone { width: 320px; min-height: 580px; background: #F1EFE8; border-radius: 36px; border: 0.5px solid rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-    .ph { padding: 22px 24px 0; display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
-    .wm { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; color: #0F6E56; letter-spacing: -0.5px; }
-    .dt { font-family: 'Inter', sans-serif; font-size: 11px; color: #B4B2A9; }
-    .pb { flex: 1; padding: 20px 24px 28px; display: flex; flex-direction: column; }
-    .nav-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    .back-btn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #D3D1C7; background: #fff; display: flex; align-items: center; justify-content: center; color: #5F5E5A; flex-shrink: 0; cursor: pointer; }
-    .dots { display: flex; gap: 6px; flex: 1; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #D3D1C7; }
-    .dot.active { width: 18px; border-radius: 3px; background: #0F6E56; }
-    .qh { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.25; color: #2C2C2A; margin-bottom: 8px; }
-    .qs { font-family: 'Inter', sans-serif; font-size: 13px; color: #888780; line-height: 1.55; margin-bottom: 20px; }
-    .option-card { background: #fff; border: 1.5px solid #D3D1C7; border-radius: 16px; padding: 13px 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
-    .option-card.selected { border-color: #0F6E56; background: #E1F5EE; }
-    .option-icon { width: 36px; height: 36px; border-radius: 10px; background: #F1EFE8; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #0F6E56; }
-    .option-card.selected .option-icon { background: #9FE1CB; color: #085041; }
-    .option-label { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #2C2C2A; margin-bottom: 2px; }
-    .option-detail { font-family: 'Inter', sans-serif; font-size: 12px; color: #888780; line-height: 1.4; }
-    .textarea-mock { width: 100%; background: #fff; border: 1.5px solid #0F6E56; border-radius: 14px; padding: 13px 15px; font-family: 'Inter', sans-serif; font-size: 13px; color: #2C2C2A; min-height: 110px; resize: none; margin-bottom: 6px; line-height: 1.5; }
-    .textarea-mock.empty { border-color: #D3D1C7; color: #B4B2A9; }
-    .char-count { font-family: 'Inter', sans-serif; font-size: 11px; color: #B4B2A9; text-align: right; margin-bottom: 16px; }
-    .scale-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .scale-pip { flex: 1; height: 54px; border-radius: 13px; background: #fff; border: 1.5px solid #D3D1C7; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 500; color: #5F5E5A; cursor: pointer; }
-    .scale-pip.selected { background: #E1F5EE; border-color: #0F6E56; color: #085041; }
-    .scale-labels { display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; font-size: 11px; color: #B4B2A9; margin-bottom: 22px; }
-    .yn-row { display: flex; gap: 10px; margin-bottom: 24px; }
-    .yn-btn { flex: 1; padding: 16px; border-radius: 14px; border: 1.5px solid #D3D1C7; background: #fff; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: #2C2C2A; cursor: pointer; text-align: center; }
-    .yn-btn.selected { background: #E1F5EE; border-color: #0F6E56; color: #085041; }
-    .skip-link { font-family: 'Inter', sans-serif; font-size: 12px; color: #B4B2A9; text-align: center; margin-top: 10px; cursor: pointer; }
-    .cta { width: 100%; padding: 15px; border-radius: 100px; border: none; background: #0F6E56; color: #fff; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; margin-top: auto; cursor: pointer; }
-    .close-btn { display: flex; align-items: center; justify-content: center; padding: 8px; color: #B4B2A9; cursor: pointer; flex-shrink: 0; }
-    .generating-ring { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #E1F5EE; border-top-color: #0F6E56; animation: spin 1s linear infinite; margin: 0 auto 22px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Láyo: Daily Check-in Screens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #e8e6df;
+        font-family: "Inter", sans-serif;
+        padding: 48px 32px;
+      }
+      h1 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #888780;
+        margin-bottom: 32px;
+        text-align: center;
+      }
+      .screens-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+      }
+      .screen-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .screen-name {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #b4b2a9;
+      }
+      .phone {
+        width: 320px;
+        min-height: 580px;
+        background: #f1efe8;
+        border-radius: 36px;
+        border: 0.5px solid rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+      .ph {
+        padding: 22px 24px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 52px;
+      }
+      .wm {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 21px;
+        color: #0f6e56;
+        letter-spacing: -0.5px;
+      }
+      .dt {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        color: #b4b2a9;
+      }
+      .pb {
+        flex: 1;
+        padding: 20px 24px 28px;
+        display: flex;
+        flex-direction: column;
+      }
+      .nav-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .back-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1.5px solid #d3d1c7;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #5f5e5a;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+      .dots {
+        display: flex;
+        gap: 6px;
+        flex: 1;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #d3d1c7;
+      }
+      .dot.active {
+        width: 18px;
+        border-radius: 3px;
+        background: #0f6e56;
+      }
+      .qh {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 22px;
+        line-height: 1.25;
+        color: #2c2c2a;
+        margin-bottom: 8px;
+      }
+      .qs {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #888780;
+        line-height: 1.55;
+        margin-bottom: 20px;
+      }
+      .option-card {
+        background: #fff;
+        border: 1.5px solid #d3d1c7;
+        border-radius: 16px;
+        padding: 13px 15px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+      }
+      .option-card.selected {
+        border-color: #0f6e56;
+        background: #e1f5ee;
+      }
+      .option-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #f1efe8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: #0f6e56;
+      }
+      .option-card.selected .option-icon {
+        background: #9fe1cb;
+        color: #085041;
+      }
+      .option-label {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: #2c2c2a;
+        margin-bottom: 2px;
+      }
+      .option-detail {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: #888780;
+        line-height: 1.4;
+      }
+      .textarea-mock {
+        width: 100%;
+        background: #fff;
+        border: 1.5px solid #0f6e56;
+        border-radius: 14px;
+        padding: 13px 15px;
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #2c2c2a;
+        min-height: 110px;
+        resize: none;
+        margin-bottom: 6px;
+        line-height: 1.5;
+      }
+      .textarea-mock.empty {
+        border-color: #d3d1c7;
+        color: #b4b2a9;
+      }
+      .char-count {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        color: #b4b2a9;
+        text-align: right;
+        margin-bottom: 16px;
+      }
+      .scale-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .scale-pip {
+        flex: 1;
+        height: 54px;
+        border-radius: 13px;
+        background: #fff;
+        border: 1.5px solid #d3d1c7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Inter", sans-serif;
+        font-size: 17px;
+        font-weight: 500;
+        color: #5f5e5a;
+        cursor: pointer;
+      }
+      .scale-pip.selected {
+        background: #e1f5ee;
+        border-color: #0f6e56;
+        color: #085041;
+      }
+      .scale-labels {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        color: #b4b2a9;
+        margin-bottom: 22px;
+      }
+      .yn-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .yn-btn {
+        flex: 1;
+        padding: 16px;
+        border-radius: 14px;
+        border: 1.5px solid #d3d1c7;
+        background: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c2c2a;
+        cursor: pointer;
+        text-align: center;
+      }
+      .yn-btn.selected {
+        background: #e1f5ee;
+        border-color: #0f6e56;
+        color: #085041;
+      }
+      .skip-link {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: #b4b2a9;
+        text-align: center;
+        margin-top: 10px;
+        cursor: pointer;
+      }
+      .cta {
+        width: 100%;
+        padding: 15px;
+        border-radius: 100px;
+        border: none;
+        background: #0f6e56;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        margin-top: auto;
+        cursor: pointer;
+      }
+      .close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        color: #b4b2a9;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .generating-ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 3px solid #e1f5ee;
+        border-top-color: #0f6e56;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 22px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-    /* inline SVG helpers */
-    .svg-arrow { display:inline-flex; }
+      /* inline SVG helpers */
+      .svg-arrow {
+        display: inline-flex;
+      }
 
-    .error-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
-    .error-icon { width: 56px; height: 56px; border-radius: 50%; background: #FAECE7; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #D85A30; }
-    .error-heading { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; color: #2C2C2A; margin-bottom: 8px; }
-    .error-body { font-family: 'Inter', sans-serif; font-size: 13px; color: #888780; line-height: 1.6; max-width: 220px; margin-bottom: 28px; }
-    .error-cta { padding: 14px 28px; border-radius: 100px; border: none; background: #0F6E56; color: #fff; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; }
-  </style>
-</head>
-<body>
-<h1>Láyo , Daily Check-in</h1>
-<div class="screens-row">
-
-  <!-- Check-in landing -->
-  <div class="screen-col">
-    <div class="screen-name">Daily greeting</div>
-    <div class="phone">
-      <div class="ph">
-        <div class="wm">láyo</div>
-        <div class="dt">Thu Jun 25</div>
-      </div>
-      <div class="pb" style="justify-content:space-between;">
-        <div>
-          <div id="greeting-label" style="font-family:'Inter',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#B4B2A9;margin-bottom:14px;">Good morning</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:28px;color:#2C2C2A;line-height:1.2;margin-bottom:14px;">Ready for today,<br>Funmi?</div>
-          <div style="font-family:'Inter',sans-serif;font-size:13px;color:#888780;line-height:1.6;">It takes about two minutes. Láyo will take it from there.</div>
+      .error-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+      }
+      .error-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #faece7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        color: #d85a30;
+      }
+      .error-heading {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        color: #2c2c2a;
+        margin-bottom: 8px;
+      }
+      .error-body {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #888780;
+        line-height: 1.6;
+        max-width: 220px;
+        margin-bottom: 28px;
+      }
+      .error-cta {
+        padding: 14px 28px;
+        border-radius: 100px;
+        border: none;
+        background: #0f6e56;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Láyo: Daily Check-in</h1>
+    <div class="screens-row">
+      <!-- Check-in landing -->
+      <div class="screen-col">
+        <div class="screen-name">Daily greeting</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb" style="justify-content: space-between">
+            <div>
+              <div
+                id="greeting-label"
+                style="
+                  font-family: &quot;Inter&quot;, sans-serif;
+                  font-size: 12px;
+                  font-weight: 500;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: #b4b2a9;
+                  margin-bottom: 14px;
+                "
+              >
+                Good morning
+              </div>
+              <div
+                style="
+                  font-family: &quot;Space Grotesk&quot;, sans-serif;
+                  font-weight: 700;
+                  font-size: 28px;
+                  color: #2c2c2a;
+                  line-height: 1.2;
+                  margin-bottom: 14px;
+                "
+              >
+                Ready for today,<br />Funmi?
+              </div>
+              <div
+                style="
+                  font-family: &quot;Inter&quot;, sans-serif;
+                  font-size: 13px;
+                  color: #888780;
+                  line-height: 1.6;
+                "
+              >
+                It takes about two minutes. Láyo will take it from there.
+              </div>
+            </div>
+            <button class="cta">Start today's check-in</button>
+          </div>
         </div>
-        <button class="cta">Start today's check-in</button>
+      </div>
+
+      <!-- Yesterday's workout -->
+      <div class="screen-col">
+        <div class="screen-name">Yesterday's workout</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="nav-row">
+              <div class="back-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <div class="dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+              <div class="close-btn">
+                <svg
+                  width="16"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+            <div class="qh">What did you do yesterday?</div>
+            <div class="qs">Pick the closest match.</div>
+            <div class="option-card selected">
+              <div class="option-icon">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div>
+                <div class="option-label">Your planned workout</div>
+                <div class="option-detail">
+                  8mi easy run @ Z2, strides at end
+                </div>
+              </div>
+            </div>
+            <div class="option-card">
+              <div class="option-icon">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"
+                  />
+                  <path
+                    d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"
+                  />
+                  <path
+                    d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div class="option-label">Láyo's suggested workout</div>
+                <div class="option-detail">6mi easy run, no strides</div>
+              </div>
+            </div>
+            <div class="option-card">
+              <div class="option-icon">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                  />
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div class="option-label">Something else</div>
+                <div class="option-detail">Tell us what you did</div>
+              </div>
+            </div>
+            <button class="cta" style="margin-top: 16px">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yesterday's feedback -->
+      <div class="screen-col">
+        <div class="screen-name">Yesterday's feedback</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="nav-row">
+              <div class="back-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+              <div class="close-btn">
+                <svg
+                  width="16"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+            <div class="qh">How did it go?</div>
+            <div class="qs">Anything worth noting about the session.</div>
+            <textarea class="textarea-mock">
+Felt strong through the strides but legs were a bit heavy in the first 3 miles. Loosened up after that.</textarea
+            >
+            <div class="char-count">96 / 280</div>
+            <button class="cta">Continue</button>
+            <div class="skip-link">Skip</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's workout -->
+      <div class="screen-col">
+        <div class="screen-name">Today's workout</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="nav-row">
+              <div class="back-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+              <div class="close-btn">
+                <svg
+                  width="16"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+            <div class="qh">What workout do you have planned today?</div>
+            <div class="qs">
+              Be as specific as you like , distance, pace, intensity.
+            </div>
+            <textarea class="textarea-mock">
+10 mile tempo run: 2mi warmup, 6mi at marathon pace, 2mi cooldown</textarea
+            >
+            <div class="char-count">65 / 280</div>
+            <button class="cta">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sleep & feel -->
+      <div class="screen-col">
+        <div class="screen-name">Sleep satisfaction and feel</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="nav-row">
+              <div class="back-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+              <div class="close-btn">
+                <svg
+                  width="16"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+            <div class="qh">How satisfied are you with how you slept?</div>
+            <div class="qs">
+              Do you feel like you got enough sleep last night?
+            </div>
+            <div class="scale-row">
+              <div class="scale-pip">1</div>
+              <div class="scale-pip">2</div>
+              <div class="scale-pip">3</div>
+              <div class="scale-pip selected">4</div>
+              <div class="scale-pip">5</div>
+            </div>
+            <div class="scale-labels">
+              <span>unsatisfied</span><span>satisfied</span>
+            </div>
+            <div class="qh">How do you feel?</div>
+            <div class="qs">How ready are you to tackle today?</div>
+            <div class="scale-row">
+              <div class="scale-pip">1</div>
+              <div class="scale-pip">2</div>
+              <div class="scale-pip selected">3</div>
+              <div class="scale-pip">4</div>
+              <div class="scale-pip">5</div>
+            </div>
+            <div class="scale-labels">
+              <span>dragging</span><span>ready to go</span>
+            </div>
+            <button class="cta">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cycle tracking -->
+      <div class="screen-col">
+        <div class="screen-name">Cycle tracking</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="nav-row">
+              <div class="back-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot active"></div>
+                <div class="dot"></div>
+              </div>
+              <div class="close-btn">
+                <svg
+                  width="16"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+            <div class="qh">Did your period start today?</div>
+            <div class="qs">
+              Láyo uses this to track where you are in your cycle. It stays
+              private.
+            </div>
+            <div class="yn-row">
+              <div class="yn-btn">Yes</div>
+              <div class="yn-btn selected">No</div>
+            </div>
+            <button class="cta">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stressors -->
+      <div class="screen-col">
+        <div class="screen-name">Stressors</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="nav-row">
+              <div class="back-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot active"></div>
+              </div>
+              <div class="close-btn">
+                <svg
+                  width="16"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+            <div class="qh">Anything new since yesterday?</div>
+            <div class="qs">
+              Travel, illness, bad news, a harder-than-usual day? This helps
+              Láyo read the full picture.
+            </div>
+            <textarea class="textarea-mock empty">
+E.g. bad night's sleep, stressful day at work, feeling under the weather...</textarea
+            >
+            <div class="char-count">0 / 280</div>
+            <button class="cta">Continue</button>
+            <div class="skip-link">Skip</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generating -->
+      <div class="screen-col">
+        <div class="screen-name">Generating</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div
+            class="pb"
+            style="
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+            "
+          >
+            <div class="generating-ring"></div>
+            <div
+              style="
+                font-family: &quot;Space Grotesk&quot;, sans-serif;
+                font-weight: 700;
+                font-size: 20px;
+                color: #2c2c2a;
+                margin-bottom: 10px;
+              "
+            >
+              Reading the full picture...
+            </div>
+            <div
+              style="
+                font-family: &quot;Inter&quot;, sans-serif;
+                font-size: 13px;
+                color: #888780;
+                line-height: 1.65;
+                max-width: 210px;
+              "
+            >
+              Láyo is working on your recommendation for today.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error: check-in submission failed -->
+      <div class="screen-col">
+        <div class="screen-name">Error - submission failed</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="error-state">
+            <div class="error-icon">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div class="error-heading">Something went wrong.</div>
+            <div class="error-body">
+              We could not save your check-in. Tap to try again.
+            </div>
+            <button class="error-cta">Try again</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Yesterday's workout -->
-  <div class="screen-col">
-    <div class="screen-name">Yesterday's workout</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="nav-row">
-          <div class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </div>
-          <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-        </div>
-        <div class="qh">What did you do yesterday?</div>
-        <div class="qs">Pick the closest match.</div>
-        <div class="option-card selected">
-          <div class="option-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div>
-            <div class="option-label">Your planned workout</div>
-            <div class="option-detail">8mi easy run @ Z2, strides at end</div>
-          </div>
-        </div>
-        <div class="option-card">
-          <div class="option-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/><path d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75z"/></svg>
-          </div>
-          <div>
-            <div class="option-label">Láyo's suggested workout</div>
-            <div class="option-detail">6mi easy run, no strides</div>
-          </div>
-        </div>
-        <div class="option-card">
-          <div class="option-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </div>
-          <div>
-            <div class="option-label">Something else</div>
-            <div class="option-detail">Tell us what you did</div>
-          </div>
-        </div>
-        <button class="cta" style="margin-top:16px;">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Yesterday's feedback -->
-  <div class="screen-col">
-    <div class="screen-name">Yesterday's feedback</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="nav-row">
-          <div class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </div>
-          <div class="dots"><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-        </div>
-        <div class="qh">How did it go?</div>
-        <div class="qs">Anything worth noting about the session.</div>
-        <textarea class="textarea-mock">Felt strong through the strides but legs were a bit heavy in the first 3 miles. Loosened up after that.</textarea>
-        <div class="char-count">96 / 280</div>
-        <button class="cta">Continue</button>
-        <div class="skip-link">Skip</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Today's workout -->
-  <div class="screen-col">
-    <div class="screen-name">Today's workout</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="nav-row">
-          <div class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </div>
-          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-        </div>
-        <div class="qh">What workout do you have planned today?</div>
-        <div class="qs">Be as specific as you like , distance, pace, intensity.</div>
-        <textarea class="textarea-mock">10 mile tempo run: 2mi warmup, 6mi at marathon pace, 2mi cooldown</textarea>
-        <div class="char-count">65 / 280</div>
-        <button class="cta">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Sleep & feel -->
-  <div class="screen-col">
-    <div class="screen-name">Sleep and feel</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="nav-row">
-          <div class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </div>
-          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
-          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-        </div>
-        <div class="qh">How did you sleep?</div>
-        <div class="qs">1 = rough night, 5 = slept great</div>
-        <div class="scale-row">
-          <div class="scale-pip">1</div><div class="scale-pip">2</div><div class="scale-pip">3</div><div class="scale-pip selected">4</div><div class="scale-pip">5</div>
-        </div>
-        <div class="scale-labels"><span>rough</span><span>great</span></div>
-        <div class="qh">How do you feel?</div>
-        <div class="qs">1 = dragging, 5 = ready to go</div>
-        <div class="scale-row">
-          <div class="scale-pip">1</div><div class="scale-pip">2</div><div class="scale-pip selected">3</div><div class="scale-pip">4</div><div class="scale-pip">5</div>
-        </div>
-        <div class="scale-labels"><span>dragging</span><span>ready to go</span></div>
-        <button class="cta">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cycle tracking -->
-  <div class="screen-col">
-    <div class="screen-name">Cycle tracking</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="nav-row">
-          <div class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </div>
-          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
-          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-        </div>
-        <div class="qh">Did your period start today?</div>
-        <div class="qs">Láyo uses this to track where you are in your cycle. It stays private.</div>
-        <div class="yn-row">
-          <div class="yn-btn">Yes</div>
-          <div class="yn-btn selected">No</div>
-        </div>
-        <button class="cta">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Stressors -->
-  <div class="screen-col">
-    <div class="screen-name">Stressors</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="nav-row">
-          <div class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </div>
-          <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
-          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-        </div>
-        <div class="qh">Anything new since yesterday?</div>
-        <div class="qs">Travel, illness, bad news, a harder-than-usual day? This helps Láyo read the full picture.</div>
-        <textarea class="textarea-mock empty">E.g. bad night's sleep, stressful day at work, feeling under the weather...</textarea>
-        <div class="char-count">0 / 280</div>
-        <button class="cta">Continue</button>
-        <div class="skip-link">Skip</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Generating -->
-  <div class="screen-col">
-    <div class="screen-name">Generating</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb" style="align-items:center;justify-content:center;text-align:center;">
-        <div class="generating-ring"></div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#2C2C2A;margin-bottom:10px;">Reading the full picture...</div>
-        <div style="font-family:'Inter',sans-serif;font-size:13px;color:#888780;line-height:1.65;max-width:210px;">Láyo is working on your recommendation for today.</div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- Error: check-in submission failed -->
-  <div class="screen-col">
-    <div class="screen-name">Error - submission failed</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="error-state">
-        <div class="error-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-        <div class="error-heading">Something went wrong.</div>
-        <div class="error-body">We could not save your check-in. Tap to try again.</div>
-        <button class="error-cta">Try again</button>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  (function() {
-    var h = new Date().getHours();
-    var label = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-    var el = document.getElementById('greeting-label');
-    if (el) el.textContent = label;
-  })();
-</script>
-</body>
+    <script>
+      (function () {
+        var h = new Date().getHours();
+        var label =
+          h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+        var el = document.getElementById("greeting-label");
+        if (el) el.textContent = label;
+      })();
+    </script>
+  </body>
 </html>

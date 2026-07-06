@@ -2,7 +2,7 @@
 
 ## Overview
 
-Láyo is a fitness coaching assistant for female athletes. It prompts users through a daily check-in, reconciles their responses against their reported workout plan, and delivers a specific, reasoned recommendation: execute as planned, modify, or rest. The product learns the user over time, building a personal baseline rather than applying generic rules.
+Láyo is a fitness coaching assistant for female athletes. It prompts users through a daily check-in, reconciles their responses against their reported workout plan, and delivers a specific, reasoned recommendation: execute as planned, modify, or rest. The product learns the user over time, building a personal baseline rather than applying generic rules. For users who connect a supported wearable device, objective physiological data enriches this recommendation.
 
 ---
 
@@ -10,7 +10,7 @@ Láyo is a fitness coaching assistant for female athletes. It prompts users thro
 
 Female endurance athletes training with structured plans face a recurring decision every morning: do I execute today's workout as written, modify it, or rest? Generic training tools give no guidance on this. Coaches do not proactively raise hormonal or recovery context. Athletes are left to make this call alone, often defaulting to push-through regardless of their actual physiological state.
 
-Láyo closes this gap with a daily check-in that takes two minutes, reads the full picture — sleep, subjective feel, yesterday's outcome, cycle day, and acute stressors — and gives a direct, reasoned recommendation.
+Láyo closes this gap with a daily check-in that takes two minutes, reads the full picture — sleep satisfaction, subjective feel, yesterday's outcome, cycle day, acute stressors, and (for connected users) objective wearable data — and gives a direct, reasoned recommendation.
 
 ---
 
@@ -47,17 +47,25 @@ Triggered on first launch when no deviceId is found in localStorage.
    Subtext: "Láyo uses this to pace your recommendations as you get closer. If you're training for more than one race, tell us about the one coming up next. You can add others later."
 
    Continue is disabled until all race fields are valid when "A specific race" is selected.
-6. Confirmation screen with Láyo wordmark, checkmark icon, and copy: "You're all set, [name]. Come back tomorrow morning and Láyo will be ready for your first check-in."
+6. **Connect your Oura Ring (optional)** — new step, shown after step 5.
+   Heading: "Connect your Oura Ring"
+   Subtext: "Láyo can use your readiness, HRV, and sleep data to give you sharper recommendations. You don't need Oura, but if you have one, this helps."
+   Two actions: "Connect Oura Ring" (primary CTA) and "Skip for now" (text link below CTA).
 
-The onboarding flow is fully client-side — see Flow 2 for flow architecture notes. The same applies here.
+   Tapping "Connect Oura Ring" initiates an OAuth 2.0 authorization flow with Oura. The user is redirected to Oura's authorization page, approves access, and is returned to the confirmation screen. A connected state confirmation is shown if the user navigates back to this screen after connecting.
 
-All onboarding question screens (steps 2 through 5) include a back button (top-left) and a close/exit button (top-right). Tapping close abandons the onboarding session without saving; the user will be returned to onboarding on next launch.
+   This step is fully optional. Skipping does not affect any other part of the product.
+7. Confirmation screen with Láyo wordmark, checkmark icon, and copy: "You're all set, [name]. Come back tomorrow morning and Láyo will be ready for your first check-in."
 
-Onboarding data is only written to the database when the user reaches and completes the confirmation screen (step 7). Abandoning mid-flow discards all entered data.
+The onboarding flow is fully client-side — see Flow 2 for flow architecture notes. The same applies here, with the exception of the Oura connect step, which requires a browser redirect to Oura's servers and back (standard OAuth 2.0).
+
+All onboarding question screens (steps 2 through 6) include a back button (top-left) and a close/exit button (top-right). Tapping close abandons the onboarding session without saving; the user will be returned to onboarding on next launch.
+
+Onboarding data is only written to the database when the user reaches and completes the confirmation screen (step 7). Abandoning mid-flow discards all entered data. The Oura connection, if completed, is written to the database at the time the OAuth callback is processed — before the confirmation screen is shown.
 
 **Submission error handling:** If the `POST /api/users` call fails, the user remains on the confirmation screen and sees an inline error message with a retry CTA. If they tap retry without refreshing, their entered data is still in React state and they do not need to re-enter it. The error message is direct and action-oriented.
 
-**Outcome:** User and user profile written to the database. deviceId generated and persisted to localStorage. User lands on the daily check-in flow.
+**Outcome:** User and user profile written to the database. deviceId generated and persisted to localStorage. If Oura was connected, wearable credentials stored and 90-day historical data fetched. User lands on the daily check-in flow.
 
 ---
 
@@ -106,12 +114,16 @@ Check-in data is only submitted to the server when the user completes the final 
 
 3. **Today's planned workout**
    "What workout do you have planned today?"
-   Subtext: "Be as specific as you like — distance, pace, intensity."
+   Subtext: "Be as specific as you like: distance, pace, intensity."
    Free-form text input. Required. Character limit: 280.
 
-4. **Sleep quality and subjective feel** (shown on one screen)
-   "How did you sleep?" — 1–5 scale. Scale labels: 1 = rough, 5 = great. Required.
+4. **Sleep satisfaction and subjective feel** (shown on one screen)
+   "How satisfied are you with how you slept?" — 1–5 scale. Scale labels: 1 = unsatisfied, 5 = satisfied. Required.
+   Subtext: "Do you feel like you got enough sleep last night?"
    "How do you feel?" — 1–5 scale. Scale labels: 1 = dragging, 5 = ready to go. Required.
+   Subtext: "How ready are you to tackle today?"
+
+   This question is shown to all users regardless of wearable connection status. The sleep satisfaction score captures subjective perception; for users with Oura connected, the Oura sleep score is passed separately to the LLM and is not surfaced in the check-in UI.
 
 5. **Cycle tracking** (shown only if user selected "Menstruating" during onboarding)
    "Did your period start today?"
@@ -125,9 +137,9 @@ Check-in data is only submitted to the server when the user completes the final 
 
 #### Generating state
 
-Displayed after the final question is submitted while the LLM recommendation is produced. Shows a spinner, a randomly chosen header string, and a constant subtext.
+Displayed after the final question is submitted while the LLM recommendation is produced. Shows a spinner, a header string that rotates through the pool below every 3 seconds, and a constant subtext.
 
-Header copy — one chosen at random per load:
+Header copy — rotated randomly every 3 seconds:
 - "Reading the full picture..."
 - "Let's see what we've got..."
 - "Putting it all together..."
@@ -145,7 +157,7 @@ Subtext (constant): "Láyo is working on your recommendation for today."
 
 In both cases the error message is direct and action-oriented. The user is never dropped silently back to the landing screen.
 
-**Outcome:** Check-in data written to the database. Recommendation generated. User navigated to recommendation view.
+**Outcome:** Check-in data written to the database. Wearable data fetched and baseline computed (for connected users). Recommendation generated. User navigated to recommendation view.
 
 ---
 
@@ -162,7 +174,7 @@ Displayed after check-in submission, and on all subsequent app opens for the sam
   - "Take a rest day today." (rest)
 - A 2px colored divider line beneath the heading
 - Rationale — a short, conversational explanation of why. Combined character limit for heading and rationale: 400 characters.
-- Compact summary card showing today's check-in data: sleep score, feel score, cycle day (if applicable), planned workout (truncated at ~40 characters with ellipsis if needed), yesterday's outcome, stressors (if any)
+- Compact summary card showing today's check-in data: sleep satisfaction score, feel score, cycle day (if applicable), planned workout (truncated at ~40 characters with ellipsis if needed), yesterday's outcome, stressors (if any)
 - "Redo today's check-in" — grey text link with reload icon, bottom-right, no button styling
 
 **Behavior:**
@@ -178,11 +190,12 @@ The recommendation is generated via the configured LLM provider. The LLM receive
 - User profile (name, calculated age from birth year, hormonal life stage, race details if applicable)
 - Today's planned workout
 - Yesterday's workout (what was done and how it went, if available)
-- Sleep score (1–5)
+- Sleep satisfaction score (1–5, subjective)
 - Subjective feel score (1–5)
 - Cycle day (if tracked)
 - Acute stressors (if provided)
 - Historical check-in summary (rolling window of recent check-ins to establish baseline, where available)
+- Wearable data context (for connected users) — today's objective metrics with deltas against 90-day rolling baseline, or a note that today's device data is not yet synced (see `docs/specs/wearable-integration.md`)
 
 **Output:** One of three recommendation types (as_written, modify, rest), a user-facing rationale string, and internal reasoning fields stored separately.
 
@@ -191,6 +204,8 @@ The recommendation is generated via the configured LLM provider. The LLM receive
 - Modifications must be specific, not vague ("reduce volume by 30% and keep intensity" not "take it easy today")
 - Rationale must be direct and conversational, not clinical or hedge-heavy
 - Recommendations must account for proximity to goal race where applicable (taper logic in final 2 weeks; peak week quality prioritization)
+- Wearable data is objective context, not a sole decision input. Subjective feel and wearable data can legitimately diverge. Do not cite specific numeric values from wearable data in user-facing rationale unless directly relevant.
+- Weight subjective inputs more heavily when today's wearable data is absent.
 
 The following must be configurable without touching core code or business logic, and without requiring a full redeployment:
 
@@ -199,6 +214,8 @@ The following must be configurable without touching core code or business logic,
 - **Inference parameters** — temperature, max tokens, top_p, and any other model-specific parameters
 
 Prompt text and inference parameters are stored in a versioned `prompt_configs` table in the database and fetched at inference time. This allows prompts and parameters to be updated and tested in live conditions without a code deployment. The `prompt_version` field in the LLM inference log references the specific `prompt_configs` row used to generate each recommendation, making every output permanently traceable to the exact prompt and parameters that produced it.
+
+For full wearable integration spec including LLM context format, fallback behavior, and baseline computation, see `docs/specs/wearable-integration.md`.
 
 ---
 
@@ -243,7 +260,7 @@ Separate table supporting multiple races per user. In the current implementation
 - `yesterday_workout_description` (string, nullable — populated if type is "other")
 - `yesterday_workout_feedback` (string, nullable — null if previous day's check-in does not exist)
 - `todays_planned_workout` (string, max 280 characters)
-- `sleep_score` (integer 1–5)
+- `sleep_satisfaction` (integer 1–5 — subjective satisfaction with sleep; replaces `sleep_score` from v0.1.0)
 - `feel_score` (integer 1–5)
 - `period_started_today` (boolean, nullable — null if user is not menstruating)
 - `cycle_day` (integer, nullable — calculated server-side from period tracking history; null if user is not menstruating or has not yet reported a period start. Calculation: (check_in_date minus date of most recent check-in where period_started_today = true) + 1. Calculation is date-based, so gap days from skipped check-ins are included naturally.)
@@ -286,6 +303,39 @@ Separate table linked one-to-one to a recommendation. Stores observability and d
 - `latency_ms` (integer — time in milliseconds from API request to response)
 - `created_at` (timestamp)
 
+### Wearable connections
+One row per user per provider. Stores OAuth credentials and connection state. See `docs/specs/wearable-integration.md` for full schema.
+
+- `id` (uuid, primary key)
+- `user_id` (uuid, foreign key)
+- `provider` (enum: oura — extensible to additional providers)
+- `access_token` (encrypted string)
+- `refresh_token` (encrypted string)
+- `token_expires_at` (timestamp)
+- `status` (enum: active | inactive)
+- `connected_at` (timestamp)
+- `updated_at` (timestamp)
+
+### Wearable daily metrics
+One row per user per provider per date. Stores normalized metric values from the provider. See `docs/specs/wearable-integration.md` for full schema and field mapping.
+
+- `id` (uuid, primary key)
+- `user_id` (uuid, foreign key)
+- `connection_id` (uuid, foreign key)
+- `provider` (enum: oura)
+- `metric_date` (date)
+- `readiness_score` (integer, nullable)
+- `hrv_avg` (float, nullable)
+- `resting_heart_rate` (integer, nullable)
+- `sleep_score` (integer, nullable)
+- `sleep_duration_minutes` (integer, nullable)
+- `deep_sleep_minutes` (integer, nullable)
+- `rem_sleep_minutes` (integer, nullable)
+- `sleep_efficiency` (float, nullable)
+- `body_temp_deviation` (float, nullable)
+- `raw_data` (jsonb — full provider response)
+- `created_at` (timestamp)
+
 ---
 
 ## Technical requirements
@@ -295,6 +345,7 @@ Separate table linked one-to-one to a recommendation. Stores observability and d
 - **Database:** Neon Postgres (production), local Postgres (development), Prisma ORM
 - **Device identity:** deviceId generated on first launch, stored in localStorage, sent with all API requests
 - **LLM:** Provider-abstracted; default provider is Anthropic API. Provider and model are configurable via environment variables (`LLM_PROVIDER`, `LLM_MODEL`) with no code changes required to swap. Provider-specific SDK implementations are isolated from shared inference logic.
+- **Wearable integrations:** Provider-abstracted via `lib/wearables/`. First provider: Oura Ring (OAuth 2.0 with PKCE). Architecture supports additional providers without structural changes.
 - **Icons:** Tabler Icons webfont
 - **Error logging:** Sentry
 - **Authentication:** None currently. deviceId is the sole account identifier.
@@ -307,3 +358,4 @@ Separate table linked one-to-one to a recommendation. Stores observability and d
 - Check-in submission and recommendation generation must complete within 10 seconds under normal conditions
 - If recommendation generation fails, the user must be able to retry without re-entering check-in data, provided they have not refreshed the page (React state is not persisted across page refreshes)
 - No personally identifiable data beyond name and birth year is collected; no email address is required
+- Wearable OAuth tokens are encrypted at rest using AES-256-GCM
