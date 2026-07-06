@@ -17,6 +17,7 @@ This document describes the technical architecture of Láyo. It is the authorita
 | Database (production) | Neon Postgres (Vercel integration) |
 | Database (development) | Local Postgres |
 | LLM | Provider-abstracted via `lib/llm/` (default: Anthropic API; swappable via `LLM_PROVIDER` and `LLM_MODEL` env vars) |
+| Wearables | Provider-abstracted via `lib/wearables/` (first provider: Oura Ring) |
 | Hosting | Vercel |
 | Error logging | Sentry |
 | Icons | Tabler Icons webfont |
@@ -45,18 +46,29 @@ layo/
 │   ├── db.ts                       # Prisma client singleton
 │   ├── device.ts                   # deviceId generation and localStorage read/write
 │   ├── cycle.ts                    # Cycle day calculation
-│   └── llm/
-│       ├── index.ts                # Provider-agnostic interface: loads prompt config, builds user message, parses and validates response, logs to Sentry
-│       ├── types.ts                # Shared LLMProvider interface and response types
+│   ├── crypto.ts                   # AES-256-GCM encrypt/decrypt for token storage
+│   ├── llm/
+│   │   ├── index.ts                # Provider-agnostic interface: loads prompt config, builds user message, parses and validates response, logs to Sentry
+│   │   ├── types.ts                # Shared LLMProvider interface and response types
+│   │   └── providers/
+│   │       ├── anthropic.ts        # Anthropic SDK invocation
+│   │       └── gemini.ts           # Gemini SDK invocation (placeholder)
+│   └── wearables/
+│       ├── index.ts                # Provider-agnostic interface: fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext
+│       ├── types.ts                # Shared types: WearableMetrics, WearableBaseline, NormalizedDailyMetric
 │       └── providers/
-│           ├── anthropic.ts        # Anthropic SDK invocation
-│           └── gemini.ts           # Gemini SDK invocation (placeholder)
+│           └── oura.ts             # Oura API calls, token refresh, field mapping
 ├── app/api/
 │   ├── users/route.ts              # POST /api/users, GET /api/users
 │   ├── check-ins/
 │   │   └── route.ts                # POST /api/check-ins, GET /api/check-ins?date=, DELETE /api/check-ins?date=
-│   └── recommendations/
-│       └── route.ts                # GET /api/recommendations?date=
+│   ├── recommendations/
+│   │   └── route.ts                # GET /api/recommendations?date=
+│   └── wearables/
+│       ├── route.ts                # GET /api/wearables
+│       └── oura/
+│           ├── authorize/route.ts  # GET /api/wearables/oura/authorize
+│           └── callback/route.ts   # GET /api/wearables/oura/callback (OAuth redirect target)
 ├── prisma/
 │   ├── schema.prisma
 │   └── migrations/
@@ -119,6 +131,8 @@ The only API calls in each flow are:
 - `POST /api/users` — once, at onboarding completion
 - `POST /api/check-ins` — once, at check-in completion
 
+**Exception — Oura connect step:** The optional Oura connect step in onboarding requires a browser redirect to Oura's authorization server. This is a departure from the purely client-side architecture. The PKCE code verifier is stored in `sessionStorage` (not localStorage) to survive the redirect within the same tab; only the code verifier requires client-side storage. The `state` parameter encodes both a CSRF nonce and the `deviceId` as an encrypted JSON payload, allowing the callback route to identify the user server-side without any session or header (the callback is a browser redirect from Oura and carries no `X-Device-ID`). After the OAuth callback, the browser is redirected back to `/onboarding?wearable=connected`, and the onboarding page detects this param on mount to show the confirmation screen. React state from before the redirect is not recoverable; the confirmation screen is a terminal step that does not depend on prior React state.
+
 If the user refreshes mid-flow or after a submission failure, React state is lost and the flow restarts from the beginning. This is acceptable for the current implementation. The retry CTA on error screens re-submits the same API call — upsert semantics on both endpoints mean this is safe regardless of whether the previous attempt partially succeeded.
 
 ---
@@ -138,13 +152,15 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  deviceId        String           @unique @map("device_id")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  profile         UserProfile?
-  events          Event[]
-  checkIns        CheckIn[]
-  recommendations Recommendation[]
+  id                 String               @id @default(uuid())
+  deviceId           String               @unique @map("device_id")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  profile            UserProfile?
+  events             Event[]
+  checkIns           CheckIn[]
+  recommendations    Recommendation[]
+  wearableConnections WearableConnection[]
+  wearableMetrics    WearableDailyMetric[]
 
   @@map("users")
 }
@@ -186,7 +202,7 @@ model CheckIn {
   yesterdayWorkoutDescription String?               @map("yesterday_workout_description")
   yesterdayWorkoutFeedback    String?               @map("yesterday_workout_feedback")
   todaysPlannedWorkout        String                @map("todays_planned_workout")
-  sleepScore                  Int                   @map("sleep_score")
+  sleepSatisfaction           Int                   @map("sleep_satisfaction")  // renamed from sleep_score in v0.1.1
   feelScore                   Int                   @map("feel_score")
   periodStartedToday          Boolean?              @map("period_started_today")
   cycleDay                    Int?                  @map("cycle_day")
@@ -243,6 +259,49 @@ model LlmInferenceLog {
   @@map("llm_inference_logs")
 }
 
+model WearableConnection {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  user           User             @relation(fields: [userId], references: [id])
+  provider       WearableProvider
+  accessToken    String           @map("access_token") @db.Text
+  refreshToken   String           @map("refresh_token") @db.Text
+  tokenExpiresAt DateTime         @map("token_expires_at")
+  status         ConnectionStatus @default(active)
+  connectedAt    DateTime         @default(now()) @map("connected_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  metrics        WearableDailyMetric[]
+
+  @@unique([userId, provider])
+  @@map("wearable_connections")
+}
+
+model WearableDailyMetric {
+  id                   String             @id @default(uuid())
+  userId               String             @map("user_id")
+  user                 User               @relation(fields: [userId], references: [id])
+  connectionId         String             @map("connection_id")
+  connection           WearableConnection @relation(fields: [connectionId], references: [id])
+  provider             WearableProvider
+  metricDate           DateTime           @map("metric_date") @db.Date
+  readinessScore       Int?               @map("readiness_score")
+  hrvAvg               Float?             @map("hrv_avg")
+  restingHeartRate     Int?               @map("resting_heart_rate")
+  sleepScore           Int?               @map("sleep_score")
+  sleepDurationMinutes Int?               @map("sleep_duration_minutes")
+  deepSleepMinutes     Int?               @map("deep_sleep_minutes")
+  remSleepMinutes      Int?               @map("rem_sleep_minutes")
+  sleepEfficiency      Float?             @map("sleep_efficiency")
+  bodyTempDeviation    Float?             @map("body_temp_deviation")
+  rawData              Json               @map("raw_data")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  @@unique([userId, provider, metricDate])
+  @@index([userId, provider])
+  @@index([userId, metricDate])
+  @@map("wearable_daily_metrics")
+}
+
 enum TrainingGoal {
   race
   non_race
@@ -268,7 +327,23 @@ enum RecommendationType {
   modify
   rest
 }
+
+enum WearableProvider {
+  oura
+}
+
+enum ConnectionStatus {
+  active
+  inactive
+}
 ```
+
+### Migration notes
+
+`sleep_score` is renamed to `sleep_satisfaction` in the `check_ins` table. This requires:
+1. A Prisma migration that renames the column (using `ALTER TABLE check_ins RENAME COLUMN sleep_score TO sleep_satisfaction`)
+2. Any existing rows retain their values — the integer range and semantics are identical
+3. The LLM prompt config must be updated to use the new field label ("sleep satisfaction (1–5, subjective)" instead of "sleep score (1–5)")
 
 ### Key indexes and constraints
 
@@ -284,6 +359,10 @@ Prisma `@unique` directives automatically create unique indexes. Additional non-
 - `events.user_id`: non-unique index — for querying a user's events
 - `llm_inference_logs.recommendation_id`: unique index (auto-created by `@unique`)
 - `prompt_configs.version`: unique index (auto-created by `@unique`)
+- `wearable_connections.(user_id, provider)`: composite unique index (auto-created by `@@unique`) — one connection per user per provider
+- `wearable_daily_metrics.(user_id, provider, metric_date)`: composite unique index (auto-created by `@@unique`) — used for upsert
+- `wearable_daily_metrics.(user_id, provider)`: non-unique index — for baseline queries
+- `wearable_daily_metrics.(user_id, metric_date)`: non-unique index — for date-scoped lookups
 
 ---
 
@@ -329,7 +408,7 @@ Creates or updates a user, user profile, and first event (if training for a race
 ---
 
 ### POST /api/check-ins
-Submits today's check-in, calculates cycle day, generates a recommendation, and persists everything atomically. Upserts on `(user_id, check_in_date)`.
+Submits today's check-in, calculates cycle day, fetches and processes wearable data (if connected), generates a recommendation, and persists everything atomically. Upserts on `(user_id, check_in_date)`.
 
 **Request body:**
 ```typescript
@@ -339,7 +418,7 @@ Submits today's check-in, calculates cycle day, generates a recommendation, and 
   yesterdayWorkoutDescription?: string
   yesterdayWorkoutFeedback?: string
   todaysPlannedWorkout: string
-  sleepScore: number              // 1–5
+  sleepSatisfaction: number       // 1–5 (subjective satisfaction with sleep; renamed from sleepScore in v0.1.1)
   feelScore: number               // 1–5
   periodStartedToday?: boolean
   stressors?: string
@@ -352,12 +431,16 @@ Submits today's check-in, calculates cycle day, generates a recommendation, and 
 1. Resolve user from `X-Device-ID`
 2. Validate inputs (see Input validation)
 3. Calculate `cycleDay`
-4. Fetch active prompt config (latest by `created_at`)
-5. Fetch rolling history (last 14 check-ins) for LLM context
-6. Call LLM, measure latency
-7. Parse LLM response
-8. Upsert check-in, upsert recommendation, insert LLM inference log — all in a single transaction
-9. Return recommendation to client
+4. If user has an active wearable connection: call the Oura API for today's metrics and upsert the result to `wearable_daily_metrics`. If the Oura API returns no data for today (not yet synced) or fails, store null for use in step 6. The entire wearable enrichment block (steps 4 and 6) is wrapped in a single try/catch; any error is logged to Sentry and the check-in proceeds without wearable context.
+5. Fetch active prompt config (latest by `created_at`)
+6. If user has an active wearable connection: compute 90-day baseline from stored rows using `computeBaseline`, then call `formatLLMContext` with the baseline and `wearable_thresholds` from the prompt config's `additional_params`. Append the formatted context to the LLM user message. If today's metrics were unavailable (null from step 4), pass fallback context (baseline only). See `docs/specs/wearable-integration.md` for full fallback behavior.
+7. Fetch rolling history (last 14 check-ins) for LLM context
+8. Call LLM with enriched context, measure latency
+9. Parse LLM response
+10. Upsert check-in, upsert recommendation, insert LLM inference log — all in a single transaction
+11. Return recommendation to client
+
+**Note on wearable sync approach:** Today's Oura data is fetched live at check-in submission time (steps 4 and 6) rather than by a background polling job. This is a deliberate simplification for v0.1.1. The planned migration is Oura webhooks, which will push data ~30 seconds after ring sync and eliminate the live fetch entirely. The webhook route and registration will be added as part of that future version.
 
 **Error:** If LLM call fails or response cannot be parsed, the check-in record is retained and `503` is returned with a retryable error payload. The client re-submits `POST /api/check-ins` on retry — upsert semantics make this safe.
 
@@ -381,6 +464,85 @@ Deletes the check-in for the given date and its associated recommendation and LL
 Returns the recommendation for the given date.
 
 **Response:** `200` with `{ recommendation: <data> }` if a recommendation exists, or `200` with `{ recommendation: null }` if not.
+
+---
+
+### GET /api/wearables
+Returns the authenticated user's wearable connections, including status for each. An empty `connections` array means no wearables are connected.
+
+**Response:**
+```typescript
+{
+  connections: Array<{
+    provider: 'oura'
+    status: 'active' | 'inactive'
+    connectedAt: string  // ISO timestamp
+  }>
+}
+```
+
+---
+
+### GET /api/wearables/oura/authorize
+Generates and returns an Oura OAuth 2.0 authorization URL with PKCE. Called by the client when the user taps "Connect Oura Ring."
+
+**Response:**
+```typescript
+{
+  authorizationUrl: string
+  codeVerifier: string  // encrypted; client stores in sessionStorage
+}
+```
+
+The `state` parameter is an encrypted JSON payload `{ nonce: randomUUID(), deviceId }` generated via `lib/crypto.ts`, where `deviceId` is read from the `X-Device-ID` header of the authorize request. It is embedded directly in the authorization URL. The client stores only `codeVerifier` in `sessionStorage`; the state requires no client-side storage because it is decrypted server-side by the callback to both validate the CSRF nonce and identify the user.
+
+---
+
+### GET /api/wearables/oura/callback
+OAuth 2.0 redirect target registered with Oura. Receives `code` and `state` query params after user authorization. This is a Next.js route handler that performs a server-side redirect after processing.
+
+**Behavior:**
+1. Decrypt the `state` query param using `lib/crypto.ts`; parse the JSON to extract `nonce` and `deviceId` (decryption failure or non-JSON value redirects to error); look up the user by `deviceId` (unknown device ID redirects to error)
+2. Exchange `code` for tokens via `POST https://api.ouraring.com/oauth/token`
+3. Encrypt tokens; upsert `WearableConnection` row
+4. Trigger 90-day historical backfill (synchronous; may add several seconds)
+5. Redirect to `/onboarding?wearable=connected`
+
+**On error:** Redirect to `/onboarding?wearable=error`
+
+---
+
+## Token encryption
+
+Wearable OAuth tokens (access and refresh) are encrypted before storage using AES-256-GCM.
+
+```typescript
+// lib/crypto.ts
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
+
+const ALGORITHM = 'aes-256-gcm'
+const KEY = Buffer.from(process.env.WEARABLE_TOKEN_KEY!, 'hex')  // 32-byte hex string
+
+export function encrypt(plaintext: string): string {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv(ALGORITHM, KEY, iv)
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`
+}
+
+export function decrypt(ciphertext: string): string {
+  const [ivHex, tagHex, encryptedHex] = ciphertext.split(':')
+  const iv = Buffer.from(ivHex, 'hex')
+  const tag = Buffer.from(tagHex, 'hex')
+  const encrypted = Buffer.from(encryptedHex, 'hex')
+  const decipher = createDecipheriv(ALGORITHM, KEY, iv)
+  decipher.setAuthTag(tag)
+  return decipher.update(encrypted) + decipher.final('utf8')
+}
+```
+
+If `WEARABLE_TOKEN_KEY` is not set, a Sentry error is logged and tokens are stored in plaintext. This is acceptable for local development but must never occur in production.
 
 ---
 
@@ -415,7 +577,7 @@ Validation is applied both client-side (immediate UI feedback) and server-side (
 | `yesterdayWorkoutType` | Required if yesterday question is shown | Must be `planned`, `suggested`, or `other` if provided |
 | `yesterdayWorkoutDescription` | Required if type is "other", 1–280 chars | Required if type is `other`, 1–280 chars |
 | `yesterdayWorkoutFeedback` | Optional, 0–280 chars | Optional, max 280 chars |
-| `sleepScore` | Required, integer 1–5 | Required, integer 1–5 |
+| `sleepSatisfaction` | Required, integer 1–5 | Required, integer 1–5 |
 | `feelScore` | Required, integer 1–5 | Required, integer 1–5 |
 | `periodStartedToday` | Required if menstruating (boolean tap) | Boolean if provided, null otherwise |
 | `stressors` | Optional, 0–280 chars | Optional, max 280 chars |
@@ -493,6 +655,10 @@ The system prompt must instruct the LLM to:
 - Account for proximity to goal race (taper logic in final 2 weeks)
 - Respond with JSON only — no preamble, no markdown
 - Never use em-dashes in any generated text
+- Treat wearable data as objective context, not the sole decision input
+- Recognize that subjective feel and device data can legitimately diverge
+- Not cite specific numeric values from wearable data in user-facing rationale unless directly relevant
+- Weight subjective inputs more heavily when today's wearable data is absent (flagged in the context block)
 
 ### Error handling
 
@@ -504,6 +670,36 @@ The system prompt must instruct the LLM to:
 | Invalid `recommendation_type` | Log to Sentry, return `503`, retain check-in record |
 
 In all error cases the check-in record is persisted. The client shows a retry option that re-submits `POST /api/check-ins` — upsert semantics ensure this is safe.
+
+---
+
+## Wearable integration
+
+For full design decisions, OAuth flow, field mapping, baseline computation, LLM context format, and fallback behavior, see `docs/specs/wearable-integration.md`.
+
+### Provider abstraction
+
+`lib/wearables/index.ts` provides a provider-agnostic interface. Adding a second wearable provider requires:
+1. Adding the provider value to the `WearableProvider` enum
+2. Adding a new provider module at `lib/wearables/providers/[provider].ts` that implements the shared interface
+3. Defining the field mapping from the provider's API response to `WearableDailyMetric` columns
+4. Registering the provider's OAuth endpoints and scopes
+
+No structural schema changes are required.
+
+### Oura-specific behavior
+
+- OAuth 2.0 with PKCE
+- Token expiry: 24 hours; refresh using stored `refresh_token`
+- On refresh failure: mark connection `inactive`, proceed without wearable data
+- Historical backfill: 90 days, triggered synchronously on OAuth callback
+- Daily sync: today's data fetched live during `POST /api/check-ins`, upserted to `wearable_daily_metrics` before LLM context is built
+- API base URL: `https://api.ouraring.com/v2`
+- Endpoints used: `/usercollection/daily_readiness`, `/usercollection/daily_sleep`
+
+### Baseline computation
+
+At check-in submission time, for each metric, `AVG(metric_value)` is computed over the last 90 days of stored rows for that user and provider where the value is not null. Requires a minimum of 14 non-null rows per metric; metrics below this threshold are omitted from LLM context. Computation happens inline in `POST /api/check-ins`; no cron job or stored baseline table.
 
 ---
 
@@ -520,6 +716,10 @@ In all error cases the check-in record is persisted. The client shows a retry op
 | `SENTRY_ORG` | Sentry organization slug — used by `next.config.mjs` for source map uploads at build time | No |
 | `SENTRY_PROJECT` | Sentry project slug — used by `next.config.mjs` for source map uploads at build time | No |
 | `NEXT_PUBLIC_APP_URL` | Public app URL | No |
+| `OURA_CLIENT_ID` | Oura OAuth client ID | Yes (when Oura is enabled) |
+| `OURA_CLIENT_SECRET` | Oura OAuth client secret | Yes (when Oura is enabled) |
+| `OURA_REDIRECT_URI` | Oura OAuth callback URL (must match Oura developer portal registration) | Yes (when Oura is enabled) |
+| `WEARABLE_TOKEN_KEY` | 32-byte hex key for AES-256-GCM token encryption | Yes (when any wearable is enabled) |
 
 Local development uses `.env.local`. Production variables are set in the Vercel dashboard.
 
@@ -533,6 +733,9 @@ Sentry is initialized in `instrumentation.ts` and used for error logging only.
 - LLM response parse failures (include raw response in Sentry context)
 - LLM API errors (include status code and model identifier)
 - Any `POST /api/check-ins` failure after the check-in record has been persisted
+- Oura token refresh failures (include user ID and error response)
+- Oura API errors during metric fetches (include endpoint and status code)
+- Missing `WEARABLE_TOKEN_KEY` in production (token stored in plaintext)
 
 ---
 
@@ -553,6 +756,8 @@ npm run dev
 ```
 
 The seed script creates the initial `PromptConfig` row (version `1.0.0`) so the app has a prompt to fetch on first run. The prompt text for `1.0.0` is defined in `prisma/seed.ts`.
+
+For Oura integration in local development, set `OURA_CLIENT_ID`, `OURA_CLIENT_SECRET`, `OURA_REDIRECT_URI` (pointing to `localhost`), and `WEARABLE_TOKEN_KEY` in `.env.local`. The `OURA_REDIRECT_URI` must also be registered in the Oura developer portal as an allowed redirect URI.
 
 ---
 
@@ -581,3 +786,13 @@ Neon Postgres connection pooling is used in production via the `@neondatabase/se
 **Prompt config is fetched at inference time from the database.** The latest row by `created_at` is used. This allows prompt and parameter updates without redeployment, with every inference permanently traceable to the exact config that generated it.
 
 **No authentication middleware in the current implementation.** All user resolution is per-request via `X-Device-ID`. This will be replaced with proper auth in a future version.
+
+**Wearable data is fetched live at check-in submission time, not by a background cron.** `POST /api/check-ins` calls the Oura API for today's data, upserts the result to `wearable_daily_metrics`, then reads from the stored row for LLM context. This keeps the v0.1.1 architecture simple at the cost of added latency on check-in submission when Oura data is available. The planned migration is Oura webhooks, which will push data ~30 seconds after ring sync and eliminate the live fetch entirely. The webhook route and registration will be added as part of that future version.
+
+**Wearable baseline is computed on-demand, not stored.** Rolling 90-day averages are calculated inline during `POST /api/check-ins` from raw `wearable_daily_metrics` rows. This avoids a separate write path, cache invalidation, and stale-data risk. At current user scale, the query adds negligible latency.
+
+**Oura OAuth uses server-side PKCE generation.** The code verifier is generated server-side in `GET /api/wearables/oura/authorize`, encrypted, and returned to the client for `sessionStorage`. This keeps the client thin and consistent with Láyo's architecture pattern of pushing logic server-side where possible.
+
+**Provider-agnostic wearable tables.** `wearable_connections` and `wearable_daily_metrics` use a `provider` enum rather than Oura-specific naming. Adding a second provider is a configuration and mapping exercise — no schema migration required beyond adding the enum value.
+
+**`sleep_score` renamed to `sleep_satisfaction` in v0.1.1.** The column rename reflects the semantic change from an objective quality rating to a subjective satisfaction rating. Existing data is preserved; the integer values remain valid under the new interpretation.

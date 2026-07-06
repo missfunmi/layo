@@ -26,20 +26,20 @@ The following MCP servers are connected to this Claude Code session:
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript (strict mode) |
-| Styling | Tailwind CSS |
-| ORM | Prisma |
-| Database (production) | Neon Postgres (Vercel integration) |
-| Database (development) | Local Postgres (`layo_dev`) |
-| Database (test) | Local Postgres (`layo_test`) |
-| LLM | Provider-abstracted via `lib/llm/` (default: Anthropic API) |
-| Hosting | Vercel |
-| Error logging | Sentry (`instrumentation.ts`) |
-| Icons | Tabler Icons webfont |
-| Testing | Vitest + React Testing Library |
+| Layer                  | Technology                                                  |
+| ---------------------- | ----------------------------------------------------------- |
+| Framework              | Next.js 14 (App Router)                                     |
+| Language               | TypeScript (strict mode)                                    |
+| Styling                | Tailwind CSS                                                |
+| ORM                    | Prisma                                                      |
+| Database (production)  | Neon Postgres (Vercel integration)                          |
+| Database (development) | Local Postgres (`layo_dev`)                                 |
+| Database (test)        | Local Postgres (`layo_test`)                                |
+| LLM                    | Provider-abstracted via `lib/llm/` (default: Anthropic API) |
+| Hosting                | Vercel                                                      |
+| Error logging          | Sentry (`instrumentation.ts`)                               |
+| Icons                  | Tabler Icons webfont                                        |
+| Testing                | Vitest + React Testing Library                              |
 
 ## Key docs
 
@@ -137,7 +137,7 @@ git fetch origin && git checkout main && git pull origin main
 ## Per-issue workflow
 If you are the implementing agent, for each issue:
 
-1. Use the Linear MCP to find the next unstarted issue in the v0.1 project containing the label "Claude", assign it, and mark it In Progress. Do not pick an issue that does not contain the "Claude" label. If you were working on a current issue that is still marked as "In Progress" or "In Review" and not Done, double-check with the user before proceeding
+1. Use the Linear MCP to find the next unstarted issue in the v0.1.1 project containing the label "Claude", assign it, and mark it In Progress. Do not pick an issue that does not contain the "Claude" label. If you were working on a current issue that is still marked as "In Progress" or "In Review" and not Done, double-check with the user before proceeding
 2. If the issue is labeled "Bug", create a bugfix branch: `bugfix/LAYO-[ID]-[short-description]` off the latest `main` branch. Otherwise, if the issue is a feature, create a feature branch: `feature/LAYO-[ID]-[short-description]` off the latest `main` branch.
 3. Implement following the `superpowers:test-driven-development` skill for features and `superpowers:systematic-debugging` skill for bugs
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Láyo - Onboarding Screens</title>
+  <title>Láyo - Onboarding Screens (v0.1.2)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -39,6 +39,13 @@
     .close-btn { display: flex; align-items: center; justify-content: center; padding: 8px; color: #B4B2A9; cursor: pointer; flex-shrink: 0; }
     .confirm-icon { width: 60px; height: 60px; border-radius: 50%; background: #E1F5EE; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #0F6E56; }
 
+    .oura-connect-cta { width: 100%; padding: 15px; border-radius: 100px; border: none; background: #0F6E56; color: #fff; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 14px; }
+    .oura-skip { font-family: 'Inter', sans-serif; font-size: 12px; color: #B4B2A9; text-align: center; cursor: pointer; background: none; border: none; display: block; width: 100%; }
+    .oura-connected-row { background: #E1F5EE; border: 1.5px solid #0F6E56; border-radius: 14px; padding: 13px 15px; display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+    .oura-connected-icon { width: 28px; height: 28px; border-radius: 50%; background: #0F6E56; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
+    .oura-connected-label { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #085041; }
+    .oura-error-banner { background: #FAECE7; border: 1.5px solid #F0997B; border-radius: 12px; padding: 10px 13px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 18px; }
+    .oura-error-banner-text { font-family: 'Inter', sans-serif; font-size: 12px; color: #993C1D; line-height: 1.5; }
     .error-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
     .error-icon { width: 56px; height: 56px; border-radius: 50%; background: #FAECE7; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #D85A30; }
     .error-heading { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; color: #2C2C2A; margin-bottom: 8px; }
@@ -134,7 +141,7 @@
       <div class="pb">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
           <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
-          <div class="dots" style="margin-bottom:0;flex:1;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+          <div class="dots" style="margin-bottom:0;flex:1;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
           <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
         </div>
         <div class="qh">What are you training for?</div>
@@ -174,6 +181,78 @@
     </div>
   </div>
 
+
+  <!-- Connect Oura Ring (default / not yet connected) -->
+  <div class="screen-col">
+    <div class="screen-name">Connect Oura Ring</div>
+    <div class="phone">
+      <div class="ph"><div class="wm">láyo</div></div>
+      <div class="pb">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+          <div class="dots" style="margin-bottom:0;flex:1;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        </div>
+        <div class="qh" style="margin-bottom:10px;">Connect your Oura Ring</div>
+        <div class="qs" style="margin-bottom:32px;">Láyo can use your readiness, HRV, and sleep data to give you sharper recommendations. You don't need Oura, but if you have one, this helps.</div>
+        <div style="margin-top:auto;">
+          <button class="oura-connect-cta">Connect Oura Ring</button>
+          <button class="oura-skip">Skip for now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connect Oura Ring (already connected) -->
+  <div class="screen-col">
+    <div class="screen-name">Connect Oura Ring — connected</div>
+    <div class="phone">
+      <div class="ph"><div class="wm">láyo</div></div>
+      <div class="pb">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+          <div class="dots" style="margin-bottom:0;flex:1;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        </div>
+        <div class="qh" style="margin-bottom:10px;">Connect your Oura Ring</div>
+        <div class="qs" style="margin-bottom:24px;">Láyo can use your readiness, HRV, and sleep data to give you sharper recommendations. You don't need Oura, but if you have one, this helps.</div>
+        <div class="oura-connected-row">
+          <div class="oura-connected-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="oura-connected-label">Oura Ring connected</div>
+        </div>
+        <div style="margin-top:auto;">
+          <button class="oura-connect-cta">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connect Oura Ring (error) -->
+  <div class="screen-col">
+    <div class="screen-name">Connect Oura Ring — error</div>
+    <div class="phone">
+      <div class="ph"><div class="wm">láyo</div></div>
+      <div class="pb">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+          <div class="dots" style="margin-bottom:0;flex:1;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+          <div class="close-btn"><svg width="16" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        </div>
+        <div class="qh" style="margin-bottom:10px;">Connect your Oura Ring</div>
+        <div class="qs" style="margin-bottom:20px;">Láyo can use your readiness, HRV, and sleep data to give you sharper recommendations. You don't need Oura, but if you have one, this helps.</div>
+        <div class="oura-error-banner">
+          <svg style="flex-shrink:0;margin-top:1px;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D85A30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="oura-error-banner-text">Couldn't connect Oura. Try again or skip for now.</div>
+        </div>
+        <div style="margin-top:auto;">
+          <button class="oura-connect-cta">Connect Oura Ring</button>
+          <button class="oura-skip">Skip for now</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Error: onboarding submission failed -->
   <div class="screen-col">
