@@ -27,7 +27,7 @@ const RECOMMENDATION = {
   rationale: 'You slept well and are feeling good.',
 }
 const CHECK_IN = {
-  sleepScore: 5,
+  sleepSatisfaction: 5,
   feelScore: 4,
   cycleDay: 7,
   todaysPlannedWorkout: '10mi tempo run',
@@ -106,7 +106,7 @@ describe('app/recommendation/page.tsx — success state', () => {
     })
   })
 
-  test('passes sleepScore from check-in to RecommendationView', async () => {
+  test('passes sleepSatisfaction from check-in to RecommendationView', async () => {
     mockFetchSuccess()
     render(<RecommendationPage />)
     await waitFor(() => {

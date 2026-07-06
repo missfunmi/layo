@@ -15,7 +15,7 @@ interface RecommendationData {
 }
 
 interface CheckInData {
-  sleepScore: number
+  sleepSatisfaction: number
   feelScore: number
   cycleDay?: number | null
   todaysPlannedWorkout: string

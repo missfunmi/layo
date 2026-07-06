@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     yesterdayWorkoutDescription,
     yesterdayWorkoutFeedback,
     todaysPlannedWorkout,
-    sleepScore,
+    sleepSatisfaction,
     feelScore,
     periodStartedToday,
     stressors,
@@ -114,9 +114,9 @@ export async function POST(request: NextRequest) {
     return bad('todaysPlannedWorkout must be 1-280 characters')
   }
 
-  if (sleepScore === undefined || sleepScore === null) return bad('sleepScore is required')
-  if (typeof sleepScore !== 'number' || !Number.isInteger(sleepScore) || sleepScore < 1 || sleepScore > 5) {
-    return bad('sleepScore must be an integer between 1 and 5')
+  if (sleepSatisfaction === undefined || sleepSatisfaction === null) return bad('sleepSatisfaction is required')
+  if (typeof sleepSatisfaction !== 'number' || !Number.isInteger(sleepSatisfaction) || sleepSatisfaction < 1 || sleepSatisfaction > 5) {
+    return bad('sleepSatisfaction must be an integer between 1 and 5')
   }
 
   if (feelScore === undefined || feelScore === null) return bad('feelScore is required')
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     select: {
       checkInDate: true,
       periodStartedToday: true,
-      sleepScore: true,
+      sleepSatisfaction: true,
       feelScore: true,
       todaysPlannedWorkout: true,
       yesterdayWorkoutType: true,
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     todaysCheckIn: {
       checkInDate,
       todaysPlannedWorkout: trimmedWorkout,
-      sleepScore,
+      sleepSatisfaction,
       feelScore,
       yesterdayWorkoutType: yesterdayWorkoutType ?? null,
       yesterdayWorkoutDescription: yesterdayWorkoutDescription ?? null,
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
     },
     recentHistory: priorCheckIns.map((c) => ({
       checkInDate: c.checkInDate.toISOString().slice(0, 10),
-      sleepScore: c.sleepScore,
+      sleepSatisfaction: c.sleepSatisfaction,
       feelScore: c.feelScore,
       todaysPlannedWorkout: c.todaysPlannedWorkout,
       yesterdayWorkoutType: c.yesterdayWorkoutType,
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         checkInDate: new Date(checkInDate),
         todaysPlannedWorkout: trimmedWorkout,
-        sleepScore: sleepScore as number,
+        sleepSatisfaction: sleepSatisfaction as number,
         feelScore: feelScore as number,
         yesterdayWorkoutType: yesterdayWorkoutType as 'planned' | 'suggested' | 'other' | undefined ?? undefined,
         yesterdayWorkoutDescription: yesterdayWorkoutDescription as string | undefined ?? undefined,
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
       },
       update: {
         todaysPlannedWorkout: trimmedWorkout,
-        sleepScore: sleepScore as number,
+        sleepSatisfaction: sleepSatisfaction as number,
         feelScore: feelScore as number,
         yesterdayWorkoutType: (yesterdayWorkoutType as 'planned' | 'suggested' | 'other') ?? null,
         yesterdayWorkoutDescription: (yesterdayWorkoutDescription as string) ?? null,

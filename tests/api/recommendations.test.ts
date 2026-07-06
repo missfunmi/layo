@@ -35,7 +35,7 @@ describe('GET /api/recommendations', () => {
         userId: testUser.id,
         checkInDate: new Date(TODAY),
         todaysPlannedWorkout: '5km easy run',
-        sleepScore: 4,
+        sleepSatisfaction: 4,
         feelScore: 4,
       },
     })
@@ -68,7 +68,7 @@ describe('GET /api/recommendations', () => {
         userId: testUser.id,
         checkInDate: new Date(TODAY),
         todaysPlannedWorkout: '10km tempo',
-        sleepScore: 2,
+        sleepSatisfaction: 2,
         feelScore: 2,
       },
     })

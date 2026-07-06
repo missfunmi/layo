@@ -22,7 +22,7 @@ const REST_REC = {
   rationale: 'Poor sleep, a 2 on feel, and you have been fighting a cold.',
 }
 const BASE_CHECK_IN = {
-  sleepScore: 5,
+  sleepSatisfaction: 5,
   feelScore: 3,
   todaysPlannedWorkout: '10mi tempo run',
 }

@@ -16,7 +16,7 @@ const AS_WRITTEN_REC = {
   rationale: 'You slept well.',
 }
 const BASE_CHECK_IN = {
-  sleepScore: 5,
+  sleepSatisfaction: 5,
   feelScore: 4,
   todaysPlannedWorkout: '10mi tempo run',
 }

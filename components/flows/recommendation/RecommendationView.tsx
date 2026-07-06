@@ -13,7 +13,7 @@ interface Recommendation {
 }
 
 interface CheckIn {
-  sleepScore: number
+  sleepSatisfaction: number
   feelScore: number
   cycleDay?: number | null
   todaysPlannedWorkout: string
@@ -146,7 +146,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
           <div className="font-sans text-[10px] font-medium uppercase tracking-[0.08em] text-[#B4B2A9] mb-[10px]">
             Today&apos;s check-in
           </div>
-          <SummaryRow label="Sleep" value={`${safeCheckIn.sleepScore} / 5`} />
+          <SummaryRow label="Sleep" value={`${safeCheckIn.sleepSatisfaction} / 5`} />
           <SummaryRow label="Feel" value={`${safeCheckIn.feelScore} / 5`} />
           {safeCheckIn.cycleDay != null && (
             <SummaryRow label="Cycle day" value={String(safeCheckIn.cycleDay)} />

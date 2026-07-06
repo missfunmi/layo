@@ -149,14 +149,14 @@ describe('CheckInFlow — generating screen: API submission', () => {
     expect((opts.headers as Record<string, string>)['X-Device-ID']).toBe('test-device-id')
   })
 
-  test('sends correct checkInDate, todaysPlannedWorkout, sleepScore, feelScore', async () => {
+  test('sends correct checkInDate, todaysPlannedWorkout, sleepSatisfaction, feelScore', async () => {
     vi.mocked(global.fetch).mockResolvedValue(new Response('{}', { status: 201 }))
     navigateToGenerating()
     await waitFor(() => expect(global.fetch).toHaveBeenCalled())
     const [, opts] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit]
     const body = JSON.parse(opts.body as string)
     expect(body.todaysPlannedWorkout).toBe('10mi run')
-    expect(body.sleepScore).toBe(4)
+    expect(body.sleepSatisfaction).toBe(4)
     expect(body.feelScore).toBe(3)
     expect(body.checkInDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })

@@ -30,7 +30,7 @@ const REST_REC = {
   rationale: 'Poor sleep and you are fighting a cold.',
 }
 const BASE_CHECK_IN = {
-  sleepScore: 5,
+  sleepSatisfaction: 5,
   feelScore: 4,
   todaysPlannedWorkout: '10mi tempo run',
   yesterdayWorkoutType: 'planned' as const,
