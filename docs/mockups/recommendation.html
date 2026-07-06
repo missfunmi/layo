@@ -1,283 +1,572 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Láyo , Recommendation Screens</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #E8E6DF; font-family: 'Inter', sans-serif; padding: 48px 32px; }
-    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888780; margin-bottom: 32px; text-align: center; }
-    .screens-row { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
-    .screen-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .screen-name { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #B4B2A9; }
-    .phone { width: 320px; min-height: 620px; background: #F1EFE8; border-radius: 36px; border: 0.5px solid rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-    .ph { padding: 22px 24px 0; display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
-    .wm { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; color: #0F6E56; letter-spacing: -0.5px; }
-    .dt { font-family: 'Inter', sans-serif; font-size: 11px; color: #B4B2A9; }
-    .pb { flex: 1; padding: 22px 24px 26px; display: flex; flex-direction: column; }
-    .verdict-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; margin-bottom: 10px; }
-    .verdict-heading { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; line-height: 1.2; color: #2C2C2A; margin-bottom: 14px; }
-    .verdict-divider { height: 2px; border-radius: 1px; margin-bottom: 16px; }
-    .rationale { font-family: 'Inter', sans-serif; font-size: 14px; color: #5F5E5A; line-height: 1.65; margin-bottom: 22px; }
-    .summary-card { background: #fff; border: 0.5px solid #D3D1C7; border-radius: 16px; padding: 14px 16px; margin-bottom: auto; }
-    .summary-label { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; color: #B4B2A9; text-transform: uppercase; margin-bottom: 10px; }
-    .summary-row { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Inter', sans-serif; font-size: 12px; color: #888780; padding: 4px 0; border-bottom: 0.5px solid #F1EFE8; }
-    .summary-row:last-child { border-bottom: none; }
-    .summary-val { font-weight: 500; color: #2C2C2A; text-align: right; max-width: 58%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .footer { display: flex; justify-content: flex-end; padding-top: 18px; }
-    .redo-link { font-family: 'Inter', sans-serif; font-size: 12px; color: #888780; text-decoration: none; cursor: pointer; display: flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Láyo: Recommendation Screens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #e8e6df;
+        font-family: "Inter", sans-serif;
+        padding: 48px 32px;
+      }
+      h1 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #888780;
+        margin-bottom: 32px;
+        text-align: center;
+      }
+      .screens-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+      }
+      .screen-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .screen-name {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #b4b2a9;
+      }
+      .phone {
+        width: 320px;
+        min-height: 620px;
+        background: #f1efe8;
+        border-radius: 36px;
+        border: 0.5px solid rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+      .ph {
+        padding: 22px 24px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 52px;
+      }
+      .wm {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 21px;
+        color: #0f6e56;
+        letter-spacing: -0.5px;
+      }
+      .dt {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        color: #b4b2a9;
+      }
+      .pb {
+        flex: 1;
+        padding: 22px 24px 26px;
+        display: flex;
+        flex-direction: column;
+      }
+      .verdict-label {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .verdict-heading {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 1.2;
+        color: #2c2c2a;
+        margin-bottom: 14px;
+      }
+      .verdict-divider {
+        height: 2px;
+        border-radius: 1px;
+        margin-bottom: 16px;
+      }
+      .rationale {
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        color: #5f5e5a;
+        line-height: 1.65;
+        margin-bottom: 22px;
+      }
+      .summary-card {
+        background: #fff;
+        border: 0.5px solid #d3d1c7;
+        border-radius: 16px;
+        padding: 14px 16px;
+        margin-bottom: auto;
+      }
+      .summary-label {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        color: #b4b2a9;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: #888780;
+        padding: 4px 0;
+        border-bottom: 0.5px solid #f1efe8;
+      }
+      .summary-row:last-child {
+        border-bottom: none;
+      }
+      .summary-val {
+        font-weight: 500;
+        color: #2c2c2a;
+        text-align: right;
+        max-width: 58%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .footer {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 18px;
+      }
+      .redo-link {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: #888780;
+        text-decoration: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: none;
+        border: none;
+        padding: 0;
+      }
 
-    .modal-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(44,44,42,0.5);
-      border-radius: 36px;
-      display: flex;
-      align-items: flex-end;
-      padding: 0;
-      z-index: 10;
-    }
-    .modal-sheet {
-      width: 100%;
-      background: #fff;
-      border-radius: 24px 24px 36px 36px;
-      padding: 24px 24px 32px;
-    }
-    .modal-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 700;
-      font-size: 18px;
-      color: #2C2C2A;
-      margin-bottom: 8px;
-    }
-    .modal-body {
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      color: #888780;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .modal-btn-primary {
-      width: 100%;
-      padding: 14px;
-      border-radius: 100px;
-      border: none;
-      background: #D85A30;
-      color: #fff;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
-    .modal-btn-cancel {
-      width: 100%;
-      padding: 14px;
-      border-radius: 100px;
-      border: 1.5px solid #D3D1C7;
-      background: transparent;
-      color: #5F5E5A;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    .error-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 24px;
-    }
-    .error-icon {
-      width: 56px; height: 56px;
-      border-radius: 50%;
-      background: #FAECE7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 18px;
-      color: #D85A30;
-    }
-    .error-heading {
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 700;
-      font-size: 20px;
-      color: #2C2C2A;
-      margin-bottom: 8px;
-    }
-    .error-body {
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      color: #888780;
-      line-height: 1.6;
-      max-width: 220px;
-      margin-bottom: 28px;
-    }
-    .error-cta {
-      padding: 14px 28px;
-      border-radius: 100px;
-      border: none;
-      background: #0F6E56;
-      color: #fff;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-<h1>Láyo , Recommendation</h1>
-<div class="screens-row">
-
-  <!-- As written -->
-  <div class="screen-col">
-    <div class="screen-name">As written</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="verdict-label" style="color:#0F6E56;">Today's recommendation</div>
-        <div class="verdict-heading">Do your workout as planned.</div>
-        <div class="verdict-divider" style="background:#5DCAA5;"></div>
-        <div class="rationale">You slept well and you're feeling good this morning. Yesterday's run went to plan and there's nothing new weighing on you. Nothing in today's picture suggests holding back , go get it.</div>
-        <div class="summary-card">
-          <div class="summary-label">Today's check-in</div>
-          <div class="summary-row"><span>Sleep</span><span class="summary-val">5 / 5</span></div>
-          <div class="summary-row"><span>Feel</span><span class="summary-val">4 / 5</span></div>
-          <div class="summary-row"><span>Cycle day</span><span class="summary-val">7</span></div>
-          <div class="summary-row"><span>Planned workout</span><span class="summary-val">10mi tempo run</span></div>
-          <div class="summary-row"><span>Yesterday</span><span class="summary-val">Planned workout</span></div>
+      .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(44, 44, 42, 0.5);
+        border-radius: 36px;
+        display: flex;
+        align-items: flex-end;
+        padding: 0;
+        z-index: 10;
+      }
+      .modal-sheet {
+        width: 100%;
+        background: #fff;
+        border-radius: 24px 24px 36px 36px;
+        padding: 24px 24px 32px;
+      }
+      .modal-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 18px;
+        color: #2c2c2a;
+        margin-bottom: 8px;
+      }
+      .modal-body {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #888780;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+      .modal-btn-primary {
+        width: 100%;
+        padding: 14px;
+        border-radius: 100px;
+        border: none;
+        background: #d85a30;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 10px;
+      }
+      .modal-btn-cancel {
+        width: 100%;
+        padding: 14px;
+        border-radius: 100px;
+        border: 1.5px solid #d3d1c7;
+        background: transparent;
+        color: #5f5e5a;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .error-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+      }
+      .error-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #faece7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        color: #d85a30;
+      }
+      .error-heading {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        color: #2c2c2a;
+        margin-bottom: 8px;
+      }
+      .error-body {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #888780;
+        line-height: 1.6;
+        max-width: 220px;
+        margin-bottom: 28px;
+      }
+      .error-cta {
+        padding: 14px 28px;
+        border-radius: 100px;
+        border: none;
+        background: #0f6e56;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Láyo: Recommendation</h1>
+    <div class="screens-row">
+      <!-- As written -->
+      <div class="screen-col">
+        <div class="screen-name">As written</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="verdict-label" style="color: #0f6e56">
+              Today's recommendation
+            </div>
+            <div class="verdict-heading">Do your workout as planned.</div>
+            <div class="verdict-divider" style="background: #5dcaa5"></div>
+            <div class="rationale">
+              You slept well and you're feeling good this morning. Yesterday's
+              run went to plan and there's nothing new weighing on you. Nothing
+              in today's picture suggests holding back , go get it.
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Today's check-in</div>
+              <div class="summary-row">
+                <span>Sleep</span><span class="summary-val">5 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Feel</span><span class="summary-val">4 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Cycle day</span><span class="summary-val">7</span>
+              </div>
+              <div class="summary-row">
+                <span>Planned workout</span
+                ><span class="summary-val">10mi tempo run</span>
+              </div>
+              <div class="summary-row">
+                <span>Yesterday</span
+                ><span class="summary-val">Planned workout</span>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="redo-link">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+                Redo today's check-in
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="footer">
-          <button class="redo-link">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-            Redo today's check-in
-          </button>
+      </div>
+
+      <!-- Modify -->
+      <div class="screen-col">
+        <div class="screen-name">Modify</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="verdict-label" style="color: #ba7517">
+              Today's recommendation
+            </div>
+            <div class="verdict-heading">
+              Cut the run to 6 miles and keep it fully easy.
+            </div>
+            <div class="verdict-divider" style="background: #fac775"></div>
+            <div class="rationale">
+              Sleep was solid but you're sitting at a 3 this morning and you're
+              on cycle day 22. Progesterone is likely elevated, which raises
+              perceived effort. Your race is 9 days out. A shorter easy run
+              protects recovery without losing fitness.
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Today's check-in</div>
+              <div class="summary-row">
+                <span>Sleep</span><span class="summary-val">4 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Feel</span><span class="summary-val">3 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Cycle day</span><span class="summary-val">22</span>
+              </div>
+              <div class="summary-row">
+                <span>Planned workout</span
+                ><span class="summary-val">10mi tempo run</span>
+              </div>
+              <div class="summary-row">
+                <span>Yesterday</span
+                ><span class="summary-val">Planned workout</span>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="redo-link">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+                Redo today's check-in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rest -->
+      <div class="screen-col">
+        <div class="screen-name">Rest</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="verdict-label" style="color: #993c1d">
+              Today's recommendation
+            </div>
+            <div class="verdict-heading">Take a rest day today.</div>
+            <div class="verdict-divider" style="background: #f0997b"></div>
+            <div class="rationale">
+              Poor sleep, a 2 on feel, and you mentioned you've been fighting a
+              cold since yesterday. You're on cycle day 2 as well, so your body
+              is already under load. One day off now is worth three lost later.
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Today's check-in</div>
+              <div class="summary-row">
+                <span>Sleep</span><span class="summary-val">2 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Feel</span><span class="summary-val">2 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Cycle day</span><span class="summary-val">2</span>
+              </div>
+              <div class="summary-row">
+                <span>Planned workout</span
+                ><span class="summary-val">10mi tempo run</span>
+              </div>
+              <div class="summary-row">
+                <span>Stressors</span
+                ><span class="summary-val">Fighting a cold</span>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="redo-link">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+                Redo today's check-in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Redo confirmation modal -->
+      <div class="screen-col">
+        <div class="screen-name">Redo confirmation</div>
+        <div class="phone" style="position: relative">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="verdict-label" style="color: #ba7517">
+              Today's recommendation
+            </div>
+            <div class="verdict-heading">
+              Cut the run to 6 miles and keep it fully easy.
+            </div>
+            <div class="verdict-divider" style="background: #fac775"></div>
+            <div class="rationale">
+              Sleep was solid but you're sitting at a 3 this morning and you're
+              on cycle day 22. Progesterone is likely elevated, which raises
+              perceived effort. Your race is 9 days out.
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Today's check-in</div>
+              <div class="summary-row">
+                <span>Sleep</span><span class="summary-val">4 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Feel</span><span class="summary-val">3 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Cycle day</span><span class="summary-val">22</span>
+              </div>
+              <div class="summary-row">
+                <span>Planned workout</span
+                ><span class="summary-val">10mi tempo run</span>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="redo-link">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+                Redo today's check-in
+              </button>
+            </div>
+          </div>
+          <div class="modal-overlay">
+            <div class="modal-sheet">
+              <div class="modal-title">Redo today's check-in?</div>
+              <div class="modal-body">
+                This will delete your check-in and recommendation for today.
+                This cannot be undone.
+              </div>
+              <button class="modal-btn-primary">Delete and redo</button>
+              <button class="modal-btn-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error: recommendation generation failed -->
+      <div class="screen-col">
+        <div class="screen-name">Error - generation failed</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="error-state">
+            <div class="error-icon">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div class="error-heading">Something went wrong.</div>
+            <div class="error-body">
+              We saved your check-in but could not generate a recommendation.
+              Tap to try again.
+            </div>
+            <button class="error-cta">Try again</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Modify -->
-  <div class="screen-col">
-    <div class="screen-name">Modify</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="verdict-label" style="color:#BA7517;">Today's recommendation</div>
-        <div class="verdict-heading">Cut the run to 6 miles and keep it fully easy.</div>
-        <div class="verdict-divider" style="background:#FAC775;"></div>
-        <div class="rationale">Sleep was solid but you're sitting at a 3 this morning and you're on cycle day 22. Progesterone is likely elevated, which raises perceived effort. Your race is 9 days out. A shorter easy run protects recovery without losing fitness.</div>
-        <div class="summary-card">
-          <div class="summary-label">Today's check-in</div>
-          <div class="summary-row"><span>Sleep</span><span class="summary-val">4 / 5</span></div>
-          <div class="summary-row"><span>Feel</span><span class="summary-val">3 / 5</span></div>
-          <div class="summary-row"><span>Cycle day</span><span class="summary-val">22</span></div>
-          <div class="summary-row"><span>Planned workout</span><span class="summary-val">10mi tempo run</span></div>
-          <div class="summary-row"><span>Yesterday</span><span class="summary-val">Planned workout</span></div>
-        </div>
-        <div class="footer">
-          <button class="redo-link">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-            Redo today's check-in
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Rest -->
-  <div class="screen-col">
-    <div class="screen-name">Rest</div>
-    <div class="phone">
-      <div class="ph"><div class="wm">láyo</div><div class="dt">Thu Jun 25</div></div>
-      <div class="pb">
-        <div class="verdict-label" style="color:#993C1D;">Today's recommendation</div>
-        <div class="verdict-heading">Take a rest day today.</div>
-        <div class="verdict-divider" style="background:#F0997B;"></div>
-        <div class="rationale">Poor sleep, a 2 on feel, and you mentioned you've been fighting a cold since yesterday. You're on cycle day 2 as well, so your body is already under load. One day off now is worth three lost later.</div>
-        <div class="summary-card">
-          <div class="summary-label">Today's check-in</div>
-          <div class="summary-row"><span>Sleep</span><span class="summary-val">2 / 5</span></div>
-          <div class="summary-row"><span>Feel</span><span class="summary-val">2 / 5</span></div>
-          <div class="summary-row"><span>Cycle day</span><span class="summary-val">2</span></div>
-          <div class="summary-row"><span>Planned workout</span><span class="summary-val">10mi tempo run</span></div>
-          <div class="summary-row"><span>Stressors</span><span class="summary-val">Fighting a cold</span></div>
-        </div>
-        <div class="footer">
-          <button class="redo-link">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-            Redo today's check-in
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Redo confirmation modal -->
-  <div class="screen-col">
-    <div class="screen-name">Redo confirmation</div>
-    <div class="phone" style="position:relative;">
-      <div class="ph">
-        <div class="wm">láyo</div>
-        <div class="dt">Thu Jun 25</div>
-      </div>
-      <div class="pb">
-        <div class="verdict-label" style="color:#BA7517;">Today's recommendation</div>
-        <div class="verdict-heading">Cut the run to 6 miles and keep it fully easy.</div>
-        <div class="verdict-divider" style="background:#FAC775;"></div>
-        <div class="rationale">Sleep was solid but you're sitting at a 3 this morning and you're on cycle day 22. Progesterone is likely elevated, which raises perceived effort. Your race is 9 days out.</div>
-        <div class="summary-card">
-          <div class="summary-label">Today's check-in</div>
-          <div class="summary-row"><span>Sleep</span><span class="summary-val">4 / 5</span></div>
-          <div class="summary-row"><span>Feel</span><span class="summary-val">3 / 5</span></div>
-          <div class="summary-row"><span>Cycle day</span><span class="summary-val">22</span></div>
-          <div class="summary-row"><span>Planned workout</span><span class="summary-val">10mi tempo run</span></div>
-        </div>
-        <div class="footer">
-          <button class="redo-link">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-            Redo today's check-in
-          </button>
-        </div>
-      </div>
-      <div class="modal-overlay">
-        <div class="modal-sheet">
-          <div class="modal-title">Redo today's check-in?</div>
-          <div class="modal-body">This will delete your check-in and recommendation for today. This cannot be undone.</div>
-          <button class="modal-btn-primary">Delete and redo</button>
-          <button class="modal-btn-cancel">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Error: recommendation generation failed -->
-  <div class="screen-col">
-    <div class="screen-name">Error - generation failed</div>
-    <div class="phone">
-      <div class="ph">
-        <div class="wm">láyo</div>
-        <div class="dt">Thu Jun 25</div>
-      </div>
-      <div class="error-state">
-        <div class="error-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <div class="error-heading">Something went wrong.</div>
-        <div class="error-body">We saved your check-in but could not generate a recommendation. Tap to try again.</div>
-        <button class="error-cta">Try again</button>
-      </div>
-    </div>
-  </div>
-
-
-</div>
-</body>
+  </body>
 </html>
