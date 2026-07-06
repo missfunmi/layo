@@ -20,10 +20,14 @@ export function encrypt(plaintext: string): string {
 export function decrypt(ciphertext: string): string {
   const keyHex = process.env.WEARABLE_TOKEN_KEY
   if (!keyHex) {
-    throw new Error('WEARABLE_TOKEN_KEY is not set')
+    return ciphertext
   }
+  const parts = ciphertext.split(':')
+  if (parts.length !== 3) {
+    return ciphertext
+  }
+  const [ivHex, tagHex, encryptedHex] = parts
   const key = Buffer.from(keyHex, 'hex')
-  const [ivHex, tagHex, encryptedHex] = ciphertext.split(':')
   const iv = Buffer.from(ivHex, 'hex')
   const tag = Buffer.from(tagHex, 'hex')
   const encrypted = Buffer.from(encryptedHex, 'hex')

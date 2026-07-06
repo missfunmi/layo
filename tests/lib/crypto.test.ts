@@ -44,6 +44,12 @@ describe('lib/crypto', () => {
     expect(() => decrypt(ciphertext)).toThrow()
   })
 
+  test('decrypt returns ciphertext unchanged when key is set but ciphertext is not in encrypted format', async () => {
+    const { decrypt } = await import('@/lib/crypto')
+    const plaintext = 'legacy-plaintext-token'
+    expect(decrypt(plaintext)).toBe(plaintext)
+  })
+
   test('missing WEARABLE_TOKEN_KEY causes encrypt to log a Sentry error and return plaintext unchanged', async () => {
     delete process.env.WEARABLE_TOKEN_KEY
     vi.resetModules()
