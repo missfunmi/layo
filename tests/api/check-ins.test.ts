@@ -30,7 +30,7 @@ const MOCK_RECOMMENDATION = {
 const BASE_BODY = {
   checkInDate: TODAY,
   todaysPlannedWorkout: '5km easy run',
-  sleepScore: 4,
+  sleepSatisfaction: 4,
   feelScore: 4,
 }
 
@@ -115,32 +115,32 @@ describe('POST /api/check-ins', () => {
     expect(response.status).toBe(400)
   })
 
-  test('returns 400 when sleepScore is missing', async () => {
+  test('returns 400 when sleepSatisfaction is missing', async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { sleepScore: _, ...body } = BASE_BODY
+    const { sleepSatisfaction: _, ...body } = BASE_BODY
     const response = await makeRequest(handler, 'POST', '/api/check-ins', body, {
       'X-Device-ID': DEVICE_ID,
     })
     expect(response.status).toBe(400)
   })
 
-  test('returns 400 when sleepScore is 0', async () => {
+  test('returns 400 when sleepSatisfaction is 0', async () => {
     const response = await makeRequest(
       handler,
       'POST',
       '/api/check-ins',
-      { ...BASE_BODY, sleepScore: 0 },
+      { ...BASE_BODY, sleepSatisfaction: 0 },
       { 'X-Device-ID': DEVICE_ID }
     )
     expect(response.status).toBe(400)
   })
 
-  test('returns 400 when sleepScore is 6', async () => {
+  test('returns 400 when sleepSatisfaction is 6', async () => {
     const response = await makeRequest(
       handler,
       'POST',
       '/api/check-ins',
-      { ...BASE_BODY, sleepScore: 6 },
+      { ...BASE_BODY, sleepSatisfaction: 6 },
       { 'X-Device-ID': DEVICE_ID }
     )
     expect(response.status).toBe(400)
@@ -309,7 +309,7 @@ describe('POST /api/check-ins', () => {
         userId: testUser.id,
         checkInDate: new Date(YESTERDAY),
         todaysPlannedWorkout: '5km easy',
-        sleepScore: 4,
+        sleepSatisfaction: 4,
         feelScore: 4,
         periodStartedToday: true,
       },
@@ -381,7 +381,7 @@ describe('GET /api/check-ins', () => {
         userId: testUser.id,
         checkInDate: new Date(TODAY),
         todaysPlannedWorkout: '5km easy run',
-        sleepScore: 4,
+        sleepSatisfaction: 4,
         feelScore: 4,
       },
     })
@@ -394,7 +394,7 @@ describe('GET /api/check-ins', () => {
     const body = await response.json()
     expect(body.checkIn).not.toBeNull()
     expect(body.checkIn.todaysPlannedWorkout).toBe('5km easy run')
-    expect(body.checkIn.sleepScore).toBe(4)
+    expect(body.checkIn.sleepSatisfaction).toBe(4)
     expect(body.checkIn.feelScore).toBe(4)
   })
 
@@ -443,7 +443,7 @@ describe('DELETE /api/check-ins', () => {
         userId: testUser.id,
         checkInDate: new Date(TODAY),
         todaysPlannedWorkout: '5km easy run',
-        sleepScore: 4,
+        sleepSatisfaction: 4,
         feelScore: 4,
       },
     })
@@ -492,7 +492,7 @@ describe('DELETE /api/check-ins', () => {
         userId: testUser.id,
         checkInDate: new Date(TODAY),
         todaysPlannedWorkout: '5km easy run',
-        sleepScore: 4,
+        sleepSatisfaction: 4,
         feelScore: 4,
       },
     })

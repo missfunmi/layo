@@ -96,7 +96,7 @@ describe('app/page.tsx — fetch behavior', () => {
 
 describe('app/page.tsx — check-in exists', () => {
   test('redirects to /recommendation when check-in is not null', async () => {
-    mockCheckInFetch({ sleepScore: 5, feelScore: 4 })
+    mockCheckInFetch({ sleepSatisfaction: 5, feelScore: 4 })
     render(<HomePage />)
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/recommendation')

@@ -7,13 +7,15 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  deviceId        String           @unique @map("device_id")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  profile         UserProfile?
-  events          Event[]
-  checkIns        CheckIn[]
-  recommendations Recommendation[]
+  id                  String                @id @default(uuid())
+  deviceId            String                @unique @map("device_id")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  profile             UserProfile?
+  events              Event[]
+  checkIns            CheckIn[]
+  recommendations     Recommendation[]
+  wearableConnections WearableConnection[]
+  wearableMetrics     WearableDailyMetric[]
 
   @@map("users")
 }
@@ -56,7 +58,7 @@ model CheckIn {
   yesterdayWorkoutDescription String?               @map("yesterday_workout_description")
   yesterdayWorkoutFeedback    String?               @map("yesterday_workout_feedback")
   todaysPlannedWorkout        String                @map("todays_planned_workout")
-  sleepScore                  Int                   @map("sleep_score")
+  sleepSatisfaction           Int                   @map("sleep_satisfaction")
   feelScore                   Int                   @map("feel_score")
   periodStartedToday          Boolean?              @map("period_started_today")
   cycleDay                    Int?                  @map("cycle_day")
@@ -140,4 +142,56 @@ enum RecommendationType {
   as_written
   modify
   rest
+}
+
+enum WearableProvider {
+  oura
+}
+
+enum ConnectionStatus {
+  active
+  inactive
+}
+
+model WearableConnection {
+  id             String                @id @default(uuid())
+  userId         String                @map("user_id")
+  user           User                  @relation(fields: [userId], references: [id])
+  provider       WearableProvider
+  accessToken    String                @map("access_token") @db.Text
+  refreshToken   String                @map("refresh_token") @db.Text
+  tokenExpiresAt DateTime              @map("token_expires_at")
+  status         ConnectionStatus      @default(active)
+  connectedAt    DateTime              @default(now()) @map("connected_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  metrics        WearableDailyMetric[]
+
+  @@unique([userId, provider])
+  @@map("wearable_connections")
+}
+
+model WearableDailyMetric {
+  id                   String             @id @default(uuid())
+  userId               String             @map("user_id")
+  user                 User               @relation(fields: [userId], references: [id])
+  connectionId         String             @map("connection_id")
+  connection           WearableConnection @relation(fields: [connectionId], references: [id])
+  provider             WearableProvider
+  metricDate           DateTime           @map("metric_date") @db.Date
+  readinessScore       Int?               @map("readiness_score")
+  hrvAvg               Float?             @map("hrv_avg")
+  restingHeartRate     Int?               @map("resting_heart_rate")
+  sleepScore           Int?               @map("sleep_score")
+  sleepDurationMinutes Int?               @map("sleep_duration_minutes")
+  deepSleepMinutes     Int?               @map("deep_sleep_minutes")
+  remSleepMinutes      Int?               @map("rem_sleep_minutes")
+  sleepEfficiency      Float?             @map("sleep_efficiency")
+  bodyTempDeviation    Float?             @map("body_temp_deviation")
+  rawData              Json               @map("raw_data")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  @@unique([userId, provider, metricDate])
+  @@index([userId, provider])
+  @@index([userId, metricDate])
+  @@map("wearable_daily_metrics")
 }

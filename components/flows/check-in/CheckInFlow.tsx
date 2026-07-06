@@ -100,7 +100,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   const [somethingElseText, setSomethingElseText] = useState('')
   const [yesterdayFeedback, setYesterdayFeedback] = useState('')
   const [todayWorkout, setTodayWorkout] = useState('')
-  const [sleepScore, setSleepScore] = useState<number | null>(null)
+  const [sleepSatisfaction, setSleepSatisfaction] = useState<number | null>(null)
   const [feelScore, setFeelScore] = useState<number | null>(null)
   const [periodStartedToday, setPeriodStartedToday] = useState<boolean | null>(null)
   const [stressorsText, setStressorsText] = useState('')
@@ -120,7 +120,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
         const payload: Record<string, unknown> = {
           checkInDate: new Date().toLocaleDateString('en-CA'),
           todaysPlannedWorkout: todayWorkout,
-          sleepScore,
+          sleepSatisfaction,
           feelScore,
         }
         if (yesterdayWorkout) {
@@ -311,7 +311,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   }
 
   if (step === 'sleep_feel') {
-    const isSleepFeelValid = sleepScore !== null && feelScore !== null
+    const isSleepFeelValid = sleepSatisfaction !== null && feelScore !== null
     return (
       <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('today_workout')} active={3} onClose={onClose} headerDate={headerDate} />
@@ -323,7 +323,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
             1 = rough night, 5 = slept great
           </p>
           <div className="mb-6">
-            <ScaleInput value={sleepScore} onChange={setSleepScore} labelLeft="rough" labelRight="great" />
+            <ScaleInput value={sleepSatisfaction} onChange={setSleepSatisfaction} labelLeft="rough" labelRight="great" />
           </div>
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             How do you feel?
