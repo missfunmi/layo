@@ -150,8 +150,7 @@ If you are the implementing agent, for each issue:
 3. Implement following the `superpowers:test-driven-development` skill for features and `superpowers:systematic-debugging` skill for bugs
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
 5. Wait for code review (see Code Review Workflow below)
-6. Once the changes are ready to merge (i.e. all review feedback is resolved and the reviewing agent reports no outstanding feedback), mark the Linear issue Done
-7. Stop and wait — do not start the next issue until instructed
+6. Stop and wait — do not start the next issue until instructed
 
 ## Code reviewer workflow
 After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Only follow these steps if you are the code review agent:
