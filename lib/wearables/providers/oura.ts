@@ -66,7 +66,7 @@ export async function fetchHistoricalData(
   accessToken: string,
   startDate: string,
   endDate: string,
-): Promise<NormalizedDailyMetric[]> {
+): Promise<Array<{ date: string } & NormalizedDailyMetric>> {
   const headers = { Authorization: `Bearer ${accessToken}` }
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
   const base = 'https://api.ouraring.com/v2/usercollection'
@@ -90,12 +90,13 @@ export async function fetchHistoricalData(
   const sleepByDate = new Map(sleepData.data.map((s) => [s.day, s]))
 
   const allDates = new Set([...readinessByDate.keys(), ...sleepByDate.keys()])
-  return Array.from(allDates).map((date) =>
-    mapToNormalized(
+  return Array.from(allDates).map((date) => ({
+    date,
+    ...mapToNormalized(
       (readinessByDate.get(date) ?? null) as OuraReadiness,
       (sleepByDate.get(date) ?? null) as OuraSleep,
     ),
-  )
+  }))
 }
 
 export async function refreshToken(userId: string): Promise<string> {
