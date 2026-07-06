@@ -80,6 +80,10 @@ npm run build     # runs: prisma migrate deploy && next build
 
 **LLM provider abstraction**: `lib/llm/index.ts` handles provider-agnostic logic (prompt config loading, user message construction, response parsing, Sentry logging). It delegates the SDK call to the active provider module (`lib/llm/providers/anthropic.ts`, etc.). Provider and model are selected at runtime via `LLM_PROVIDER` and `LLM_MODEL` env vars.
 
+**Wearable provider abstraction**: `lib/wearables/index.ts` is the provider-agnostic wearable interface, parallel to `lib/llm/`. It exposes `fetchAndStoreTodayMetrics`, `computeBaseline`, and `formatLLMContext`. `lib/wearables/providers/oura.ts` is the first provider implementation.
+
+**Token encryption**: `lib/crypto.ts` implements AES-256-GCM encrypt/decrypt for wearable token storage. Key is read from the `WEARABLE_TOKEN_KEY` env var (32-byte hex string).
+
 **Prompt config**: The latest `PromptConfig` row (by `created_at`) is fetched from the database at inference time. This allows the system prompt and inference parameters to be updated without a code deployment. Every inference logs the `prompt_version` used.
 
 **Cycle day calculation**: Implemented in `lib/cycle.ts`, called server-side during check-in submission. `periodStartedToday = true` → return `1`; otherwise, find the most recent check-in where `period_started_today = true` and return `(checkInDate - anchorDate) + 1`. Gap days from skipped check-ins are counted naturally.
@@ -98,6 +102,10 @@ SENTRY_DSN           # required in production
 SENTRY_ORG           # Sentry org slug, used for source map uploads at build time (optional)
 SENTRY_PROJECT       # Sentry project slug, used for source map uploads at build time (optional)
 NEXT_PUBLIC_APP_URL  # optional
+OURA_CLIENT_ID       # Oura OAuth client ID
+OURA_CLIENT_SECRET   # Oura OAuth client secret
+OURA_REDIRECT_URI    # Oura OAuth callback URL
+WEARABLE_TOKEN_KEY   # 32-byte hex key for AES-256-GCM token encryption
 ```
 
 Local development uses `.env.local`. See `.env.local.example` for the full list.
@@ -108,7 +116,7 @@ Follow the `superpowers:test-driven-development` skill for all feature implement
 
 Follow the `superpowers:systematic-debugging` skill for all debugging tasks. No exceptions.
 
-TDD is scoped to API routes (`app/api/`) and critical business logic (`lib/cycle.ts`, `lib/llm/`). These require tests written first, proven to fail, then implemented to pass without modifying the tests. UI components, page wrappers, and trivial utility modules (e.g. `lib/device.ts`, `lib/db.ts`) are exempt from TDD. They may be implemented directly without a preceding test-writing step.
+TDD is scoped to API routes (`app/api/`) and critical business logic (`lib/cycle.ts`, `lib/llm/`, `lib/wearables/`). These require tests written first, proven to fail, then implemented to pass without modifying the tests. UI components, page wrappers, and trivial utility modules (e.g. `lib/device.ts`, `lib/db.ts`) are exempt from TDD. They may be implemented directly without a preceding test-writing step.
 
 Do not invoke the `superpowers:brainstorming` skill for implementation tasks in this project. Design decisions are finalized in `docs/architecture.md` and `docs/prd.md`, and each Linear issue's acceptance criteria define the task scope. If a task's requirements are genuinely ambiguous or contradict the architecture doc, ask directly in chat rather than running the brainstorming workflow.
 
