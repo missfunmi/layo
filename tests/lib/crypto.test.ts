@@ -30,7 +30,9 @@ describe('lib/crypto', () => {
     const { encrypt, decrypt } = await import('@/lib/crypto')
     const ciphertext = encrypt('hello')
     const [iv, tag, encrypted] = ciphertext.split(':')
-    const tampered = `${iv}:${tag}:${encrypted.slice(0, -2)}ff`
+    const lastByte = encrypted.slice(-2)
+    const replacement = lastByte !== 'ff' ? 'ff' : '00'
+    const tampered = `${iv}:${tag}:${encrypted.slice(0, -2)}${replacement}`
     expect(() => decrypt(tampered)).toThrow()
   })
 
