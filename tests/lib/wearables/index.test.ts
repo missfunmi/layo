@@ -133,7 +133,7 @@ describe('lib/wearables/index', () => {
       expect(output).toContain('Wearable data (Oura Ring):')
       expect(output).toContain('Readiness score: 61 (90-day avg: 74, 18% below baseline)')
       expect(output).toContain('HRV: 42ms (90-day avg: 58ms, 28% below baseline)')
-      expect(output).toContain('Resting heart rate: 58bpm (90-day avg: 52bpm, 12% above baseline; elevated RHR is a recovery signal)')
+      expect(output).toContain('Resting heart rate: 58bpm (90-day avg: 52bpm, 12% above baseline; higher value indicates reduced recovery)')
       expect(output).toContain('Sleep score: 67 (90-day avg: 74, 9% below baseline)')
       expect(output).toContain('Sleep duration: 6h 14m (90-day avg: 7h 22m, 15% below baseline)')
       expect(output).toContain('Deep sleep: 52min (90-day avg: 68min, 24% below baseline)')
@@ -156,10 +156,20 @@ describe('lib/wearables/index', () => {
       expect(output).toContain('Readiness score: 73 (90-day avg: 74)')
     })
 
-    test('RHR above baseline uses "above baseline; elevated RHR is a recovery signal" wording', () => {
+    test('RHR above baseline uses generic "higher value indicates reduced recovery" wording', () => {
       // rhr: 58 vs baseline 52 → 12% above (> 5% threshold), higher_is: 'worse'
       const output = formatLLMContext({ restingHeartRate: 58 }, { restingHeartRate: 52 }, THRESHOLDS)
-      expect(output).toContain('above baseline; elevated RHR is a recovery signal')
+      expect(output).toContain('above baseline; higher value indicates reduced recovery')
+    })
+
+    test('a non-RHR metric with higher_is: worse does not produce "RHR" in the delta label', () => {
+      // readinessScore treated as higher_is: 'worse' (hypothetical future config)
+      // 80 vs baseline 60 → 33% above (> 5% threshold)
+      const customThresholds: WearableThresholds = {
+        readinessScore: { report_threshold_pct: 5, higher_is: 'worse' },
+      }
+      const output = formatLLMContext({ readinessScore: 80 }, { readinessScore: 60 }, customThresholds)
+      expect(output).not.toContain('RHR')
     })
 
     test('HRV above baseline uses "above baseline" with no negative characterization', () => {

@@ -225,7 +225,7 @@ export function formatLLMContext(
       if (exactDeltaPct > threshold.report_threshold_pct) {
         const direction = today > avg ? 'above' : 'below'
         if (direction === 'above' && threshold.higher_is === 'worse') {
-          deltaLabel = `, ${displayDeltaPct}% above baseline; elevated RHR is a recovery signal`
+          deltaLabel = `, ${displayDeltaPct}% above baseline; higher value indicates reduced recovery`
         } else {
           deltaLabel = `, ${displayDeltaPct}% ${direction} baseline`
         }
