@@ -136,17 +136,25 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      await tx.event.deleteMany({ where: { userId: u.id } })
       if (trainingGoal === 'race') {
-        await tx.event.create({
-          data: {
+        await tx.event.upsert({
+          where: { userId: u.id },
+          create: {
             userId: u.id,
             eventName: eventName!,
             eventType: validatedEventType!,
             eventTypeOther,
             eventDate: eventDateParsed!,
           },
+          update: {
+            eventName: eventName!,
+            eventType: validatedEventType!,
+            eventTypeOther,
+            eventDate: eventDateParsed!,
+          },
         })
+      } else {
+        await tx.event.deleteMany({ where: { userId: u.id } })
       }
 
       return u

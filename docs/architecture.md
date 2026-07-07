@@ -89,9 +89,11 @@ layo/
 
 The entry point (`app/page.tsx`) runs client-side on mount and routes the user to the correct screen:
 
-1. Is there a `deviceId` in localStorage?
+1. Does the URL include `?force=true`?
+   - Yes → redirect to `/onboarding` regardless of localStorage state (persistent testing utility for re-running onboarding on an existing device)
+2. Is there a `deviceId` in localStorage?
    - No → redirect to `/onboarding`
-2. Does a check-in record exist for today (`GET /api/check-ins?date={today}`)?
+3. Does a check-in record exist for today (`GET /api/check-ins?date={today}`)?
    - No → redirect to `/check-in`
    - Yes → redirect to `/recommendation`
 
@@ -386,7 +388,7 @@ A near-term improvement is to add idempotency key support (client generates a UU
 ---
 
 ### POST /api/users
-Creates or updates a user, user profile, and first event (if training for a race). Called on onboarding completion. Upserts on `device_id`.
+Creates or updates a user, user profile, and event (if training for a race). Called on onboarding completion. Upserts on `device_id`. For race goals, the event is upserted on `user_id` (one goal event per user at a time): re-onboarding always replaces the existing event row with the newly submitted race details. For non-race goals, any existing event row is deleted.
 
 **Request body:**
 ```typescript
