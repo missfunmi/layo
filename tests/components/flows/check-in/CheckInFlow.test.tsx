@@ -441,19 +441,19 @@ describe('CheckInFlow — step sleep_feel: entry', () => {
     navigateToTodayWorkout()
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '10mi run' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+    expect(screen.getByText(/how satisfied are you with how you slept/i)).toBeInTheDocument()
   })
 })
 
 describe('CheckInFlow — step sleep_feel: layout', () => {
-  test('shows sleep heading "How did you sleep?"', () => {
+  test('shows sleep heading "How satisfied are you with how you slept?"', () => {
     navigateToSleepFeel()
-    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+    expect(screen.getByText(/how satisfied are you with how you slept/i)).toBeInTheDocument()
   })
 
-  test('shows sleep subtext "1 = rough night, 5 = slept great"', () => {
+  test('shows sleep subtext "Do you feel like you got enough sleep last night?"', () => {
     navigateToSleepFeel()
-    expect(screen.getByText(/1 = rough night, 5 = slept great/i)).toBeInTheDocument()
+    expect(screen.getByText(/do you feel like you got enough sleep last night/i)).toBeInTheDocument()
   })
 
   test('shows feel heading "How do you feel?"', () => {
@@ -461,15 +461,15 @@ describe('CheckInFlow — step sleep_feel: layout', () => {
     expect(screen.getByText(/how do you feel/i)).toBeInTheDocument()
   })
 
-  test('shows feel subtext "1 = dragging, 5 = ready to go"', () => {
+  test('shows feel subtext "How ready are you to tackle today?"', () => {
     navigateToSleepFeel()
-    expect(screen.getByText(/1 = dragging, 5 = ready to go/i)).toBeInTheDocument()
+    expect(screen.getByText(/how ready are you to tackle today/i)).toBeInTheDocument()
   })
 
-  test('shows sleep scale labels "rough" and "great"', () => {
+  test('shows sleep scale labels "unsatisfied" and "satisfied"', () => {
     navigateToSleepFeel()
-    expect(screen.getByText('rough')).toBeInTheDocument()
-    expect(screen.getByText('great')).toBeInTheDocument()
+    expect(screen.getByText('unsatisfied')).toBeInTheDocument()
+    expect(screen.getByText('satisfied')).toBeInTheDocument()
   })
 
   test('shows feel scale labels "dragging" and "ready to go"', () => {
@@ -667,7 +667,7 @@ describe('CheckInFlow — step cycle_tracking: back navigation', () => {
   test('back button navigates to sleep_feel', () => {
     navigateToCycleTracking()
     fireEvent.click(screen.getByRole('button', { name: /go back/i }))
-    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+    expect(screen.getByText(/how satisfied are you with how you slept/i)).toBeInTheDocument()
   })
 
   test('close button calls onClose', () => {
@@ -822,7 +822,7 @@ describe('CheckInFlow — step stressors: back navigation', () => {
     fireEvent.click(scaleButtons[7])
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: /go back/i }))
-    expect(screen.getByText(/how did you sleep/i)).toBeInTheDocument()
+    expect(screen.getByText(/how satisfied are you with how you slept/i)).toBeInTheDocument()
   })
 
   test('close button calls onClose', () => {

@@ -317,19 +317,19 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
         <StepHeader onBack={() => setStep('today_workout')} active={3} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
-            How did you sleep?
+            How satisfied are you with how you slept?
           </h2>
           <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-4">
-            1 = rough night, 5 = slept great
+            Do you feel like you got enough sleep last night?
           </p>
           <div className="mb-6">
-            <ScaleInput value={sleepSatisfaction} onChange={setSleepSatisfaction} labelLeft="rough" labelRight="great" />
+            <ScaleInput value={sleepSatisfaction} onChange={setSleepSatisfaction} labelLeft="unsatisfied" labelRight="satisfied" />
           </div>
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
             How do you feel?
           </h2>
           <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-4">
-            1 = dragging, 5 = ready to go
+            How ready are you to tackle today?
           </p>
           <div className="mb-6">
             <ScaleInput value={feelScore} onChange={setFeelScore} labelLeft="dragging" labelRight="ready to go" />
