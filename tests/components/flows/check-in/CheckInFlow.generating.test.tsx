@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
+import { describe, test, expect, vi, afterEach, beforeEach, afterAll } from 'vitest'
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react'
 
 afterEach(cleanup)
 
@@ -79,6 +79,10 @@ describe('CheckInFlow — generating screen: layout', () => {
     vi.mocked(global.fetch).mockReturnValue(new Promise(() => {}))
   })
 
+  afterAll(() => {
+    vi.useRealTimers()
+  })
+
   test('stressors Continue navigates to generating screen', () => {
     navigateToGenerating()
     expect(screen.getByText(/láyo is working on your recommendation for today/i)).toBeInTheDocument()
@@ -103,6 +107,15 @@ describe('CheckInFlow — generating screen: layout', () => {
   test('does not show a Close button', () => {
     navigateToGenerating()
     expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument()
+  })
+
+  test('header rotates to a valid pool string after 3 seconds', () => {
+    vi.useFakeTimers()
+    navigateToGenerating()
+    act(() => { vi.advanceTimersByTime(3000) })
+    const heading = screen.getByRole('heading', { level: 2 })
+    expect(GENERATING_HEADERS).toContain(heading.textContent)
+    vi.useRealTimers()
   })
 
   test('stressors Skip also navigates to generating screen', () => {
