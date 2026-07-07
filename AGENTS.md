@@ -155,7 +155,7 @@ If you are the implementing agent, for each issue:
 ## Code reviewer workflow
 After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Only follow these steps if you are the code review agent:
 
-1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
+1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. Be sure to also go through the test plan written on the PR. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
 2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR.
 3. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete.
 4. After writing the feedback file, clean up: run `git branch -d pr-[number] && git checkout -` to delete the local PR branch and return the workspace to the previously active branch.
