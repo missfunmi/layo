@@ -14,6 +14,10 @@ export default function Home() {
 
   useEffect(() => {
     setState('loading')
+    if (new URLSearchParams(window.location.search).get('force') === 'true') {
+      router.push('/onboarding')
+      return
+    }
     const deviceId = getDeviceId()
     if (!deviceId) {
       router.push('/onboarding')

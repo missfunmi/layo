@@ -182,6 +182,22 @@ describe('POST /api/users', () => {
     expect(sentry.captureMessage).not.toHaveBeenCalled()
   })
 
+  test('submitting onboarding twice with the same race details produces one event row', async () => {
+    await makeRequest(handler, 'POST', '/api/users', RACE_BODY)
+    await makeRequest(handler, 'POST', '/api/users', RACE_BODY)
+    const events = await getTestClient().event.findMany()
+    expect(events).toHaveLength(1)
+  })
+
+  test('submitting onboarding twice with different race details produces one event row reflecting the second submission', async () => {
+    await makeRequest(handler, 'POST', '/api/users', RACE_BODY)
+    const updated = { ...RACE_BODY, eventName: 'Chicago Marathon', eventDate: `${new Date().getFullYear() + 1}-09-20` }
+    await makeRequest(handler, 'POST', '/api/users', updated)
+    const events = await getTestClient().event.findMany()
+    expect(events).toHaveLength(1)
+    expect(events[0].eventName).toBe('Chicago Marathon')
+  })
+
   test('upsert: second identical request returns 201 with same userId, no duplicate row', async () => {
     const r1 = await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
     expect(r1.status).toBe(201)
