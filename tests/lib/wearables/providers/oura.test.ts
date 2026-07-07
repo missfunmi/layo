@@ -1,5 +1,11 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { mapToNormalized, fetchHistoricalData } from '@/lib/wearables/providers/oura'
+import { mapToNormalized, fetchHistoricalData, fetchTodayData } from '@/lib/wearables/providers/oura'
+import * as Sentry from '@sentry/nextjs'
+
+vi.mock('@sentry/nextjs', () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}))
 
 const FULL_READINESS = {
   score: 74,
@@ -72,6 +78,48 @@ describe('lib/wearables/providers/oura', () => {
 
     test('a partial response (sleep only, readiness absent) does not throw', () => {
       expect(() => mapToNormalized(null, FULL_SLEEP)).not.toThrow()
+    })
+  })
+
+  describe('fetchTodayData', () => {
+    afterEach(() => {
+      vi.mocked(Sentry.captureMessage).mockReset()
+    })
+
+    test('emits a Sentry event when the API returns a non-null response but all mapped metrics are undefined', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ unrecognized_field: 80 }] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ also_unknown: 42 }] }) }),
+      )
+      await fetchTodayData('fake-token', '2026-07-07')
+      expect(Sentry.captureMessage).toHaveBeenCalledOnce()
+    })
+
+    test('does not emit a Sentry event when metrics are successfully mapped', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [FULL_READINESS] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [FULL_SLEEP] }) }),
+      )
+      await fetchTodayData('fake-token', '2026-07-07')
+      expect(Sentry.captureMessage).not.toHaveBeenCalled()
+    })
+
+    test('does not emit a Sentry event when the API returns no data (null readiness and sleep)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) }),
+      )
+      await fetchTodayData('fake-token', '2026-07-07')
+      expect(Sentry.captureMessage).not.toHaveBeenCalled()
     })
   })
 

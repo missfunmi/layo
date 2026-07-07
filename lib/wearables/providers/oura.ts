@@ -61,10 +61,16 @@ export async function fetchTodayData(accessToken: string, date: string): Promise
 
   if (!readiness && !sleep) return null
 
-  return {
-    metrics: mapToNormalized(readiness as OuraReadiness, sleep as OuraSleep),
-    raw: { readiness, sleep },
+  const metrics = mapToNormalized(readiness as OuraReadiness, sleep as OuraSleep)
+  const allUndefined = Object.values(metrics).every((v) => v === undefined)
+  if (allUndefined) {
+    Sentry.captureMessage('Oura metric dropout: all mapped metrics are undefined despite non-null API response', {
+      level: 'error',
+      extra: { readiness, sleep },
+    })
   }
+
+  return { metrics, raw: { readiness, sleep } }
 }
 
 export async function fetchHistoricalData(
