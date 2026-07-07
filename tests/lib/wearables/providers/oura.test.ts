@@ -123,7 +123,60 @@ describe('lib/wearables/providers/oura', () => {
     })
   })
 
+  describe('fetchTodayData (error handling)', () => {
+    test('error thrown when readiness returns 401 includes the Oura response body', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            text: async () => '{"detail":"Authorization token is invalid."}',
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) }),
+      )
+      await expect(fetchTodayData('bad-token', '2026-07-07')).rejects.toThrow(
+        'Oura API error: 401 {"detail":"Authorization token is invalid."}',
+      )
+    })
+
+    test('error thrown when sleep returns 401 includes the Oura response body', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            text: async () => '{"detail":"Insufficient scope."}',
+          }),
+      )
+      await expect(fetchTodayData('bad-token', '2026-07-07')).rejects.toThrow(
+        'Oura API error: 401 {"detail":"Insufficient scope."}',
+      )
+    })
+  })
+
   describe('fetchHistoricalData', () => {
+    test('error thrown when readiness returns 401 includes the Oura response body', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            text: async () => '{"detail":"Authorization token is invalid."}',
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) }),
+      )
+      await expect(fetchHistoricalData('bad-token', '2026-04-08', '2026-07-07')).rejects.toThrow(
+        'Oura API error: 401 {"detail":"Authorization token is invalid."}',
+      )
+    })
+
     test('returns metrics with their corresponding dates', async () => {
       const readinessData = {
         data: [

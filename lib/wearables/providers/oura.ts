@@ -47,8 +47,11 @@ export async function fetchTodayData(accessToken: string, date: string): Promise
   ])
 
   if (!readinessRes.ok || !sleepRes.ok) {
-    const status = !readinessRes.ok ? readinessRes.status : sleepRes.status
-    throw new Error(`Oura API error: ${status}`)
+    const failedRes = !readinessRes.ok ? readinessRes : sleepRes
+    const status = failedRes.status
+    let detail = ''
+    try { detail = await failedRes.text() } catch { /* ignore */ }
+    throw new Error(`Oura API error: ${status}${detail ? ` ${detail}` : ''}`)
   }
 
   const [readinessData, sleepData] = await Promise.all([
@@ -88,8 +91,11 @@ export async function fetchHistoricalData(
   ])
 
   if (!readinessRes.ok || !sleepRes.ok) {
-    const status = !readinessRes.ok ? readinessRes.status : sleepRes.status
-    throw new Error(`Oura API error: ${status}`)
+    const failedRes = !readinessRes.ok ? readinessRes : sleepRes
+    const status = failedRes.status
+    let detail = ''
+    try { detail = await failedRes.text() } catch { /* ignore */ }
+    throw new Error(`Oura API error: ${status}${detail ? ` ${detail}` : ''}`)
   }
 
   const [readinessData, sleepData] = await Promise.all([

@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { getTestClient, setupTestDb, teardownTestDb } from '@/tests/helpers/db'
 import { computeBaseline, formatLLMContext, fetchAndStoreTodayMetrics } from '@/lib/wearables/index'
-import { fetchTodayData } from '@/lib/wearables/providers/oura'
+import { fetchTodayData, refreshToken } from '@/lib/wearables/providers/oura'
 import type { NormalizedDailyMetric, WearableBaseline, WearableThresholds } from '@/lib/wearables/types'
 
 vi.mock('@/lib/wearables/providers/oura', async (importOriginal) => {
@@ -280,6 +280,26 @@ describe('lib/wearables/index', () => {
 
       const row = await getTestClient().wearableDailyMetric.findFirst({ where: { userId } })
       expect(row?.rawData).toEqual({ readiness: MOCK_READINESS, sleep: MOCK_SLEEP })
+    })
+
+    test('connection remains active when initial fetch returns 401, refresh succeeds, but retry also returns 401', async () => {
+      vi.mocked(fetchTodayData).mockRejectedValue(new Error('Oura API error: 401'))
+      vi.mocked(refreshToken).mockResolvedValue('new-token')
+
+      await fetchAndStoreTodayMetrics(userId, 'oura', '2026-07-07')
+
+      const conn = await getTestClient().wearableConnection.findFirst({ where: { userId } })
+      expect(conn?.status).toBe('active')
+    })
+
+    test('connection is marked inactive when the refresh token itself is invalid', async () => {
+      vi.mocked(fetchTodayData).mockRejectedValue(new Error('Oura API error: 401'))
+      vi.mocked(refreshToken).mockRejectedValue(new Error('Oura token refresh failed: 401'))
+
+      await fetchAndStoreTodayMetrics(userId, 'oura', '2026-07-07')
+
+      const conn = await getTestClient().wearableConnection.findFirst({ where: { userId } })
+      expect(conn?.status).toBe('inactive')
     })
   })
 })

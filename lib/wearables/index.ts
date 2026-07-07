@@ -31,15 +31,21 @@ export async function fetchAndStoreTodayMetrics(
       Sentry.captureException(err)
       return null
     }
+    let newToken: string
     try {
-      const newToken = await refreshToken(userId)
-      result = await attempt(newToken)
+      newToken = await refreshToken(userId)
     } catch (refreshErr) {
       Sentry.captureException(refreshErr)
       await prisma.wearableConnection.update({
         where: { userId_provider: { userId, provider } },
         data: { status: 'inactive' },
       })
+      return null
+    }
+    try {
+      result = await attempt(newToken)
+    } catch (retryErr) {
+      Sentry.captureException(retryErr)
       return null
     }
   }
