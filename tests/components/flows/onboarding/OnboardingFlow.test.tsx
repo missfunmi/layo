@@ -14,6 +14,20 @@ vi.mock('@/lib/device', () => ({
   getOrCreateDeviceId: () => 'test-device-id',
 }))
 
+vi.mock('@/components/flows/onboarding/OuraConnectStep', () => ({
+  OuraConnectStep: ({ onBack, onClose, onContinue }: {
+    onBack: () => void
+    onClose: () => void
+    onContinue: () => void
+  }) => (
+    <div data-testid="oura-connect-step">
+      <button type="button" aria-label="Go back" onClick={onBack} />
+      <button type="button" aria-label="Close" onClick={onClose} />
+      <button type="button" onClick={onContinue}>Skip for now</button>
+    </div>
+  ),
+}))
+
 import { OnboardingFlow } from '@/components/flows/onboarding/OnboardingFlow'
 import OnboardingPage from '@/app/onboarding/page'
 
@@ -404,6 +418,7 @@ describe('OnboardingFlow — step 4: training goal', () => {
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Other reasons' }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /skip for now/i }))
     expect(screen.queryByText(/tell us about your race/i)).not.toBeInTheDocument()
     expect(screen.getByText(/you're all set, funmi/i)).toBeInTheDocument()
   })
@@ -573,6 +588,7 @@ describe('OnboardingFlow — step 4: race details (inline)', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /event type/i }), { target: { value: 'Running' } })
     fireEvent.change(screen.getByLabelText(/event date/i), { target: { value: tomorrow } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /skip for now/i }))
     expect(screen.getByText(/you're all set, funmi/i)).toBeInTheDocument()
   })
 
@@ -625,6 +641,8 @@ function navigateToConfirmation(path: 'non_race' | 'race' = 'non_race') {
     fireEvent.click(screen.getByRole('button', { name: 'Other reasons' }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   }
+  // Advance through the Oura connect step
+  fireEvent.click(screen.getByRole('button', { name: /skip for now/i }))
 }
 
 describe('OnboardingFlow — confirmation screen: UI', () => {

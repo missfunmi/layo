@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/TextInput'
@@ -11,6 +11,7 @@ import { PillSelect } from '@/components/ui/PillSelect'
 import { SingleSelect } from '@/components/ui/SingleSelect'
 import { PickerField } from '@/components/ui/PickerField'
 import { DateField } from '@/components/ui/DateField'
+import { OuraConnectStep } from '@/components/flows/onboarding/OuraConnectStep'
 import { getOrCreateDeviceId } from '@/lib/device'
 
 type Step =
@@ -19,6 +20,7 @@ type Step =
   | 'birth_year'
   | 'hormonal_life_stage'
   | 'training_goal'
+  | 'oura_connect'
   | 'confirmation'
 
 const HORMONAL_OPTIONS = [
@@ -58,12 +60,25 @@ function StepHeader({ onBack, active, onClose }: { onBack: () => void; active: n
       <div className="flex items-center gap-[10px] mb-6 px-6 pt-[22px]">
         <BackButton onClick={onBack} />
         <div data-testid="progress-dots" className="flex-1">
-          <ProgressDots total={4} active={active} />
+          <ProgressDots total={5} active={active} />
         </div>
         <CloseButton onClick={onClose} />
       </div>
     </>
   )
+}
+
+const FORM_STORAGE_KEY = 'layo_onboarding_form'
+
+type SavedForm = {
+  name: string
+  birthYear: string
+  hormonalLifeStage: string[]
+  trainingGoal: string | null
+  eventName: string
+  eventType: string
+  eventTypeDetail: string
+  eventDate: string
 }
 
 export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
@@ -78,6 +93,30 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
   const [eventTypeDetail, setEventTypeDetail] = useState('')
   const [eventDate, setEventDate] = useState('')
   const [confirmationError, setConfirmationError] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const wearable = params.get('wearable')
+    if (wearable === 'connected' || wearable === 'error') {
+      const raw = sessionStorage.getItem(FORM_STORAGE_KEY)
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw) as SavedForm
+          setName(saved.name)
+          setBirthYear(saved.birthYear)
+          setHormonalLifeStage(saved.hormonalLifeStage)
+          setTrainingGoal(saved.trainingGoal)
+          setEventName(saved.eventName)
+          setEventType(saved.eventType)
+          setEventTypeDetail(saved.eventTypeDetail)
+          setEventDate(saved.eventDate)
+        } catch {
+          // ignore malformed storage
+        }
+      }
+      setStep('oura_connect')
+    }
+  }, [])
 
   const currentYear = new Date().getFullYear()
   const minYear = currentYear - 100
@@ -112,6 +151,7 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
         body: JSON.stringify(payload),
       })
       if (res.ok) {
+        sessionStorage.removeItem(FORM_STORAGE_KEY)
         router.push('/check-in')
       } else {
         setConfirmationError(true)
@@ -291,8 +331,11 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           )}
           <Button
             onClick={() => {
-              setStep('confirmation')
-              void submitOnboarding()
+              sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+                name, birthYear, hormonalLifeStage, trainingGoal,
+                eventName, eventType, eventTypeDetail, eventDate,
+              }))
+              setStep('oura_connect')
             }}
             disabled={isContinueDisabled}
           >
@@ -300,6 +343,21 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           </Button>
         </div>
       </div>
+    )
+  }
+
+  if (step === 'oura_connect') {
+    return (
+      <OuraConnectStep
+        onBack={() => setStep('training_goal')}
+        onClose={onClose}
+        onContinue={() => {
+          setStep('confirmation')
+          void submitOnboarding()
+        }}
+        active={4}
+        total={5}
+      />
     )
   }
 
