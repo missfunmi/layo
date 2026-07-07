@@ -105,7 +105,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   const [periodStartedToday, setPeriodStartedToday] = useState<boolean | null>(null)
   const [stressorsText, setStressorsText] = useState('')
   const [submissionError, setSubmissionError] = useState<SubmissionError>(null)
-  const [generatingHeader] = useState(
+  const [generatingHeader, setGeneratingHeader] = useState(
     () => GENERATING_HEADERS[Math.floor(Math.random() * GENERATING_HEADERS.length)]
   )
 
@@ -165,6 +165,14 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   // Reads form state as a snapshot when step transitions to 'generating'. Listing all
   // state variables would re-fire the submission on every keystroke before that point.
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
+  useEffect(() => {
+    if (step !== 'generating') return
+    const interval = setInterval(() => {
+      setGeneratingHeader(GENERATING_HEADERS[Math.floor(Math.random() * GENERATING_HEADERS.length)])
+    }, 3000)
+    return () => clearInterval(interval)
   }, [step])
 
   const hasPreviousRecord = previousCheckIn != null
