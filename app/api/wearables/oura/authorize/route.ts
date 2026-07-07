@@ -20,7 +20,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     client_id: process.env.OURA_CLIENT_ID ?? '',
     redirect_uri: process.env.OURA_REDIRECT_URI ?? '',
     response_type: 'code',
-    scope: 'daily.activity daily.readiness daily.sleep heartrate personal',
+    scope: 'daily heartrate personal',
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
     state: encryptedState,
