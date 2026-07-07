@@ -29,6 +29,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return errorRedirect(req)
   }
 
+  const pkceCookieValue = req.cookies.get('layo_oura_pkce_verifier')?.value
+  if (!pkceCookieValue) return errorRedirect(req)
+  const codeVerifier = decrypt(pkceCookieValue)
+
   let userId: string
   try {
     const user = await prisma.user.findUnique({ where: { deviceId } })
@@ -48,6 +52,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
+        code_verifier: codeVerifier,
         client_id: process.env.OURA_CLIENT_ID ?? '',
         client_secret: process.env.OURA_CLIENT_SECRET ?? '',
         redirect_uri: process.env.OURA_REDIRECT_URI ?? '',

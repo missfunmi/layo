@@ -28,5 +28,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const authorizationUrl = `https://cloud.ouraring.com/oauth/authorize?${params.toString()}`
 
-  return NextResponse.json({ authorizationUrl, codeVerifier: encryptedCodeVerifier })
+  const response = NextResponse.json({ authorizationUrl })
+  response.cookies.set('layo_oura_pkce_verifier', encryptedCodeVerifier, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 300,
+  })
+  return response
 }

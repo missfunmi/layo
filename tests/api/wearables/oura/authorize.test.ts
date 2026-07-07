@@ -18,7 +18,7 @@ describe('GET /api/wearables/oura/authorize', () => {
     expect(res.status).toBe(401)
   })
 
-  test('returns 200 with authorizationUrl and codeVerifier', async () => {
+  test('returns 200 with authorizationUrl', async () => {
     const res = await makeRequest(
       handler,
       'GET',
@@ -29,7 +29,7 @@ describe('GET /api/wearables/oura/authorize', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toHaveProperty('authorizationUrl')
-    expect(body).toHaveProperty('codeVerifier')
+    expect(body).not.toHaveProperty('codeVerifier')
   })
 
   test('authorizationUrl contains all required OAuth parameters', async () => {
@@ -73,7 +73,7 @@ describe('GET /api/wearables/oura/authorize', () => {
     )
   })
 
-  test('codeVerifier is a non-empty encrypted string', async () => {
+  test('sets layo_oura_pkce_verifier HTTP-only cookie with encrypted code verifier', async () => {
     const res = await makeRequest(
       handler,
       'GET',
@@ -81,17 +81,15 @@ describe('GET /api/wearables/oura/authorize', () => {
       undefined,
       { 'X-Device-ID': DEVICE_ID },
     )
-    const { codeVerifier } = await res.json()
+    const setCookie = res.headers.get('set-cookie') ?? ''
+    expect(setCookie).toContain('layo_oura_pkce_verifier=')
+    expect(setCookie.toLowerCase()).toContain('httponly')
 
-    expect(typeof codeVerifier).toBe('string')
-    expect(codeVerifier.length).toBeGreaterThan(0)
-
-    // Must be encrypted format: iv:tag:ciphertext (3 colon-separated hex segments)
-    const parts = codeVerifier.split(':')
-    expect(parts).toHaveLength(3)
-
-    // Decrypted value should be a non-empty base64url string
-    const plainVerifier = decrypt(codeVerifier)
+    // Extract and verify the encrypted verifier value (Next.js may percent-encode ':' in the cookie)
+    const rawCookieValue = setCookie.split(';')[0].replace('layo_oura_pkce_verifier=', '')
+    const cookieValue = decodeURIComponent(rawCookieValue)
+    expect(cookieValue.split(':')).toHaveLength(3)
+    const plainVerifier = decrypt(cookieValue)
     expect(plainVerifier.length).toBeGreaterThanOrEqual(43)
   })
 })
