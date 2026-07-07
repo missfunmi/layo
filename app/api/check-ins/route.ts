@@ -6,6 +6,8 @@ type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0
 import { resolveUser } from '@/lib/api'
 import { calculateCycleDay } from '@/lib/cycle'
 import { generateRecommendation } from '@/lib/llm/index'
+import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
+import type { WearableThresholds } from '@/lib/wearables/types'
 
 const VALID_YESTERDAY_TYPES = ['planned', 'suggested', 'other']
 
@@ -179,7 +181,25 @@ export async function POST(request: NextRequest) {
     }))
   )
 
-  const userMessage = JSON.stringify({
+  let wearableContext: string | null = null
+  const activeConnection = await prisma.wearableConnection.findFirst({
+    where: { userId: user.id, status: 'active' },
+  })
+  if (activeConnection) {
+    try {
+      const todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
+      const promptConfig = await prisma.promptConfig.findFirst({ orderBy: { createdAt: 'desc' } })
+      const thresholds = (
+        (promptConfig?.additionalParams as Record<string, unknown> | null)?.wearable_thresholds ?? {}
+      ) as WearableThresholds
+      const baseline = await computeBaseline(user.id, activeConnection.provider)
+      wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
+    } catch (err) {
+      Sentry.captureException(err)
+    }
+  }
+
+  let userMessage = JSON.stringify({
     profile: {
       name: user.profile?.name,
       hormonalLifeStage: user.profile?.hormonalLifeStage,
@@ -206,6 +226,10 @@ export async function POST(request: NextRequest) {
       stressors: c.stressors,
     })),
   })
+
+  if (wearableContext) {
+    userMessage += '\n\n' + wearableContext
+  }
 
   let recommendation: Awaited<ReturnType<typeof generateRecommendation>>
   try {

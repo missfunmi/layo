@@ -9,10 +9,17 @@ vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }))
 
+vi.mock('@/lib/wearables/index', () => ({
+  fetchAndStoreTodayMetrics: vi.fn(),
+  computeBaseline: vi.fn(),
+  formatLLMContext: vi.fn(),
+}))
+
 import { setupTestDb, teardownTestDb, getTestClient } from '../helpers/db'
 import { makeRequest } from '../helpers/api'
 import * as handler from '@/app/api/check-ins/route'
 import { generateRecommendation } from '@/lib/llm/index'
+import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
 
 const DEVICE_ID = 'test-device-checkin'
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -363,6 +370,80 @@ describe('POST /api/check-ins', () => {
     const checkIns = await getTestClient().checkIn.findMany()
     expect(checkIns).toHaveLength(1)
     expect(checkIns[0].todaysPlannedWorkout).toBe('10km tempo run')
+  })
+
+  test('user with no active wearable connection: fetchAndStoreTodayMetrics not called', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(201)
+    expect(vi.mocked(fetchAndStoreTodayMetrics)).not.toHaveBeenCalled()
+  })
+
+  describe('with active Oura connection', () => {
+    const MOCK_METRICS = { readinessScore: 82, hrvAvg: 65 }
+    const MOCK_BASELINE = { readinessScore: 78, hrvAvg: 60 }
+    const MOCK_WEARABLE_CONTEXT = 'Wearable data (Oura Ring):\nReadiness score: 82 (90-day avg: 78)'
+
+    beforeEach(async () => {
+      const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+      await getTestClient().wearableConnection.create({
+        data: {
+          userId: user.id,
+          provider: 'oura',
+          accessToken: 'enc-access-tok',
+          refreshToken: 'enc-refresh-tok',
+          tokenExpiresAt: new Date(Date.now() + 86400000),
+          status: 'active',
+        },
+      })
+      vi.mocked(fetchAndStoreTodayMetrics).mockResolvedValue(MOCK_METRICS)
+      vi.mocked(computeBaseline).mockResolvedValue(MOCK_BASELINE)
+      vi.mocked(formatLLMContext).mockReturnValue(MOCK_WEARABLE_CONTEXT)
+    })
+
+    test('calls fetchAndStoreTodayMetrics and appends wearable context to LLM message', async () => {
+      const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+        'X-Device-ID': DEVICE_ID,
+      })
+      expect(response.status).toBe(201)
+      expect(vi.mocked(fetchAndStoreTodayMetrics)).toHaveBeenCalledOnce()
+      expect(vi.mocked(generateRecommendation)).toHaveBeenCalledWith(
+        expect.stringContaining(MOCK_WEARABLE_CONTEXT),
+      )
+    })
+
+    test('fetchAndStoreTodayMetrics returns null: formatLLMContext called with null and fallback context appended to LLM message', async () => {
+      const FALLBACK_CONTEXT = "Wearable data (Oura Ring):\nToday's data: not yet synced"
+      vi.mocked(fetchAndStoreTodayMetrics).mockResolvedValue(null)
+      vi.mocked(formatLLMContext).mockReturnValue(FALLBACK_CONTEXT)
+
+      const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+        'X-Device-ID': DEVICE_ID,
+      })
+      expect(response.status).toBe(201)
+      expect(vi.mocked(formatLLMContext)).toHaveBeenCalledWith(
+        null,
+        expect.anything(),
+        expect.anything(),
+      )
+      expect(vi.mocked(generateRecommendation)).toHaveBeenCalledWith(
+        expect.stringContaining(FALLBACK_CONTEXT),
+      )
+    })
+
+    test('wearable lib throws: check-in proceeds, Sentry.captureException called, wearable context not appended', async () => {
+      vi.mocked(fetchAndStoreTodayMetrics).mockRejectedValue(new Error('Oura API error'))
+      const sentry = await import('@sentry/nextjs')
+
+      const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+        'X-Device-ID': DEVICE_ID,
+      })
+      expect(response.status).toBe(201)
+      expect(vi.mocked(sentry.captureException)).toHaveBeenCalled()
+      expect(vi.mocked(formatLLMContext)).not.toHaveBeenCalled()
+      expect(vi.mocked(generateRecommendation)).toHaveBeenCalledOnce()
+    })
   })
 })
 
