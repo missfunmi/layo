@@ -3,7 +3,7 @@ import { decrypt } from '@/lib/crypto'
 import { fetchTodayData, refreshToken } from '@/lib/wearables/providers/oura'
 import * as Sentry from '@sentry/nextjs'
 import type { NormalizedDailyMetric, WearableBaseline, WearableThresholds } from '@/lib/wearables/types'
-import type { WearableProvider } from '@prisma/client'
+import type { WearableProvider, Prisma } from '@prisma/client'
 
 export async function fetchAndStoreTodayMetrics(
   userId: string,
@@ -54,10 +54,10 @@ export async function fetchAndStoreTodayMetrics(
       connectionId: connection.id,
       provider,
       metricDate,
-      rawData: result.raw,
+      rawData: result.raw as unknown as Prisma.InputJsonValue,
       ...result.metrics,
     },
-    update: { rawData: result.raw, ...result.metrics },
+    update: { rawData: result.raw as unknown as Prisma.InputJsonValue, ...result.metrics },
   })
 
   return result.metrics
