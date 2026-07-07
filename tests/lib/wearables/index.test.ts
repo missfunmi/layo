@@ -1,7 +1,18 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { getTestClient, setupTestDb, teardownTestDb } from '@/tests/helpers/db'
-import { computeBaseline, formatLLMContext } from '@/lib/wearables/index'
+import { computeBaseline, formatLLMContext, fetchAndStoreTodayMetrics } from '@/lib/wearables/index'
+import { fetchTodayData } from '@/lib/wearables/providers/oura'
 import type { NormalizedDailyMetric, WearableBaseline, WearableThresholds } from '@/lib/wearables/types'
+
+vi.mock('@/lib/wearables/providers/oura', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/wearables/providers/oura')>()
+  return { ...actual, fetchTodayData: vi.fn(), refreshToken: vi.fn() }
+})
+
+vi.mock('@/lib/crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/crypto')>()
+  return { ...actual, decrypt: vi.fn().mockReturnValue('fake-token') }
+})
 
 const THRESHOLDS: WearableThresholds = {
   readinessScore: { report_threshold_pct: 8, higher_is: 'better' },
@@ -232,6 +243,43 @@ describe('lib/wearables/index', () => {
       const today: NormalizedDailyMetric = { readinessScore: 72 }
       const output = formatLLMContext(today, {}, THRESHOLDS)
       expect(output).not.toContain('Readiness score:')
+    })
+  })
+
+  describe('fetchAndStoreTodayMetrics', () => {
+    let userId: string
+
+    beforeEach(async () => {
+      await setupTestDb()
+      const user = await getTestClient().user.create({ data: { deviceId: 'fetch-store-metrics-test' } })
+      userId = user.id
+      await getTestClient().wearableConnection.create({
+        data: {
+          userId,
+          provider: 'oura',
+          accessToken: 'encrypted-tok',
+          refreshToken: 'encrypted-ref',
+          tokenExpiresAt: new Date(Date.now() + 86400000),
+          status: 'active',
+        },
+      })
+    })
+
+    afterEach(teardownTestDb)
+
+    test('rawData in the upserted row contains the raw Oura API response objects', async () => {
+      const MOCK_READINESS = { score: 80, temperature_deviation: 0.2 }
+      const MOCK_SLEEP = { score: 70, average_hrv: 45, lowest_resting_heart_rate: 52 }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(fetchTodayData).mockResolvedValue({
+        metrics: { readinessScore: 80, bodyTempDeviation: 0.2, hrvAvg: 45, restingHeartRate: 52 },
+        raw: { readiness: MOCK_READINESS, sleep: MOCK_SLEEP },
+      } as any)
+
+      await fetchAndStoreTodayMetrics(userId, 'oura', '2026-07-07')
+
+      const row = await getTestClient().wearableDailyMetric.findFirst({ where: { userId } })
+      expect(row?.rawData).toEqual({ readiness: MOCK_READINESS, sleep: MOCK_SLEEP })
     })
   })
 })

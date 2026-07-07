@@ -31,7 +31,12 @@ export function mapToNormalized(ouraReadiness: OuraReadiness, ouraSleep: OuraSle
   }
 }
 
-export async function fetchTodayData(accessToken: string, date: string): Promise<NormalizedDailyMetric | null> {
+export type FetchTodayResult = {
+  metrics: NormalizedDailyMetric
+  raw: { readiness: unknown; sleep: unknown }
+}
+
+export async function fetchTodayData(accessToken: string, date: string): Promise<FetchTodayResult | null> {
   const headers = { Authorization: `Bearer ${accessToken}` }
   const params = new URLSearchParams({ start_date: date, end_date: date })
   const base = 'https://api.ouraring.com/v2/usercollection'
@@ -56,10 +61,10 @@ export async function fetchTodayData(accessToken: string, date: string): Promise
 
   if (!readiness && !sleep) return null
 
-  return mapToNormalized(
-    readiness as OuraReadiness,
-    sleep as OuraSleep,
-  )
+  return {
+    metrics: mapToNormalized(readiness as OuraReadiness, sleep as OuraSleep),
+    raw: { readiness, sleep },
+  }
 }
 
 export async function fetchHistoricalData(

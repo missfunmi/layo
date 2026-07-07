@@ -123,7 +123,7 @@ Do not invoke the `superpowers:brainstorming` skill for implementation tasks in 
 ## Implementation approach
 
 - One Linear issue at a time; do not combine issues in a single commit or PR
-- Run the full test suite before committing
+- Run the full test suite and check for compile-time type errors (e.g. by running `npx tsc --noEmit`) before committing
 - Commit messages must reference the nature of the commit and the Linear issue ID (e.g. `feat: implement Prisma schema [LAYO-16]` or `fix: move eslint-disable comment to correct line for exhaustive-deps [LAYO-61]`)
 - Do not merge PRs; PRs are reviewed and merged by the human
 - If implementation introduces a new environment variable, library module, or architectural decision not already in `AGENTS.md` or `docs/architecture.md`, update both in the same PR
@@ -155,7 +155,7 @@ If you are the implementing agent, for each issue:
 ## Code reviewer workflow
 After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Only follow these steps if you are the code review agent:
 
-1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. Be sure to also go through the test plan written on the PR. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
+1. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. Be sure to run the test suite (`npm test`) AND verify compile-time type-safety (`npx tsc --noEmit` or `npm run build`) locally while checked out on the PR branch. Go through the test plan written on the PR. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
 2. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR.
 3. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete.
 4. After writing the feedback file, clean up: run `git branch -d pr-[number] && git checkout -` to delete the local PR branch and return the workspace to the previously active branch.

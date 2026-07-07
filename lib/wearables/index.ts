@@ -3,7 +3,7 @@ import { decrypt } from '@/lib/crypto'
 import { fetchTodayData, refreshToken } from '@/lib/wearables/providers/oura'
 import * as Sentry from '@sentry/nextjs'
 import type { NormalizedDailyMetric, WearableBaseline, WearableThresholds } from '@/lib/wearables/types'
-import type { WearableProvider } from '@prisma/client'
+import type { WearableProvider, Prisma } from '@prisma/client'
 
 export async function fetchAndStoreTodayMetrics(
   userId: string,
@@ -17,13 +17,13 @@ export async function fetchAndStoreTodayMetrics(
 
   const accessToken = decrypt(connection.accessToken)
 
-  const attempt = async (token: string): Promise<NormalizedDailyMetric | null> => {
+  const attempt = async (token: string) => {
     return fetchTodayData(token, checkInDate)
   }
 
-  let metrics: NormalizedDailyMetric | null = null
+  let result: Awaited<ReturnType<typeof fetchTodayData>> = null
   try {
-    metrics = await attempt(accessToken)
+    result = await attempt(accessToken)
   } catch (err: unknown) {
     const isUnauthorized =
       err instanceof Error && err.message.includes('401')
@@ -33,7 +33,7 @@ export async function fetchAndStoreTodayMetrics(
     }
     try {
       const newToken = await refreshToken(userId)
-      metrics = await attempt(newToken)
+      result = await attempt(newToken)
     } catch (refreshErr) {
       Sentry.captureException(refreshErr)
       await prisma.wearableConnection.update({
@@ -44,7 +44,7 @@ export async function fetchAndStoreTodayMetrics(
     }
   }
 
-  if (!metrics) return null
+  if (!result) return null
 
   const metricDate = new Date(checkInDate)
   await prisma.wearableDailyMetric.upsert({
@@ -54,13 +54,13 @@ export async function fetchAndStoreTodayMetrics(
       connectionId: connection.id,
       provider,
       metricDate,
-      rawData: {},
-      ...metrics,
+      rawData: result.raw as unknown as Prisma.InputJsonValue,
+      ...result.metrics,
     },
-    update: metrics,
+    update: { rawData: result.raw as unknown as Prisma.InputJsonValue, ...result.metrics },
   })
 
-  return metrics
+  return result.metrics
 }
 
 const METRIC_KEYS: (keyof NormalizedDailyMetric)[] = [
