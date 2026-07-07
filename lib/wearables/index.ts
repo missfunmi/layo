@@ -235,5 +235,9 @@ export function formatLLMContext(
     lines.push(`${def.label}: ${todayFmt} (90-day avg: ${avgFmt}${deltaLabel})`)
   }
 
+  if (lines.length === 1) {
+    lines.push('Note: Baseline data is not yet available (fewer than 14 days of data). Raw metrics are available but delta comparisons cannot be computed yet.')
+  }
+
   return lines.join('\n')
 }

@@ -218,5 +218,20 @@ describe('lib/wearables/index', () => {
       expect(formatLLMContext(today, baseline, THRESHOLDS)).not.toContain('—')
       expect(formatLLMContext(null, baseline, THRESHOLDS)).not.toContain('—')
     })
+
+    test('non-null todayMetrics with all-undefined baseline emits a fallback note instead of an empty section', () => {
+      const today: NormalizedDailyMetric = { readinessScore: 72, hrvAvg: 55 }
+      const output = formatLLMContext(today, {}, THRESHOLDS)
+      expect(output).toContain('Wearable data (Oura Ring):')
+      expect(output).not.toMatch(/^Wearable data \(Oura Ring\):\s*$/)
+      expect(output).toContain('Note: Baseline data is not yet available')
+      expect(output).toContain('fewer than 14 days')
+    })
+
+    test('non-null todayMetrics with all-undefined baseline does not contain metric lines', () => {
+      const today: NormalizedDailyMetric = { readinessScore: 72 }
+      const output = formatLLMContext(today, {}, THRESHOLDS)
+      expect(output).not.toContain('Readiness score:')
+    })
   })
 })
