@@ -115,7 +115,7 @@ describe('GET /api/wearables/oura/callback', () => {
     const state = buildState(DEVICE_ID)
     await callCallback({ code: 'auth-code', state }, buildPkceCookie())
     const tokenExchangeCall = mockFetch.mock.calls.find(
-      ([url]: [string]) => url === 'https://api.ouraring.com/oauth/token',
+      ([url]) => url === 'https://api.ouraring.com/oauth/token',
     )
     const body = tokenExchangeCall?.[1]?.body as URLSearchParams
     expect(body.get('code_verifier')).toBe(PLAIN_CODE_VERIFIER)
