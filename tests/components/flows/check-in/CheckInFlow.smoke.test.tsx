@@ -6,6 +6,7 @@ afterEach(cleanup)
 
 vi.mock('@/lib/device', () => ({
   getOrCreateDeviceId: () => 'test-device-id',
+  generateCorrelationId: () => 'test-correlation-id',
 }))
 
 import { CheckInFlow } from '@/components/flows/check-in/CheckInFlow'

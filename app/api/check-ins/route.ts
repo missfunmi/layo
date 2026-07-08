@@ -8,51 +8,56 @@ import { calculateCycleDay } from '@/lib/cycle'
 import { generateRecommendation } from '@/lib/llm/index'
 import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
 import type { WearableThresholds } from '@/lib/wearables/types'
+import { log, logError, startRequest, endRequest, type RequestContext } from '@/lib/logger'
 
 const VALID_YESTERDAY_TYPES = ['planned', 'suggested', 'other']
 
-function bad(message: string) {
-  return NextResponse.json({ error: message }, { status: 400 })
+function bad(ctx: RequestContext, message: string) {
+  return endRequest(NextResponse.json({ error: message }, { status: 400 }), ctx)
 }
 
-function parseDateParam(request: NextRequest): { date: Date } | NextResponse {
+function parseDateParam(ctx: RequestContext, request: NextRequest): { date: Date } | NextResponse {
   const { searchParams } = new URL(request.url)
   const dateStr = searchParams.get('date')
-  if (!dateStr) return bad('date is required')
+  if (!dateStr) return bad(ctx, 'date is required')
   const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return bad('date is invalid')
+  if (isNaN(date.getTime())) return bad(ctx, 'date is invalid')
   return { date }
 }
 
 export async function GET(request: NextRequest) {
+  const ctx = startRequest(request, 'GET', '/api/check-ins')
+
   let user: Awaited<ReturnType<typeof resolveUser>>
   try {
     user = await resolveUser(request)
   } catch (err) {
-    if (err instanceof Response) return err
+    if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
 
-  const parsed = parseDateParam(request)
+  const parsed = parseDateParam(ctx, request)
   if (parsed instanceof NextResponse) return parsed
 
   const checkIn = await prisma.checkIn.findUnique({
     where: { userId_checkInDate: { userId: user.id, checkInDate: parsed.date } },
   })
 
-  return NextResponse.json({ checkIn })
+  return endRequest(NextResponse.json({ checkIn }), ctx)
 }
 
 export async function DELETE(request: NextRequest) {
+  const ctx = startRequest(request, 'DELETE', '/api/check-ins')
+
   let user: Awaited<ReturnType<typeof resolveUser>>
   try {
     user = await resolveUser(request)
   } catch (err) {
-    if (err instanceof Response) return err
+    if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
 
-  const parsed = parseDateParam(request)
+  const parsed = parseDateParam(ctx, request)
   if (parsed instanceof NextResponse) return parsed
 
   const checkIn = await prisma.checkIn.findUnique({
@@ -73,23 +78,26 @@ export async function DELETE(request: NextRequest) {
 
   }
 
-  return new NextResponse(null, { status: 204 })
+  return endRequest(new NextResponse(null, { status: 204 }), ctx)
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = startRequest(request, 'POST', '/api/check-ins')
+
   let user: Awaited<ReturnType<typeof resolveUser>>
   try {
     user = await resolveUser(request)
   } catch (err) {
-    if (err instanceof Response) return err
+    if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
+  log({ event: 'user_resolved', requestId: ctx.requestId, correlationId: ctx.correlationId, userId: user.id })
 
   let body: Record<string, unknown>
   try {
     body = await request.json()
   } catch {
-    return bad('Invalid request body')
+    return bad(ctx, 'Invalid request body')
   }
 
   const {
@@ -104,56 +112,56 @@ export async function POST(request: NextRequest) {
     stressors,
   } = body
 
-  if (!checkInDate || typeof checkInDate !== 'string') return bad('checkInDate is required')
+  if (!checkInDate || typeof checkInDate !== 'string') return bad(ctx, 'checkInDate is required')
   const tomorrowStr = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  if (checkInDate > tomorrowStr) return bad('checkInDate cannot be more than 1 day in the future')
+  if (checkInDate > tomorrowStr) return bad(ctx, 'checkInDate cannot be more than 1 day in the future')
 
   if (todaysPlannedWorkout === undefined || todaysPlannedWorkout === null || typeof todaysPlannedWorkout !== 'string') {
-    return bad('todaysPlannedWorkout is required')
+    return bad(ctx, 'todaysPlannedWorkout is required')
   }
   const trimmedWorkout = todaysPlannedWorkout.trim()
   if (trimmedWorkout.length === 0 || trimmedWorkout.length > 280) {
-    return bad('todaysPlannedWorkout must be 1-280 characters')
+    return bad(ctx, 'todaysPlannedWorkout must be 1-280 characters')
   }
 
-  if (sleepSatisfaction === undefined || sleepSatisfaction === null) return bad('sleepSatisfaction is required')
+  if (sleepSatisfaction === undefined || sleepSatisfaction === null) return bad(ctx, 'sleepSatisfaction is required')
   if (typeof sleepSatisfaction !== 'number' || !Number.isInteger(sleepSatisfaction) || sleepSatisfaction < 1 || sleepSatisfaction > 5) {
-    return bad('sleepSatisfaction must be an integer between 1 and 5')
+    return bad(ctx, 'sleepSatisfaction must be an integer between 1 and 5')
   }
 
-  if (feelScore === undefined || feelScore === null) return bad('feelScore is required')
+  if (feelScore === undefined || feelScore === null) return bad(ctx, 'feelScore is required')
   if (typeof feelScore !== 'number' || !Number.isInteger(feelScore) || feelScore < 1 || feelScore > 5) {
-    return bad('feelScore must be an integer between 1 and 5')
+    return bad(ctx, 'feelScore must be an integer between 1 and 5')
   }
 
   if (yesterdayWorkoutType != null) {
     if (!VALID_YESTERDAY_TYPES.includes(yesterdayWorkoutType as string)) {
-      return bad('yesterdayWorkoutType must be planned, suggested, or other')
+      return bad(ctx, 'yesterdayWorkoutType must be planned, suggested, or other')
     }
     if (yesterdayWorkoutType === 'other') {
       if (!yesterdayWorkoutDescription || typeof yesterdayWorkoutDescription !== 'string') {
-        return bad('yesterdayWorkoutDescription is required when yesterdayWorkoutType is other')
+        return bad(ctx, 'yesterdayWorkoutDescription is required when yesterdayWorkoutType is other')
       }
       const trimmedDesc = yesterdayWorkoutDescription.trim()
       if (trimmedDesc.length === 0 || trimmedDesc.length > 280) {
-        return bad('yesterdayWorkoutDescription must be 1-280 characters')
+        return bad(ctx, 'yesterdayWorkoutDescription must be 1-280 characters')
       }
     }
   }
 
   if (yesterdayWorkoutFeedback != null) {
     if (typeof yesterdayWorkoutFeedback !== 'string' || yesterdayWorkoutFeedback.length > 280) {
-      return bad('yesterdayWorkoutFeedback cannot exceed 280 characters')
+      return bad(ctx, 'yesterdayWorkoutFeedback cannot exceed 280 characters')
     }
   }
 
   if (periodStartedToday != null && typeof periodStartedToday !== 'boolean') {
-    return bad('periodStartedToday must be a boolean')
+    return bad(ctx, 'periodStartedToday must be a boolean')
   }
 
   if (stressors != null) {
     if (typeof stressors !== 'string' || stressors.length > 280) {
-      return bad('stressors cannot exceed 280 characters')
+      return bad(ctx, 'stressors cannot exceed 280 characters')
     }
   }
 
@@ -180,23 +188,51 @@ export async function POST(request: NextRequest) {
       periodStartedToday: c.periodStartedToday,
     }))
   )
+  log({ event: 'cycle_day_calculated', requestId: ctx.requestId, correlationId: ctx.correlationId, cycleDay })
 
   let wearableContext: string | null = null
   const activeConnection = await prisma.wearableConnection.findFirst({
     where: { userId: user.id, status: 'active' },
   })
   if (activeConnection) {
+    const ouraStart = performance.now()
     try {
       const todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
+      log({
+        event: 'oura_fetch',
+        requestId: ctx.requestId,
+        correlationId: ctx.correlationId,
+        fetchSkipped: false,
+        dataAvailable: todayMetrics !== null,
+        latencyMs: Math.round(performance.now() - ouraStart),
+      })
       const promptConfig = await prisma.promptConfig.findFirst({ orderBy: { createdAt: 'desc' } })
       const thresholds = (
         (promptConfig?.additionalParams as Record<string, unknown> | null)?.wearable_thresholds ?? {}
       ) as WearableThresholds
       const baseline = await computeBaseline(user.id, activeConnection.provider)
+      const baselineValues = Object.values(baseline)
+      log({
+        event: 'baseline_computed',
+        requestId: ctx.requestId,
+        correlationId: ctx.correlationId,
+        metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
+        metricsOmitted: baselineValues.filter((v) => v === undefined).length,
+      })
       wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
     } catch (err) {
       Sentry.captureException(err)
+      logError({ event: 'wearable_enrichment_error', requestId: ctx.requestId, correlationId: ctx.correlationId })
     }
+  } else {
+    log({
+      event: 'oura_fetch',
+      requestId: ctx.requestId,
+      correlationId: ctx.correlationId,
+      fetchSkipped: true,
+      dataAvailable: false,
+      latencyMs: 0,
+    })
   }
 
   let userMessage = JSON.stringify({
@@ -233,20 +269,27 @@ export async function POST(request: NextRequest) {
 
   let recommendation: Awaited<ReturnType<typeof generateRecommendation>>
   try {
-    recommendation = await generateRecommendation(userMessage)
+    recommendation = await generateRecommendation(userMessage, {
+      requestId: ctx.requestId,
+      correlationId: ctx.correlationId,
+    })
   } catch (err) {
     const existing = await prisma.checkIn.findUnique({
       where: { userId_checkInDate: { userId: user.id, checkInDate: new Date(checkInDate) } },
     })
     if (existing) Sentry.captureException(err)
-    return NextResponse.json(
-      { error: 'recommendation_failed', checkInSaved: existing !== null },
-      { status: 503 }
+    return endRequest(
+      NextResponse.json(
+        { error: 'recommendation_failed', checkInSaved: existing !== null },
+        { status: 503 }
+      ),
+      ctx
     )
   }
 
   const model = process.env.LLM_MODEL ?? 'claude-opus-4-6'
 
+  const dbStart = performance.now()
   await prisma.$transaction(async (tx) => {
     const checkIn = await tx.checkIn.upsert({
       where: { userId_checkInDate: { userId: user.id, checkInDate: new Date(checkInDate) } },
@@ -298,32 +341,44 @@ export async function POST(request: NextRequest) {
         recommendationId: rec.id,
         model,
         promptVersion: recommendation.promptVersion,
+        correlationId: ctx.correlationId,
         rawResponse: JSON.stringify(recommendation),
         rationaleInternal: recommendation.rationaleInternal,
         readinessScore: recommendation.readinessScore,
-        inputTokens: 0,
-        outputTokens: 0,
-        latencyMs: 0,
+        inputTokens: recommendation.inputTokens,
+        outputTokens: recommendation.outputTokens,
+        latencyMs: recommendation.latencyMs,
       },
       update: {
         model,
         promptVersion: recommendation.promptVersion,
+        correlationId: ctx.correlationId,
         rawResponse: JSON.stringify(recommendation),
         rationaleInternal: recommendation.rationaleInternal,
         readinessScore: recommendation.readinessScore,
-        inputTokens: 0,
-        outputTokens: 0,
-        latencyMs: 0,
+        inputTokens: recommendation.inputTokens,
+        outputTokens: recommendation.outputTokens,
+        latencyMs: recommendation.latencyMs,
       },
     })
   })
+  log({
+    event: 'db_write',
+    requestId: ctx.requestId,
+    correlationId: ctx.correlationId,
+    tables: ['check_ins', 'recommendations', 'llm_inference_logs'],
+    latencyMs: Math.round(performance.now() - dbStart),
+  })
 
-  return NextResponse.json(
-    {
-      recommendationType: recommendation.recommendationType,
-      modificationDetail: recommendation.modificationDetail,
-      rationale: recommendation.rationale,
-    },
-    { status: 201 }
+  return endRequest(
+    NextResponse.json(
+      {
+        recommendationType: recommendation.recommendationType,
+        modificationDetail: recommendation.modificationDetail,
+        rationale: recommendation.rationale,
+      },
+      { status: 201 }
+    ),
+    ctx
   )
 }

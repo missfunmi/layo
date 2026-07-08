@@ -1,7 +1,11 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setupTestDb, teardownTestDb, getTestClient } from '@/tests/helpers/db'
 import { makeRequest } from '@/tests/helpers/api'
 import * as handler from '@/app/api/wearables/route'
+
+function loggedEvents(consoleLogSpy: ReturnType<typeof vi.spyOn>): Record<string, unknown>[] {
+  return consoleLogSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+}
 
 const DEVICE_ID = 'test-device-wearables'
 
@@ -70,5 +74,25 @@ describe('GET /api/wearables', () => {
     expect(body.connections).toHaveLength(1)
     expect(body.connections[0].provider).toBe('oura')
     expect(body.connections[0].status).toBe('inactive')
+  })
+
+  test('returns an x-request-id response header', async () => {
+    await getTestClient().user.create({ data: { deviceId: DEVICE_ID } })
+    const res = await makeRequest(handler, 'GET', '/api/wearables', undefined, { 'X-Device-ID': DEVICE_ID })
+    expect(res.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('logs request_start, request_end, and connections_fetched with count', async () => {
+    await seedUserWithConnection('active')
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    await makeRequest(handler, 'GET', '/api/wearables', undefined, { 'X-Device-ID': DEVICE_ID })
+    const events = loggedEvents(consoleLogSpy)
+    consoleLogSpy.mockRestore()
+
+    expect(events).toContainEqual(
+      expect.objectContaining({ event: 'request_start', method: 'GET', path: '/api/wearables' })
+    )
+    expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 200 }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'connections_fetched', count: 1 }))
   })
 })

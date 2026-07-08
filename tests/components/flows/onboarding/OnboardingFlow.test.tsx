@@ -12,6 +12,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/device', () => ({
   getOrCreateDeviceId: () => 'test-device-id',
+  generateCorrelationId: () => 'test-correlation-id',
 }))
 
 vi.mock('@/components/flows/onboarding/OuraConnectStep', () => ({

@@ -250,6 +250,7 @@ model LlmInferenceLog {
   recommendation    Recommendation @relation(fields: [recommendationId], references: [id])
   model             String
   promptVersion     String         @map("prompt_version")
+  correlationId     String?        @map("correlation_id")
   rawResponse       String         @map("raw_response") @db.Text
   rationaleInternal String         @map("rationale_internal") @db.Text
   readinessScore    Int            @map("readiness_score")
@@ -729,7 +730,7 @@ Local development uses `.env.local`. Production variables are set in the Vercel 
 
 ## Logging
 
-Sentry is initialized in `instrumentation.ts` and used for error logging only.
+Sentry is initialized in `instrumentation.ts` and used for error logging.
 
 **Error events:**
 - LLM response parse failures (include raw response in Sentry context)
@@ -738,6 +739,21 @@ Sentry is initialized in `instrumentation.ts` and used for error logging only.
 - Oura token refresh failures (include user ID and error response)
 - Oura API errors during metric fetches (include endpoint and status code)
 - Missing `WEARABLE_TOKEN_KEY` in production (token stored in plaintext)
+
+### Structured logging and request tracing
+
+`lib/logger.ts` provides structured JSON logging so Vercel's log drain can index and filter fields, independent of Sentry:
+
+- `log(fields)` — writes a JSON line (with an added `timestamp`) to stdout
+- `logError(fields)` — writes a JSON line to stderr; called alongside every `Sentry.captureException`/`captureMessage` so errors are visible in Vercel logs without opening Sentry
+- `startRequest(request, method, path)` — generates a `requestId` (`crypto.randomUUID()`), reads `correlationId` from the `x-correlation-id` request header (falling back to a generated UUID), logs a `request_start` event, and returns a `RequestContext`
+- `endRequest(response, ctx)` — logs a `request_end` event with `statusCode` and `latencyMs`, sets the `x-request-id` response header, and returns the response unchanged
+
+Every API route handler calls `startRequest` first and routes every response through `endRequest`, so all routes emit entry/exit log lines and return `x-request-id`.
+
+**Two IDs, two scopes:** `requestId` is unique per API call. `correlationId` represents a logical user action that may span multiple API calls in the future (e.g. Oura webhook flows); for current flows it is 1:1 with `requestId`. The client generates a fresh `correlationId` via `generateCorrelationId()` in `lib/device.ts` before each user action (onboarding submission, check-in submission, Oura OAuth initiation) and sends it as `x-correlation-id`. It is ephemeral and never persisted client-side. `POST /api/check-ins` persists the resolved `correlationId` to `llm_inference_logs.correlation_id` so a recommendation can be traced in logs without guessing a time window.
+
+`POST /api/check-ins` and `GET /api/wearables/oura/callback` additionally emit a log line at the completion of each internal phase (user resolution, cycle day calculation, Oura fetch, baseline computation, LLM inference, DB writes; state decryption, token exchange, connection write, backfill). Log lines never include check-in free text, stressors, rationale strings, Oura metric values, or access/refresh tokens — only IDs, shapes, statuses, and latencies.
 
 ---
 

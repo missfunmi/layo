@@ -12,7 +12,7 @@ import { SingleSelect } from '@/components/ui/SingleSelect'
 import { PickerField } from '@/components/ui/PickerField'
 import { DateField } from '@/components/ui/DateField'
 import { OuraConnectStep } from '@/components/flows/onboarding/OuraConnectStep'
-import { getOrCreateDeviceId } from '@/lib/device'
+import { getOrCreateDeviceId, generateCorrelationId } from '@/lib/device'
 
 type Step =
   | 'welcome'
@@ -147,7 +147,10 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-correlation-id': generateCorrelationId(),
+        },
         body: JSON.stringify(payload),
       })
       if (res.ok) {

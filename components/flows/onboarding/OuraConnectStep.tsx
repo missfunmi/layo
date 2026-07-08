@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { BackButton } from '@/components/ui/BackButton'
 import { CloseButton } from '@/components/ui/CloseButton'
 import { ProgressDots } from '@/components/ui/ProgressDots'
-import { getOrCreateDeviceId } from '@/lib/device'
+import { getOrCreateDeviceId, generateCorrelationId } from '@/lib/device'
 
 interface OuraConnectStepProps {
   onBack: () => void
@@ -47,7 +47,7 @@ export function OuraConnectStep({ onBack, onClose, onContinue, active, total }: 
     try {
       const deviceId = getOrCreateDeviceId()
       const res = await fetch('/api/wearables/oura/authorize', {
-        headers: { 'X-Device-ID': deviceId },
+        headers: { 'X-Device-ID': deviceId, 'x-correlation-id': generateCorrelationId() },
       })
       const data = await res.json() as { authorizationUrl: string }
       window.location.href = data.authorizationUrl

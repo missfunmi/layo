@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
 import { resolveUser } from '@/lib/api'
+import { logError, startRequest, endRequest } from '@/lib/logger'
 
 const ALLOWED_HORMONAL_STAGES = [
   'premenopausal',
@@ -16,16 +17,18 @@ const ALLOWED_HORMONAL_STAGES = [
 const VALID_EVENT_TYPES = ['running', 'cycling', 'swimming', 'triathlon', 'skiing', 'other'] as const
 type ValidEventType = (typeof VALID_EVENT_TYPES)[number]
 
-function bad(message: string) {
-  return NextResponse.json({ error: message }, { status: 400 })
+function bad(ctx: ReturnType<typeof startRequest>, message: string) {
+  return endRequest(NextResponse.json({ error: message }, { status: 400 }), ctx)
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = startRequest(request, 'POST', '/api/users')
+
   let body: Record<string, unknown>
   try {
     body = await request.json()
   } catch {
-    return bad('Invalid request body')
+    return bad(ctx, 'Invalid request body')
   }
 
   const {
@@ -41,14 +44,12 @@ export async function POST(request: NextRequest) {
   } = body as Record<string, unknown>
 
   if (!deviceId || typeof deviceId !== 'string') {
-    return bad('deviceId is required')
+    return bad(ctx, 'deviceId is required')
   }
-
-  console.log('[POST /api/users] deviceId:', deviceId)
 
   const name = typeof rawName === 'string' ? rawName.trim() : ''
   if (!rawName || name.length < 1 || name.length > 50) {
-    return bad('name must be 1-50 characters')
+    return bad(ctx, 'name must be 1-50 characters')
   }
 
   const currentYear = new Date().getFullYear()
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     (birthYear as number) < currentYear - 100 ||
     (birthYear as number) > currentYear - 13
   ) {
-    return bad('birthYear is invalid')
+    return bad(ctx, 'birthYear is invalid')
   }
 
   if (
@@ -67,11 +68,11 @@ export async function POST(request: NextRequest) {
     hormonalLifeStage.length < 1 ||
     !hormonalLifeStage.every((s) => ALLOWED_HORMONAL_STAGES.includes(s as string))
   ) {
-    return bad('hormonalLifeStage is invalid')
+    return bad(ctx, 'hormonalLifeStage is invalid')
   }
 
   if (trainingGoal !== 'race' && trainingGoal !== 'non_race') {
-    return bad('trainingGoal must be race or non_race')
+    return bad(ctx, 'trainingGoal must be race or non_race')
   }
 
   let eventName: string | undefined
@@ -82,32 +83,32 @@ export async function POST(request: NextRequest) {
   if (trainingGoal === 'race') {
     eventName = typeof rawEventName === 'string' ? rawEventName.trim() : ''
     if (!rawEventName || eventName.length < 1 || eventName.length > 100) {
-      return bad('eventName must be 1-100 characters when trainingGoal is race')
+      return bad(ctx, 'eventName must be 1-100 characters when trainingGoal is race')
     }
 
     if (!VALID_EVENT_TYPES.includes(eventType as ValidEventType)) {
-      return bad('eventType is invalid')
+      return bad(ctx, 'eventType is invalid')
     }
     validatedEventType = eventType as ValidEventType
 
     if (eventType === 'other') {
       const trimmed = typeof rawEventTypeOther === 'string' ? rawEventTypeOther.trim() : ''
       if (!rawEventTypeOther || trimmed.length < 1 || trimmed.length > 50) {
-        return bad('eventTypeOther must be 1-50 characters when eventType is other')
+        return bad(ctx, 'eventTypeOther must be 1-50 characters when eventType is other')
       }
       eventTypeOther = trimmed
     }
 
     if (!eventDate || typeof eventDate !== 'string') {
-      return bad('eventDate is required when trainingGoal is race')
+      return bad(ctx, 'eventDate is required when trainingGoal is race')
     }
     eventDateParsed = new Date(eventDate as string)
     if (isNaN(eventDateParsed.getTime())) {
-      return bad('eventDate is invalid')
+      return bad(ctx, 'eventDate is invalid')
     }
     const todayStr = new Date().toISOString().slice(0, 10)
     if ((eventDate as string) <= todayStr) {
-      return bad('eventDate must be in the future')
+      return bad(ctx, 'eventDate must be in the future')
     }
   }
 
@@ -160,21 +161,22 @@ export async function POST(request: NextRequest) {
       return u
     })
 
-    return NextResponse.json({ userId: user.id }, { status: 201 })
+    return endRequest(NextResponse.json({ userId: user.id }, { status: 201 }), ctx)
   } catch (err) {
     Sentry.captureException(err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logError({ event: 'user_upsert_error', requestId: ctx.requestId, correlationId: ctx.correlationId })
+    return endRequest(NextResponse.json({ error: 'Internal server error' }, { status: 500 }), ctx)
   }
 }
 
 export async function GET(request: NextRequest) {
-  console.log('[GET /api/users] deviceId:', request.headers.get('X-Device-ID'))
+  const ctx = startRequest(request, 'GET', '/api/users')
 
   let user: Awaited<ReturnType<typeof resolveUser>>
   try {
     user = await resolveUser(request)
   } catch (err) {
-    if (err instanceof Response) return err
+    if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
 
@@ -185,8 +187,11 @@ export async function GET(request: NextRequest) {
   })
 
   if (!profile) {
-    return NextResponse.json({ error: 'not_found' }, { status: 404 })
+    return endRequest(NextResponse.json({ error: 'not_found' }, { status: 404 }), ctx)
   }
 
-  return NextResponse.json({ user: { name: profile.name, hormonalLifeStage: profile.hormonalLifeStage } })
+  return endRequest(
+    NextResponse.json({ user: { name: profile.name, hormonalLifeStage: profile.hormonalLifeStage } }),
+    ctx
+  )
 }

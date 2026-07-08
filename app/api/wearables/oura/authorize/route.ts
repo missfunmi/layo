@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes, createHash } from 'crypto'
 import { randomUUID } from 'crypto'
 import { encrypt } from '@/lib/crypto'
+import { log, startRequest, endRequest } from '@/lib/logger'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const ctx = startRequest(req, 'GET', '/api/wearables/oura/authorize')
+
   const deviceId = req.headers.get('X-Device-ID')
   if (!deviceId) {
-    return NextResponse.json({ error: 'Missing X-Device-ID header' }, { status: 401 })
+    return endRequest(NextResponse.json({ error: 'Missing X-Device-ID header' }, { status: 401 }), ctx)
   }
 
   const codeVerifierPlain = randomBytes(32).toString('base64url')
@@ -27,6 +30,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   })
 
   const authorizationUrl = `https://cloud.ouraring.com/oauth/authorize?${params.toString()}`
+  log({ event: 'pkce_generated', requestId: ctx.requestId, correlationId: ctx.correlationId, userId: deviceId })
 
   const response = NextResponse.json({ authorizationUrl })
   response.cookies.set('layo_oura_pkce_verifier', encryptedCodeVerifier, {
@@ -36,5 +40,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     path: '/',
     maxAge: 300,
   })
-  return response
+  return endRequest(response, ctx)
 }

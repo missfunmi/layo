@@ -23,4 +23,12 @@ export interface ParsedRecommendation {
   rationaleInternal: string
   readinessScore: number
   promptVersion: string
+  inputTokens: number
+  outputTokens: number
+  latencyMs: number
+}
+
+export interface InferenceLogContext {
+  requestId: string
+  correlationId: string
 }
