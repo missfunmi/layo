@@ -116,6 +116,30 @@ describe('GET /api/wearables/oura/authorize', () => {
       expect.objectContaining({ event: 'request_start', method: 'GET', path: '/api/wearables/oura/authorize' })
     )
     expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 200 }))
-    expect(events).toContainEqual(expect.objectContaining({ event: 'pkce_generated', userId: DEVICE_ID }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'pkce_generated', deviceId: DEVICE_ID }))
+  })
+
+  test('pkce_generated does not include a userId field (no DB user lookup happens in this route)', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    await makeRequest(handler, 'GET', '/api/wearables/oura/authorize', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    const pkceEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'pkce_generated')
+    consoleLogSpy.mockRestore()
+
+    expect(pkceEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end includes deviceId but never a userId (no DB user lookup happens in this route)', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const res = await makeRequest(handler, 'GET', '/api/wearables/oura/authorize', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(200)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent).not.toHaveProperty('userId')
   })
 })

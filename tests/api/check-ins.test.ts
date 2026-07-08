@@ -150,6 +150,45 @@ describe('POST /api/check-ins request tracing', () => {
     const ouraFetchEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'oura_fetch')
     expect(ouraFetchEvent?.fetchSkipped).toBe(true)
   })
+
+  test('request_end includes deviceId and userId on success', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+    const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    expect(response.status).toBe(201)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
+  })
+
+  test('request_end includes deviceId but omits userId on 401 for an unknown device', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+      'X-Device-ID': 'unknown-device',
+    })
+
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    expect(response.status).toBe(401)
+    expect(endEvent?.deviceId).toBe('unknown-device')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end omits deviceId and userId on 401 when X-Device-ID header is missing entirely', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY)
+
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    expect(response.status).toBe(401)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('user_resolved event includes deviceId and userId', async () => {
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+    const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+
+    const userResolvedEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'user_resolved')
+    expect(userResolvedEvent?.deviceId).toBe(DEVICE_ID)
+    expect(userResolvedEvent?.userId).toBe(user.id)
+  })
 })
 
 describe('POST /api/check-ins', () => {
@@ -596,6 +635,20 @@ describe('GET /api/check-ins', () => {
     expect(response.headers.get('x-request-id')).toBeTruthy()
   })
 
+  test('request_end includes deviceId and userId', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(200)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
+  })
+
   test('returns 401 when X-Device-ID header is missing', async () => {
     const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`)
     expect(response.status).toBe(401)
@@ -705,6 +758,20 @@ describe('DELETE /api/check-ins', () => {
       'X-Device-ID': DEVICE_ID,
     })
     expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('request_end includes deviceId and userId', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(204)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
   })
 
   test('returns 401 when X-Device-ID header is missing', async () => {

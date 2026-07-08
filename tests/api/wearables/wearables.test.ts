@@ -95,4 +95,38 @@ describe('GET /api/wearables', () => {
     expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 200 }))
     expect(events).toContainEqual(expect.objectContaining({ event: 'connections_fetched', count: 1 }))
   })
+
+  test('request_end includes deviceId and userId on success', async () => {
+    const user = await seedUserWithConnection('active')
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const res = await makeRequest(handler, 'GET', '/api/wearables', undefined, { 'X-Device-ID': DEVICE_ID })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(200)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
+  })
+
+  test('request_end includes deviceId but omits userId on 401 for an unknown device', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const res = await makeRequest(handler, 'GET', '/api/wearables', undefined, { 'X-Device-ID': 'unknown-device' })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(401)
+    expect(endEvent?.deviceId).toBe('unknown-device')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end omits deviceId and userId on 401 when X-Device-ID header is missing entirely', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const res = await makeRequest(handler, 'GET', '/api/wearables')
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(401)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
 })

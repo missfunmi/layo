@@ -233,6 +233,30 @@ describe('POST /api/users', () => {
     )
     expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 201 }))
   })
+
+  test('request_end includes deviceId from the request body and userId from the created user', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    const body = await response.json()
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(201)
+    expect(endEvent?.deviceId).toBe(BASE_BODY.deviceId)
+    expect(endEvent?.userId).toBe(body.userId)
+  })
+
+  test('request_end omits userId (deviceId not yet known) on a validation error before deviceId is read', async () => {
+    const { deviceId: _deviceId, ...body } = BASE_BODY
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'POST', '/api/users', body)
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(400)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
 })
 
 describe('GET /api/users', () => {
@@ -268,5 +292,41 @@ describe('GET /api/users', () => {
     await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
     const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': BASE_BODY.deviceId })
     expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('request_end includes deviceId and userId on success', async () => {
+    await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: BASE_BODY.deviceId } })
+
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': BASE_BODY.deviceId })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(200)
+    expect(endEvent?.deviceId).toBe(BASE_BODY.deviceId)
+    expect(endEvent?.userId).toBe(user.id)
+  })
+
+  test('request_end includes deviceId but omits userId on 401 for an unknown device', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': 'unknown-device' })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(401)
+    expect(endEvent?.deviceId).toBe('unknown-device')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end omits deviceId and userId on 401 when X-Device-ID header is missing entirely', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', '/api/users')
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(401)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
   })
 })

@@ -17,17 +17,18 @@ vi.mock('@/lib/llm/providers/gemini', () => ({
 }))
 
 vi.mock('@/lib/logger', () => ({
-  log: vi.fn(),
-  logError: vi.fn(),
+  logCtx: vi.fn(),
+  logErrorCtx: vi.fn(),
 }))
 
 import { generateRecommendation } from '@/lib/llm/index'
 import { prisma } from '@/lib/db'
 import * as anthropicProvider from '@/lib/llm/providers/anthropic'
 import * as geminiProvider from '@/lib/llm/providers/gemini'
-import { log, logError } from '@/lib/logger'
+import { logCtx, logErrorCtx } from '@/lib/logger'
 
 const TEST_CTX = { requestId: 'req-1', correlationId: 'corr-1' }
+const TEST_CTX_WITH_IDS = { requestId: 'req-1', correlationId: 'corr-1', deviceId: 'device-1', userId: 'user-1' }
 
 const MOCK_PROMPT_CONFIG = {
   id: 'config-1',
@@ -187,24 +188,19 @@ describe('generateRecommendation', () => {
   test('logs prompt_config_fetched with requestId, correlationId, and promptVersion', async () => {
     await generateRecommendation('Test user message', TEST_CTX)
 
-    expect(log).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'prompt_config_fetched',
-        requestId: 'req-1',
-        correlationId: 'corr-1',
-        promptVersion: 'test-v1',
-      })
+    expect(logCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'req-1', correlationId: 'corr-1' }),
+      expect.objectContaining({ event: 'prompt_config_fetched', promptVersion: 'test-v1' })
     )
   })
 
   test('logs llm_inference with model, promptVersion, token counts, latencyMs, and recommendationType', async () => {
     await generateRecommendation('Test user message', TEST_CTX)
 
-    expect(log).toHaveBeenCalledWith(
+    expect(logCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'req-1', correlationId: 'corr-1' }),
       expect.objectContaining({
         event: 'llm_inference',
-        requestId: 'req-1',
-        correlationId: 'corr-1',
         promptVersion: 'test-v1',
         inputTokens: 100,
         outputTokens: 50,
@@ -214,21 +210,19 @@ describe('generateRecommendation', () => {
     )
   })
 
-  test('logs a matching logError when the provider call throws', async () => {
+  test('logs a matching logErrorCtx when the provider call throws', async () => {
     const providerError = new Error('Anthropic API error: 500')
     vi.mocked(anthropicProvider.complete).mockRejectedValue(providerError)
 
     await expect(generateRecommendation('Test user message', TEST_CTX)).rejects.toThrow()
 
-    expect(logError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        requestId: 'req-1',
-        correlationId: 'corr-1',
-      })
+    expect(logErrorCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'req-1', correlationId: 'corr-1' }),
+      expect.anything()
     )
   })
 
-  test('logs a matching logError when the LLM response fails validation', async () => {
+  test('logs a matching logErrorCtx when the LLM response fails validation', async () => {
     vi.mocked(anthropicProvider.complete).mockResolvedValue({
       ...MOCK_RAW_RESPONSE,
       content: 'not valid json {{',
@@ -236,15 +230,13 @@ describe('generateRecommendation', () => {
 
     await expect(generateRecommendation('Test user message', TEST_CTX)).rejects.toThrow()
 
-    expect(logError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        requestId: 'req-1',
-        correlationId: 'corr-1',
-      })
+    expect(logErrorCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'req-1', correlationId: 'corr-1' }),
+      expect.anything()
     )
   })
 
-  test('does not include raw LLM response content in the validation-failure logError call', async () => {
+  test('does not include raw LLM response content in the validation-failure logErrorCtx call', async () => {
     vi.mocked(anthropicProvider.complete).mockResolvedValue({
       ...MOCK_RAW_RESPONSE,
       content: 'not valid json {{ super-secret-rationale-text',
@@ -252,7 +244,31 @@ describe('generateRecommendation', () => {
 
     await expect(generateRecommendation('Test user message', TEST_CTX)).rejects.toThrow()
 
-    const loggedFields = vi.mocked(logError).mock.calls.map((call) => JSON.stringify(call[0]))
+    const loggedFields = vi.mocked(logErrorCtx).mock.calls.map((call) => JSON.stringify(call))
     expect(loggedFields.some((f) => f.includes('super-secret-rationale-text'))).toBe(false)
+  })
+
+  test('propagates deviceId and userId from ctx to prompt_config_fetched and llm_inference', async () => {
+    await generateRecommendation('Test user message', TEST_CTX_WITH_IDS)
+
+    expect(logCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: 'device-1', userId: 'user-1' }),
+      expect.objectContaining({ event: 'prompt_config_fetched' })
+    )
+    expect(logCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: 'device-1', userId: 'user-1' }),
+      expect.objectContaining({ event: 'llm_inference' })
+    )
+  })
+
+  test('propagates deviceId and userId from ctx to logErrorCtx on provider failure', async () => {
+    vi.mocked(anthropicProvider.complete).mockRejectedValue(new Error('Anthropic API error: 500'))
+
+    await expect(generateRecommendation('Test user message', TEST_CTX_WITH_IDS)).rejects.toThrow()
+
+    expect(logErrorCtx).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: 'device-1', userId: 'user-1' }),
+      expect.anything()
+    )
   })
 })
