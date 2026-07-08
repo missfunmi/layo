@@ -1,8 +1,12 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { setupTestDb, teardownTestDb, getTestClient } from '../helpers/db'
 import { makeRequest } from '../helpers/api'
 import * as handler from '@/app/api/recommendations/route'
+
+function loggedEvents(consoleLogSpy: ReturnType<typeof vi.spyOn>): Record<string, unknown>[] {
+  return consoleLogSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+}
 
 const DEVICE_ID = 'test-device-recommendations'
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -126,5 +130,43 @@ describe('GET /api/recommendations', () => {
       'X-Device-ID': DEVICE_ID,
     })
     expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('request_end includes deviceId and userId on success', async () => {
+    const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', `/api/recommendations?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(200)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
+  })
+
+  test('request_end includes deviceId but omits userId on 401 for an unknown device', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', `/api/recommendations?date=${TODAY}`, undefined, {
+      'X-Device-ID': 'unknown-device',
+    })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(401)
+    expect(endEvent?.deviceId).toBe('unknown-device')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end omits deviceId and userId on 401 when X-Device-ID header is missing entirely', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const response = await makeRequest(handler, 'GET', `/api/recommendations?date=${TODAY}`)
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(response.status).toBe(401)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
   })
 })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { log, startRequest, endRequest } from '@/lib/logger'
+import { logCtx, startRequest, endRequest } from '@/lib/logger'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = startRequest(req, 'GET', '/api/wearables')
@@ -14,12 +14,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!user) {
     return endRequest(NextResponse.json({ error: 'Unknown device' }, { status: 401 }), ctx)
   }
+  ctx.userId = user.id
 
   const connections = await prisma.wearableConnection.findMany({
     where: { userId: user.id },
     select: { provider: true, status: true, connectedAt: true },
   })
-  log({ event: 'connections_fetched', requestId: ctx.requestId, correlationId: ctx.correlationId, count: connections.length })
+  logCtx(ctx, { event: 'connections_fetched', count: connections.length })
 
   return endRequest(
     NextResponse.json({

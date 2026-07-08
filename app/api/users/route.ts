@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
 import { resolveUser } from '@/lib/api'
-import { logError, startRequest, endRequest } from '@/lib/logger'
+import { logErrorCtx, startRequest, endRequest } from '@/lib/logger'
 
 const ALLOWED_HORMONAL_STAGES = [
   'premenopausal',
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
   if (!deviceId || typeof deviceId !== 'string') {
     return bad(ctx, 'deviceId is required')
   }
+  ctx.deviceId = deviceId
 
   const name = typeof rawName === 'string' ? rawName.trim() : ''
   if (!rawName || name.length < 1 || name.length > 50) {
@@ -161,10 +162,11 @@ export async function POST(request: NextRequest) {
       return u
     })
 
+    ctx.userId = user.id
     return endRequest(NextResponse.json({ userId: user.id }, { status: 201 }), ctx)
   } catch (err) {
     Sentry.captureException(err)
-    logError({ event: 'user_upsert_error', requestId: ctx.requestId, correlationId: ctx.correlationId })
+    logErrorCtx(ctx, { event: 'user_upsert_error' })
     return endRequest(NextResponse.json({ error: 'Internal server error' }, { status: 500 }), ctx)
   }
 }
@@ -179,6 +181,7 @@ export async function GET(request: NextRequest) {
     if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
+  ctx.userId = user.id
 
   const profile = await prisma.userProfile.findFirst({
     where: { userId: user.id },

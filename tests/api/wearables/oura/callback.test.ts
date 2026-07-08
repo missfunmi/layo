@@ -195,4 +195,100 @@ describe('GET /api/wearables/oura/callback', () => {
 
     expect(errorEvents).toContainEqual(expect.objectContaining({ event: 'oura_backfill_error' }))
   })
+
+  test('request_end includes deviceId and userId on success', async () => {
+    const user = await getTestClient().user.findUniqueOrThrow({ where: { deviceId: DEVICE_ID } })
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    const res = await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(307)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
+  })
+
+  test('wearable_connection_written includes deviceId and userId', async () => {
+    const user = await getTestClient().user.findUniqueOrThrow({ where: { deviceId: DEVICE_ID } })
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const event = loggedEvents(consoleLogSpy).find((e) => e.event === 'wearable_connection_written')
+    consoleLogSpy.mockRestore()
+
+    expect(event?.deviceId).toBe(DEVICE_ID)
+    expect(event?.userId).toBe(user.id)
+  })
+
+  test('state_decrypted includes deviceId', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const event = loggedEvents(consoleLogSpy).find((e) => e.event === 'state_decrypted')
+    consoleLogSpy.mockRestore()
+
+    expect(event?.deviceId).toBe(DEVICE_ID)
+  })
+
+  test('request_end omits deviceId when code param is missing (before state decryption ever runs)', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    const res = await callCallback({ state }, buildPkceCookie())
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(307)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end omits deviceId when state is invalid (decryption never succeeds)', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const res = await callCallback({ code: 'auth-code', state: 'not-a-valid-encrypted-state' }, buildPkceCookie())
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(307)
+    expect(endEvent).not.toHaveProperty('deviceId')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end includes deviceId but omits userId when PKCE cookie is missing (DB lookup never runs)', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    const res = await callCallback({ code: 'auth-code', state })
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(307)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end includes deviceId but omits userId when deviceId in state is unknown', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = encrypt(JSON.stringify({ nonce: randomUUID(), deviceId: 'unknown-device-id' }))
+    const res = await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(307)
+    expect(endEvent?.deviceId).toBe('unknown-device-id')
+    expect(endEvent).not.toHaveProperty('userId')
+  })
+
+  test('request_end includes deviceId and userId even when the Oura token exchange fails', async () => {
+    const user = await getTestClient().user.findUniqueOrThrow({ where: { deviceId: DEVICE_ID } })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    const res = await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const endEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_end')
+    consoleLogSpy.mockRestore()
+
+    expect(res.status).toBe(307)
+    expect(endEvent?.deviceId).toBe(DEVICE_ID)
+    expect(endEvent?.userId).toBe(user.id)
+  })
 })

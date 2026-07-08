@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
 import * as anthropicProvider from '@/lib/llm/providers/anthropic'
 import * as geminiProvider from '@/lib/llm/providers/gemini'
-import { log, logError } from '@/lib/logger'
+import { logCtx, logErrorCtx } from '@/lib/logger'
 import type { ParsedRecommendation, InferenceParams, LLMRawResponse, LLMProvider, InferenceLogContext } from '@/lib/llm/types'
 
 const ALLOWED_RECOMMENDATION_TYPES = ['as_written', 'modify', 'rest'] as const
@@ -57,8 +57,6 @@ export async function generateRecommendation(
   userMessage: string,
   ctx: InferenceLogContext
 ): Promise<ParsedRecommendation> {
-  const { requestId, correlationId } = ctx
-
   const promptConfig = await prisma.promptConfig.findFirst({
     orderBy: { createdAt: 'desc' },
   })
@@ -67,7 +65,7 @@ export async function generateRecommendation(
     throw new Error('No PromptConfig found in database')
   }
 
-  log({ event: 'prompt_config_fetched', requestId, correlationId, promptVersion: promptConfig.version })
+  logCtx(ctx, { event: 'prompt_config_fetched', promptVersion: promptConfig.version })
 
   const providerName = process.env.LLM_PROVIDER ?? 'anthropic'
   const model = process.env.LLM_MODEL ?? 'claude-opus-4-6'
@@ -85,7 +83,7 @@ export async function generateRecommendation(
     raw = await provider.complete(promptConfig.systemPrompt, userMessage, params)
   } catch (err) {
     Sentry.captureException(err)
-    logError({ event: 'llm_provider_error', requestId, correlationId, model })
+    logErrorCtx(ctx, { event: 'llm_provider_error', model })
     throw err
   }
 
@@ -97,20 +95,12 @@ export async function generateRecommendation(
       level: 'error',
       extra: { raw: raw.content, error: String(err) },
     })
-    logError({
-      event: 'llm_response_invalid',
-      requestId,
-      correlationId,
-      model,
-      promptVersion: promptConfig.version,
-    })
+    logErrorCtx(ctx, { event: 'llm_response_invalid', model, promptVersion: promptConfig.version })
     throw err
   }
 
-  log({
+  logCtx(ctx, {
     event: 'llm_inference',
-    requestId,
-    correlationId,
     model,
     promptVersion: parsed.promptVersion,
     inputTokens: parsed.inputTokens,

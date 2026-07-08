@@ -3,7 +3,7 @@ import { decrypt, encrypt } from '@/lib/crypto'
 import { prisma } from '@/lib/db'
 import { fetchHistoricalData } from '@/lib/wearables/providers/oura'
 import * as Sentry from '@sentry/nextjs'
-import { log, logError, startRequest, endRequest, type RequestContext } from '@/lib/logger'
+import { logCtx, logErrorCtx, startRequest, endRequest, type RequestContext } from '@/lib/logger'
 
 const PROVIDER = 'oura' as const
 
@@ -31,6 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch {
     return errorRedirect(req, ctx)
   }
+  ctx.deviceId = deviceId
 
   const pkceCookieValue = req.cookies.get('layo_oura_pkce_verifier')?.value
   if (!pkceCookieValue) return errorRedirect(req, ctx)
@@ -44,7 +45,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch {
     return errorRedirect(req, ctx)
   }
-  log({ event: 'state_decrypted', requestId: ctx.requestId, correlationId: ctx.correlationId, userId })
+  ctx.userId = userId
+  logCtx(ctx, { event: 'state_decrypted' })
 
   let accessToken: string
   let refreshToken: string
@@ -64,10 +66,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       }),
     })
     if (!res.ok) {
-      log({
+      logCtx(ctx, {
         event: 'oura_token_exchange',
-        requestId: ctx.requestId,
-        correlationId: ctx.correlationId,
         success: false,
         latencyMs: Math.round(performance.now() - tokenExchangeStart),
       })
@@ -81,18 +81,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     accessToken = tokens.access_token
     refreshToken = tokens.refresh_token
     expiresIn = tokens.expires_in
-    log({
+    logCtx(ctx, {
       event: 'oura_token_exchange',
-      requestId: ctx.requestId,
-      correlationId: ctx.correlationId,
       success: true,
       latencyMs: Math.round(performance.now() - tokenExchangeStart),
     })
   } catch {
-    log({
+    logCtx(ctx, {
       event: 'oura_token_exchange',
-      requestId: ctx.requestId,
-      correlationId: ctx.correlationId,
       success: false,
       latencyMs: Math.round(performance.now() - tokenExchangeStart),
     })
@@ -126,14 +122,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch {
     return errorRedirect(req, ctx)
   }
-  log({
-    event: 'wearable_connection_written',
-    requestId: ctx.requestId,
-    correlationId: ctx.correlationId,
-    provider: PROVIDER,
-  })
+  logCtx(ctx, { event: 'wearable_connection_written', provider: PROVIDER })
 
-  log({ event: 'oura_backfill_start', requestId: ctx.requestId, correlationId: ctx.correlationId })
+  logCtx(ctx, { event: 'oura_backfill_start' })
   const backfillStart = performance.now()
   try {
     const today = new Date()
@@ -157,16 +148,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         }),
       ),
     )
-    log({
+    logCtx(ctx, {
       event: 'oura_backfill_complete',
-      requestId: ctx.requestId,
-      correlationId: ctx.correlationId,
       rowsUpserted: metrics.length,
       latencyMs: Math.round(performance.now() - backfillStart),
     })
   } catch (err) {
     Sentry.captureException(err)
-    logError({ event: 'oura_backfill_error', requestId: ctx.requestId, correlationId: ctx.correlationId })
+    logErrorCtx(ctx, { event: 'oura_backfill_error' })
   }
 
   return endRequest(NextResponse.redirect(new URL('/onboarding?wearable=connected', req.url)), ctx)

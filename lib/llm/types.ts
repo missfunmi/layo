@@ -31,4 +31,6 @@ export interface ParsedRecommendation {
 export interface InferenceLogContext {
   requestId: string
   correlationId: string
+  deviceId?: string
+  userId?: string
 }

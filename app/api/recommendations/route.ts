@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
+  ctx.userId = user.id
 
   const { searchParams } = new URL(request.url)
   const dateStr = searchParams.get('date')

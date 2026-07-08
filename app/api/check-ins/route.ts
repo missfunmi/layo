@@ -8,7 +8,7 @@ import { calculateCycleDay } from '@/lib/cycle'
 import { generateRecommendation } from '@/lib/llm/index'
 import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
 import type { WearableThresholds } from '@/lib/wearables/types'
-import { log, logError, startRequest, endRequest, type RequestContext } from '@/lib/logger'
+import { logCtx, logErrorCtx, startRequest, endRequest, type RequestContext } from '@/lib/logger'
 
 const VALID_YESTERDAY_TYPES = ['planned', 'suggested', 'other']
 
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
+  ctx.userId = user.id
 
   const parsed = parseDateParam(ctx, request)
   if (parsed instanceof NextResponse) return parsed
@@ -56,6 +57,7 @@ export async function DELETE(request: NextRequest) {
     if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
+  ctx.userId = user.id
 
   const parsed = parseDateParam(ctx, request)
   if (parsed instanceof NextResponse) return parsed
@@ -91,7 +93,8 @@ export async function POST(request: NextRequest) {
     if (err instanceof Response) return endRequest(err, ctx)
     throw err
   }
-  log({ event: 'user_resolved', requestId: ctx.requestId, correlationId: ctx.correlationId, userId: user.id })
+  ctx.userId = user.id
+  logCtx(ctx, { event: 'user_resolved' })
 
   let body: Record<string, unknown>
   try {
@@ -188,7 +191,7 @@ export async function POST(request: NextRequest) {
       periodStartedToday: c.periodStartedToday,
     }))
   )
-  log({ event: 'cycle_day_calculated', requestId: ctx.requestId, correlationId: ctx.correlationId, cycleDay })
+  logCtx(ctx, { event: 'cycle_day_calculated', cycleDay })
 
   let wearableContext: string | null = null
   const activeConnection = await prisma.wearableConnection.findFirst({
@@ -198,10 +201,8 @@ export async function POST(request: NextRequest) {
     const ouraStart = performance.now()
     try {
       const todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
-      log({
+      logCtx(ctx, {
         event: 'oura_fetch',
-        requestId: ctx.requestId,
-        correlationId: ctx.correlationId,
         fetchSkipped: false,
         dataAvailable: todayMetrics !== null,
         latencyMs: Math.round(performance.now() - ouraStart),
@@ -212,23 +213,19 @@ export async function POST(request: NextRequest) {
       ) as WearableThresholds
       const baseline = await computeBaseline(user.id, activeConnection.provider)
       const baselineValues = Object.values(baseline)
-      log({
+      logCtx(ctx, {
         event: 'baseline_computed',
-        requestId: ctx.requestId,
-        correlationId: ctx.correlationId,
         metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
         metricsOmitted: baselineValues.filter((v) => v === undefined).length,
       })
       wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
     } catch (err) {
       Sentry.captureException(err)
-      logError({ event: 'wearable_enrichment_error', requestId: ctx.requestId, correlationId: ctx.correlationId })
+      logErrorCtx(ctx, { event: 'wearable_enrichment_error' })
     }
   } else {
-    log({
+    logCtx(ctx, {
       event: 'oura_fetch',
-      requestId: ctx.requestId,
-      correlationId: ctx.correlationId,
       fetchSkipped: true,
       dataAvailable: false,
       latencyMs: 0,
@@ -272,6 +269,8 @@ export async function POST(request: NextRequest) {
     recommendation = await generateRecommendation(userMessage, {
       requestId: ctx.requestId,
       correlationId: ctx.correlationId,
+      deviceId: ctx.deviceId,
+      userId: ctx.userId,
     })
   } catch (err) {
     const existing = await prisma.checkIn.findUnique({
@@ -362,10 +361,8 @@ export async function POST(request: NextRequest) {
       },
     })
   })
-  log({
+  logCtx(ctx, {
     event: 'db_write',
-    requestId: ctx.requestId,
-    correlationId: ctx.correlationId,
     tables: ['check_ins', 'recommendations', 'llm_inference_logs'],
     latencyMs: Math.round(performance.now() - dbStart),
   })

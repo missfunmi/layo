@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes, createHash } from 'crypto'
 import { randomUUID } from 'crypto'
 import { encrypt } from '@/lib/crypto'
-import { log, startRequest, endRequest } from '@/lib/logger'
+import { logCtx, startRequest, endRequest } from '@/lib/logger'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = startRequest(req, 'GET', '/api/wearables/oura/authorize')
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   })
 
   const authorizationUrl = `https://cloud.ouraring.com/oauth/authorize?${params.toString()}`
-  log({ event: 'pkce_generated', requestId: ctx.requestId, correlationId: ctx.correlationId, userId: deviceId })
+  logCtx(ctx, { event: 'pkce_generated' })
 
   const response = NextResponse.json({ authorizationUrl })
   response.cookies.set('layo_oura_pkce_verifier', encryptedCodeVerifier, {
