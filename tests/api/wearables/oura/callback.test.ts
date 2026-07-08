@@ -14,6 +14,10 @@ import { encrypt, decrypt } from '@/lib/crypto'
 import { fetchHistoricalData } from '@/lib/wearables/providers/oura'
 import * as handler from '@/app/api/wearables/oura/callback/route'
 
+function loggedEvents(consoleLogSpy: ReturnType<typeof vi.spyOn>): Record<string, unknown>[] {
+  return consoleLogSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+}
+
 const DEVICE_ID = 'test-device-callback'
 const TEST_KEY = 'a'.repeat(64)
 const PLAIN_CODE_VERIFIER = 'test-code-verifier-base64url-43chars-padding00'
@@ -155,5 +159,40 @@ describe('GET /api/wearables/oura/callback', () => {
     const res = await callCallback({ state }, buildPkceCookie())
     expect(res.status).toBe(307)
     expect(res.headers.get('location')).toContain('/onboarding?wearable=error')
+  })
+
+  test('returns an x-request-id response header', async () => {
+    const state = buildState(DEVICE_ID)
+    const res = await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    expect(res.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('logs request_start, request_end, state_decrypted, oura_token_exchange, wearable_connection_written, and oura_backfill phases', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const events = loggedEvents(consoleLogSpy)
+    consoleLogSpy.mockRestore()
+
+    expect(events).toContainEqual(
+      expect.objectContaining({ event: 'request_start', method: 'GET', path: '/api/wearables/oura/callback' })
+    )
+    expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 307 }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'state_decrypted' }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'oura_token_exchange', success: true }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'wearable_connection_written', provider: 'oura' }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'oura_backfill_start' }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'oura_backfill_complete', rowsUpserted: 0 }))
+  })
+
+  test('logs a matching logError when the backfill fetch throws', async () => {
+    vi.mocked(fetchHistoricalData).mockRejectedValueOnce(new Error('Oura API error: 500'))
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const state = buildState(DEVICE_ID)
+    await callCallback({ code: 'auth-code', state }, buildPkceCookie())
+    const errorEvents = consoleErrorSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+    consoleErrorSpy.mockRestore()
+
+    expect(errorEvents).toContainEqual(expect.objectContaining({ event: 'oura_backfill_error' }))
   })
 })

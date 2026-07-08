@@ -21,6 +21,10 @@ import * as handler from '@/app/api/check-ins/route'
 import { generateRecommendation } from '@/lib/llm/index'
 import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
 
+function loggedEvents(consoleLogSpy: ReturnType<typeof vi.spyOn>): Record<string, unknown>[] {
+  return consoleLogSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+}
+
 const DEVICE_ID = 'test-device-checkin'
 const TODAY = new Date().toISOString().slice(0, 10)
 const YESTERDAY = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -32,6 +36,9 @@ const MOCK_RECOMMENDATION = {
   rationaleInternal: 'Sleep 4, feel 4. All signals positive.',
   readinessScore: 80,
   promptVersion: 'test-v1',
+  inputTokens: 100,
+  outputTokens: 50,
+  latencyMs: 1200,
 }
 
 const BASE_BODY = {
@@ -53,6 +60,97 @@ async function seedTestUser(): Promise<void> {
     },
   })
 }
+
+describe('POST /api/check-ins request tracing', () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(async () => {
+    await setupTestDb()
+    vi.clearAllMocks()
+    vi.mocked(generateRecommendation).mockResolvedValue(MOCK_RECOMMENDATION)
+    await seedTestUser()
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(async () => {
+    consoleLogSpy.mockRestore()
+    await teardownTestDb()
+  })
+
+  test('returns an x-request-id response header on success', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(201)
+    expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('returns an x-request-id response header on a validation error', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { todaysPlannedWorkout: _, ...body } = BASE_BODY
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', body, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(400)
+    expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('returns an x-request-id response header on 401', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY)
+    expect(response.status).toBe(401)
+    expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('generates a correlationId and persists it to llm_inference_logs when x-correlation-id header is absent', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(201)
+
+    const inferenceLog = await getTestClient().llmInferenceLog.findFirstOrThrow()
+    expect(inferenceLog.correlationId).toEqual(expect.stringMatching(/^[0-9a-f-]{36}$/))
+  })
+
+  test('uses the x-correlation-id request header when provided, and persists it to llm_inference_logs', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+      'X-Device-ID': DEVICE_ID,
+      'x-correlation-id': 'my-correlation-id',
+    })
+    expect(response.status).toBe(201)
+
+    const startEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'request_start')
+    expect(startEvent?.correlationId).toBe('my-correlation-id')
+
+    const inferenceLog = await getTestClient().llmInferenceLog.findFirstOrThrow()
+    expect(inferenceLog.correlationId).toBe('my-correlation-id')
+  })
+
+  test('logs request_start and request_end with method, path, and statusCode', async () => {
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+    const events = loggedEvents(consoleLogSpy)
+    expect(events).toContainEqual(
+      expect.objectContaining({ event: 'request_start', method: 'POST', path: '/api/check-ins' })
+    )
+    expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 201 }))
+  })
+
+  test('logs user_resolved, cycle_day_calculated, and db_write phase events on success', async () => {
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+    const eventNames = loggedEvents(consoleLogSpy).map((e) => e.event)
+    expect(eventNames).toContain('user_resolved')
+    expect(eventNames).toContain('cycle_day_calculated')
+    expect(eventNames).toContain('db_write')
+  })
+
+  test('logs oura_fetch with fetchSkipped true when there is no active wearable connection', async () => {
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+    const ouraFetchEvent = loggedEvents(consoleLogSpy).find((e) => e.event === 'oura_fetch')
+    expect(ouraFetchEvent?.fetchSkipped).toBe(true)
+  })
+})
 
 describe('POST /api/check-ins', () => {
   beforeEach(async () => {
@@ -410,6 +508,7 @@ describe('POST /api/check-ins', () => {
       expect(vi.mocked(fetchAndStoreTodayMetrics)).toHaveBeenCalledOnce()
       expect(vi.mocked(generateRecommendation)).toHaveBeenCalledWith(
         expect.stringContaining(MOCK_WEARABLE_CONTEXT),
+        expect.anything(),
       )
     })
 
@@ -429,6 +528,7 @@ describe('POST /api/check-ins', () => {
       )
       expect(vi.mocked(generateRecommendation)).toHaveBeenCalledWith(
         expect.stringContaining(FALLBACK_CONTEXT),
+        expect.anything(),
       )
     })
 
@@ -487,6 +587,13 @@ describe('GET /api/check-ins', () => {
     expect(response.status).toBe(200)
     const body = await response.json()
     expect(body.checkIn).toBeNull()
+  })
+
+  test('returns an x-request-id response header', async () => {
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.headers.get('x-request-id')).toBeTruthy()
   })
 
   test('returns 401 when X-Device-ID header is missing', async () => {
@@ -591,6 +698,13 @@ describe('DELETE /api/check-ins', () => {
       'X-Device-ID': DEVICE_ID,
     })
     expect(response.status).toBe(204)
+  })
+
+  test('returns an x-request-id response header', async () => {
+    const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.headers.get('x-request-id')).toBeTruthy()
   })
 
   test('returns 401 when X-Device-ID header is missing', async () => {

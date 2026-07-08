@@ -120,4 +120,11 @@ describe('GET /api/recommendations', () => {
     })
     expect(response.status).toBe(400)
   })
+
+  test('returns an x-request-id response header', async () => {
+    const response = await makeRequest(handler, 'GET', `/api/recommendations?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
 })

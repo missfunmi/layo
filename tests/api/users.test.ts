@@ -8,6 +8,10 @@ vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }))
 
+function loggedEvents(consoleLogSpy: ReturnType<typeof vi.spyOn>): Record<string, unknown>[] {
+  return consoleLogSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+}
+
 const CURRENT_YEAR = new Date().getFullYear()
 
 const BASE_BODY = {
@@ -212,6 +216,23 @@ describe('POST /api/users', () => {
     const users = await getTestClient().user.findMany()
     expect(users).toHaveLength(1)
   })
+
+  test('returns an x-request-id response header', async () => {
+    const response = await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    expect(response.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('logs request_start and request_end with method, path, and statusCode', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    const events = loggedEvents(consoleLogSpy)
+    consoleLogSpy.mockRestore()
+
+    expect(events).toContainEqual(
+      expect.objectContaining({ event: 'request_start', method: 'POST', path: '/api/users' })
+    )
+    expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 201 }))
+  })
 })
 
 describe('GET /api/users', () => {
@@ -241,5 +262,11 @@ describe('GET /api/users', () => {
     await getTestClient().user.create({ data: { deviceId: 'no-profile-device' } })
     const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': 'no-profile-device' })
     expect(response.status).toBe(404)
+  })
+
+  test('returns an x-request-id response header', async () => {
+    await makeRequest(handler, 'POST', '/api/users', BASE_BODY)
+    const response = await makeRequest(handler, 'GET', '/api/users', undefined, { 'X-Device-ID': BASE_BODY.deviceId })
+    expect(response.headers.get('x-request-id')).toBeTruthy()
   })
 })

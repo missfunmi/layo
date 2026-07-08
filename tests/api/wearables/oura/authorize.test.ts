@@ -1,7 +1,11 @@
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { makeRequest } from '@/tests/helpers/api'
 import { decrypt } from '@/lib/crypto'
 import * as handler from '@/app/api/wearables/oura/authorize/route'
+
+function loggedEvents(consoleLogSpy: ReturnType<typeof vi.spyOn>): Record<string, unknown>[] {
+  return consoleLogSpy.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))
+}
 
 const DEVICE_ID = 'test-device-authorize'
 const TEST_KEY = 'a'.repeat(64) // 32-byte hex key
@@ -91,5 +95,27 @@ describe('GET /api/wearables/oura/authorize', () => {
     expect(cookieValue.split(':')).toHaveLength(3)
     const plainVerifier = decrypt(cookieValue)
     expect(plainVerifier.length).toBeGreaterThanOrEqual(43)
+  })
+
+  test('returns an x-request-id response header', async () => {
+    const res = await makeRequest(handler, 'GET', '/api/wearables/oura/authorize', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(res.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  test('logs request_start, request_end, and pkce_generated', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    await makeRequest(handler, 'GET', '/api/wearables/oura/authorize', undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    const events = loggedEvents(consoleLogSpy)
+    consoleLogSpy.mockRestore()
+
+    expect(events).toContainEqual(
+      expect.objectContaining({ event: 'request_start', method: 'GET', path: '/api/wearables/oura/authorize' })
+    )
+    expect(events).toContainEqual(expect.objectContaining({ event: 'request_end', statusCode: 200 }))
+    expect(events).toContainEqual(expect.objectContaining({ event: 'pkce_generated', userId: DEVICE_ID }))
   })
 })

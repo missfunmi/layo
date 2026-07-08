@@ -107,6 +107,7 @@ model LlmInferenceLog {
   recommendation    Recommendation @relation(fields: [recommendationId], references: [id])
   model             String
   promptVersion     String         @map("prompt_version")
+  correlationId     String?        @map("correlation_id")
   rawResponse       String         @map("raw_response") @db.Text
   rationaleInternal String         @map("rationale_internal") @db.Text
   readinessScore    Int            @map("readiness_score")

@@ -1,27 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { log, startRequest, endRequest } from '@/lib/logger'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const ctx = startRequest(req, 'GET', '/api/wearables')
+
   const deviceId = req.headers.get('X-Device-ID')
   if (!deviceId) {
-    return NextResponse.json({ error: 'Missing X-Device-ID header' }, { status: 401 })
+    return endRequest(NextResponse.json({ error: 'Missing X-Device-ID header' }, { status: 401 }), ctx)
   }
 
   const user = await prisma.user.findUnique({ where: { deviceId } })
   if (!user) {
-    return NextResponse.json({ error: 'Unknown device' }, { status: 401 })
+    return endRequest(NextResponse.json({ error: 'Unknown device' }, { status: 401 }), ctx)
   }
 
   const connections = await prisma.wearableConnection.findMany({
     where: { userId: user.id },
     select: { provider: true, status: true, connectedAt: true },
   })
+  log({ event: 'connections_fetched', requestId: ctx.requestId, correlationId: ctx.correlationId, count: connections.length })
 
-  return NextResponse.json({
-    connections: connections.map((c) => ({
-      provider: c.provider,
-      status: c.status,
-      connectedAt: c.connectedAt.toISOString(),
-    })),
-  })
+  return endRequest(
+    NextResponse.json({
+      connections: connections.map((c) => ({
+        provider: c.provider,
+        status: c.status,
+        connectedAt: c.connectedAt.toISOString(),
+      })),
+    }),
+    ctx
+  )
 }

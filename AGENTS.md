@@ -90,6 +90,8 @@ npm run build     # runs: prisma migrate deploy && next build
 
 **Date handling**: `check_in_date` is a plain local calendar date string from the client (`new Date().toLocaleDateString('en-CA')`), not UTC-derived. Server allows dates up to 1 day in the future to tolerate UTC+14.
 
+**Structured logging and request tracing**: `lib/logger.ts` exports `log`/`logError` (structured JSON to stdout/stderr) and `startRequest`/`endRequest`, which every API route handler calls to emit `request_start`/`request_end` log lines and return an `x-request-id` response header. `requestId` is generated per API call; `correlationId` is read from the client-sent `x-correlation-id` header (falling back to a generated UUID) and represents a logical user action that may span multiple API calls in the future. The client generates a fresh `correlationId` via `generateCorrelationId()` in `lib/device.ts` before each user action. `POST /api/check-ins` and `GET /api/wearables/oura/callback` additionally emit a log line per internal phase; see `docs/architecture.md` for the full event list. Never log check-in free text, stressors, rationale strings, Oura metric values, or tokens.
+
 ## Environment variables
 
 ```

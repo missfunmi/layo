@@ -9,7 +9,7 @@ import { OptionCard } from '@/components/ui/OptionCard'
 import { TextArea } from '@/components/ui/TextArea'
 import { ScaleInput } from '@/components/ui/ScaleInput'
 import { YesNoSelector } from '@/components/ui/YesNoSelector'
-import { getOrCreateDeviceId } from '@/lib/device'
+import { getOrCreateDeviceId, generateCorrelationId } from '@/lib/device'
 
 type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking' | 'stressors' | 'generating' | 'error'
 
@@ -144,6 +144,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           headers: {
             'Content-Type': 'application/json',
             'X-Device-ID': getOrCreateDeviceId(),
+            'x-correlation-id': generateCorrelationId(),
           },
           body: JSON.stringify(payload),
         })

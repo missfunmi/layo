@@ -14,3 +14,7 @@ export function getOrCreateDeviceId(): string {
   }
   return deviceId
 }
+
+export function generateCorrelationId(): string {
+  return crypto.randomUUID()
+}

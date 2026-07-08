@@ -2,7 +2,8 @@ import * as Sentry from '@sentry/nextjs'
 import { prisma } from '@/lib/db'
 import * as anthropicProvider from '@/lib/llm/providers/anthropic'
 import * as geminiProvider from '@/lib/llm/providers/gemini'
-import type { ParsedRecommendation, InferenceParams, LLMRawResponse, LLMProvider } from '@/lib/llm/types'
+import { log, logError } from '@/lib/logger'
+import type { ParsedRecommendation, InferenceParams, LLMRawResponse, LLMProvider, InferenceLogContext } from '@/lib/llm/types'
 
 const ALLOWED_RECOMMENDATION_TYPES = ['as_written', 'modify', 'rest'] as const
 type RecommendationType = (typeof ALLOWED_RECOMMENDATION_TYPES)[number]
@@ -46,10 +47,18 @@ function parseAndValidate(raw: LLMRawResponse, promptVersion: string): ParsedRec
     rationaleInternal: parsed.rationale_internal as string,
     readinessScore,
     promptVersion,
+    inputTokens: raw.inputTokens,
+    outputTokens: raw.outputTokens,
+    latencyMs: raw.latencyMs,
   }
 }
 
-export async function generateRecommendation(userMessage: string): Promise<ParsedRecommendation> {
+export async function generateRecommendation(
+  userMessage: string,
+  ctx: InferenceLogContext
+): Promise<ParsedRecommendation> {
+  const { requestId, correlationId } = ctx
+
   const promptConfig = await prisma.promptConfig.findFirst({
     orderBy: { createdAt: 'desc' },
   })
@@ -57,6 +66,8 @@ export async function generateRecommendation(userMessage: string): Promise<Parse
   if (!promptConfig) {
     throw new Error('No PromptConfig found in database')
   }
+
+  log({ event: 'prompt_config_fetched', requestId, correlationId, promptVersion: promptConfig.version })
 
   const providerName = process.env.LLM_PROVIDER ?? 'anthropic'
   const model = process.env.LLM_MODEL ?? 'claude-opus-4-6'
@@ -74,16 +85,39 @@ export async function generateRecommendation(userMessage: string): Promise<Parse
     raw = await provider.complete(promptConfig.systemPrompt, userMessage, params)
   } catch (err) {
     Sentry.captureException(err)
+    logError({ event: 'llm_provider_error', requestId, correlationId, model })
     throw err
   }
 
+  let parsed: ParsedRecommendation
   try {
-    return parseAndValidate(raw, promptConfig.version)
+    parsed = parseAndValidate(raw, promptConfig.version)
   } catch (err) {
     Sentry.captureMessage('LLM response validation failed', {
       level: 'error',
       extra: { raw: raw.content, error: String(err) },
     })
+    logError({
+      event: 'llm_response_invalid',
+      requestId,
+      correlationId,
+      model,
+      promptVersion: promptConfig.version,
+    })
     throw err
   }
+
+  log({
+    event: 'llm_inference',
+    requestId,
+    correlationId,
+    model,
+    promptVersion: parsed.promptVersion,
+    inputTokens: parsed.inputTokens,
+    outputTokens: parsed.outputTokens,
+    latencyMs: parsed.latencyMs,
+    recommendationType: parsed.recommendationType,
+  })
+
+  return parsed
 }

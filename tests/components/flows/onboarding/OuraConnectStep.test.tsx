@@ -9,6 +9,7 @@ afterEach(() => {
 
 vi.mock('@/lib/device', () => ({
   getOrCreateDeviceId: () => 'test-device-id',
+  generateCorrelationId: () => 'test-correlation-id',
 }))
 
 import { OuraConnectStep } from '@/components/flows/onboarding/OuraConnectStep'
