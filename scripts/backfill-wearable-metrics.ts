@@ -7,10 +7,22 @@ import { fetchHistoricalDataWithRaw, refreshToken } from '../lib/wearables/provi
 
 loadEnv({ path: resolve(process.cwd(), '.env.local'), override: false })
 
+const KNOWN_ARGS = new Set(['--dry-run'])
+const unknownArgs = process.argv.slice(2).filter((arg) => !KNOWN_ARGS.has(arg))
+if (unknownArgs.length > 0) {
+  console.error(`Error: unrecognized argument(s): ${unknownArgs.join(', ')}`)
+  console.error('Usage: npm run backfill-wearable-metrics -- [--dry-run]')
+  process.exit(1)
+}
+
 const DRY_RUN = process.argv.includes('--dry-run')
 
-if (!process.env.DATABASE_URL) {
-  console.error('Error: DATABASE_URL is not set. Configure it in .env.local or as an environment variable.')
+const REQUIRED_ENV_VARS = ['DATABASE_URL', 'WEARABLE_TOKEN_KEY', 'OURA_CLIENT_ID', 'OURA_CLIENT_SECRET']
+const missingEnvVars = REQUIRED_ENV_VARS.filter((name) => !process.env[name])
+if (missingEnvVars.length > 0) {
+  console.error(`Error: missing required environment variable(s): ${missingEnvVars.join(', ')}`)
+  console.error('These must match the target database: WEARABLE_TOKEN_KEY decrypts stored tokens, and')
+  console.error('OURA_CLIENT_ID/OURA_CLIENT_SECRET are needed if any token needs refreshing mid-run.')
   process.exit(1)
 }
 
