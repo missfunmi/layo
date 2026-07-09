@@ -20,12 +20,12 @@ Beta testers occasionally hit issues that are hard to diagnose from a bug report
 
 A single card with four fields:
 
-| Field | Source | Notes |
-|---|---|---|
-| Device ID | `layo_device_id` from localStorage | Read directly on the client; not fetched from the API |
-| User ID | `GET /api/profile` → `userId` | The database `users.id` this device resolves to |
-| Oura Ring | `GET /api/profile` → `ouraConnected` | "Connected" or "Not connected"; true if an active `wearable_connections` row exists |
-| AI version | `GET /api/profile` → `promptVersion` | The latest `prompt_configs.version` by `created_at` |
+| Field                 | Source                               | Notes                                                                               |
+| --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Device ID             | `layo_device_id` from localStorage   | Read directly on the client; not fetched from the API                               |
+| User ID               | `GET /api/profile` → `userId`        | The database `users.id` this device resolves to                                     |
+| Oura Ring             | `GET /api/profile` → `ouraConnected` | "Connected" or "Not connected"; true if an active `wearable_connections` row exists |
+| Recommendation Engine | `GET /api/profile` → `promptVersion` | The latest `prompt_configs.version` by `created_at`                                 |
 
 No sensitive data (tokens, check-in content, rationale text) is displayed or returned by the API.
 
@@ -33,7 +33,7 @@ No sensitive data (tokens, check-in content, rationale text) is displayed or ret
 
 ## User-facing label conventions
 
-The database field and internal terminology is `prompt_version` / `promptVersion`. The user-facing label is **"AI version"**. "Prompt" is an implementation detail; a beta tester does not need to know the product is prompt-driven, and "prompt version" reads as more technical than necessary. "AI version" communicates the same thing (which iteration of the recommendation logic produced their results) in plain language.
+The database field and internal terminology is `prompt_version` / `promptVersion`. The user-facing label is **"Recommendation Engine"**. "Prompt" is an implementation detail; a beta tester does not need to know the product is prompt-driven, and "prompt version" reads as more technical than necessary. "Recommendation Engine" communicates the same thing (which iteration of the recommendation logic produced their results) in plain language.
 
 This mirrors the `sleep_score` → `sleep_satisfaction` precedent (see `docs/specs/wearable-integration.md`): internal/database naming and user-facing copy are allowed to diverge when the internal name doesn't read well to an end user.
 

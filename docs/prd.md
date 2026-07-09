@@ -192,7 +192,7 @@ Not part of the numbered flows above: there is no navigation entry point to this
 - Device ID (from localStorage)
 - User ID (the database record corresponding to this device)
 - Oura Ring connection status ("Connected" or "Not connected")
-- AI version (the active prompt config version)
+- Recommendation Engine (the active prompt config version)
 
 **Navigation:** a back button (top-left) returns to the app root (`/`). The Láyo wordmark appears top-left, same position as all other screens. No other navigation.
 
