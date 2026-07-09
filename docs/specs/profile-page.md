@@ -10,7 +10,7 @@ This is scoped to v0.1.1.
 
 ## Purpose
 
-Beta testers occasionally hit issues that are hard to diagnose from a bug report alone ("my recommendation seems off," "Oura isn't syncing"). Without a way to see their own identifiers, resolving these requires asking the user to describe their device and hoping it's enough to find the right rows in the database.
+Beta testers may hit issues that are hard to diagnose from a bug report alone ("my recommendation seems off," "Oura isn't syncing"). Without a way to see their own identifiers, resolving these requires asking the user to describe their device and exact time of app use and hoping it's enough to find the right rows in the database.
 
 `/profile` gives the user (or the person helping them) a copy-pasteable snapshot of exactly what the backend has on file for them: which device record they are, which user that maps to, whether Oura is connected, and which version of the recommendation prompt they're currently on. This turns "my recommendation seems off" into "user X, prompt version Y, no Oura," enough to reproduce or rule things out immediately.
 
@@ -41,7 +41,7 @@ This mirrors the `sleep_score` → `sleep_satisfaction` precedent (see `docs/spe
 
 ## No navigation entry point
 
-There is deliberately no link, button, or menu item anywhere in the app that leads to `/profile`. Users are told to type the URL directly when a troubleshooting conversation calls for it. This keeps the page out of the primary product surface (it is a support tool, not a feature) while still being one URL away when needed.
+There is deliberately no link, button, or menu item anywhere in the app that leads to `/profile`. Users are told to type the URL directly when a troubleshooting conversation calls for it. This keeps the page out of the primary product surface (as of now, it is just a support tool, not a feature) while still being one URL away when needed.
 
 This is enforced by omission, not by an auth gate: `/profile` uses the same `X-Device-ID` resolution as every other route, and is reachable by anyone who knows the URL and has a valid device. It is not treated as a secret; the constraint is discoverability, not access control.
 
