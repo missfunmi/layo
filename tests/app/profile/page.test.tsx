@@ -25,13 +25,19 @@ beforeEach(() => {
 
 import ProfilePage from '@/app/profile/page'
 
-const PROFILE = {
+interface ProfileData {
+  userId: string
+  ouraConnected: boolean
+  promptVersion: string | null
+}
+
+const PROFILE: ProfileData = {
   userId: 'user-123',
   ouraConnected: true,
   promptVersion: 'v1.2.0',
 }
 
-function mockFetchSuccess(profile: typeof PROFILE = PROFILE) {
+function mockFetchSuccess(profile: ProfileData = PROFILE) {
   vi.mocked(global.fetch).mockResolvedValueOnce(
     new Response(JSON.stringify(profile), { status: 200 })
   )
@@ -122,6 +128,14 @@ describe('app/profile/page.tsx — success state', () => {
     render(<ProfilePage />)
     await waitFor(() => {
       expect(screen.getByText('v1.2.0')).toBeInTheDocument()
+    })
+  })
+
+  test('displays "Unknown" for AI version when promptVersion is null', async () => {
+    mockFetchSuccess({ ...PROFILE, promptVersion: null })
+    render(<ProfilePage />)
+    await waitFor(() => {
+      expect(screen.getByText('Unknown')).toBeInTheDocument()
     })
   })
 
