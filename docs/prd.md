@@ -183,6 +183,25 @@ Displayed after check-in submission, and on all subsequent app opens for the sam
 
 ---
 
+### Diagnostic page: Profile (`/profile`)
+
+Not part of the numbered flows above: there is no navigation entry point to this page from within the app. Users reach it only by typing the URL directly, when asked to for troubleshooting during beta testing.
+
+**Content:** a single card displaying:
+
+- Device ID (from localStorage)
+- User ID (the database record corresponding to this device)
+- Oura Ring connection status ("Connected" or "Not connected")
+- AI version (the active prompt config version)
+
+**Navigation:** a back button (top-left) returns to the app root (`/`). The Láyo wordmark appears top-left, same position as all other screens. No other navigation.
+
+**Behavior:** if no `deviceId` is found in localStorage, the user is redirected to onboarding rather than shown an empty or broken page.
+
+This is a minimal diagnostic surface for the current beta. Full profile management (settings, data management, authentication) is out of scope for this version. See `docs/specs/profile-page.md` for the full spec.
+
+---
+
 ## Recommendation logic
 
 The recommendation is generated via the configured LLM provider. The LLM receives a structured prompt containing:
