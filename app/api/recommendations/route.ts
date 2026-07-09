@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     where: {
       userId: user.id,
       checkIn: { checkInDate: date },
+      status: 'active',
     },
     select: {
       recommendationType: true,

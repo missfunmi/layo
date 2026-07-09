@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
   const parsed = parseDateParam(ctx, request)
   if (parsed instanceof NextResponse) return parsed
 
-  const checkIn = await prisma.checkIn.findUnique({
-    where: { userId_checkInDate: { userId: user.id, checkInDate: parsed.date } },
+  const checkIn = await prisma.checkIn.findFirst({
+    where: { userId: user.id, checkInDate: parsed.date, status: 'active' },
   })
 
   return endRequest(NextResponse.json({ checkIn }), ctx)
@@ -62,22 +62,24 @@ export async function DELETE(request: NextRequest) {
   const parsed = parseDateParam(ctx, request)
   if (parsed instanceof NextResponse) return parsed
 
-  const checkIn = await prisma.checkIn.findUnique({
-    where: { userId_checkInDate: { userId: user.id, checkInDate: parsed.date } },
-    include: { recommendation: { include: { llmInferenceLog: true } } },
+  const checkIn = await prisma.checkIn.findFirst({
+    where: { userId: user.id, checkInDate: parsed.date, status: 'active' },
+    include: { recommendation: true },
   })
 
   if (checkIn) {
     await prisma.$transaction(async (tx: TransactionClient) => {
-      if (checkIn.recommendation?.llmInferenceLog) {
-        await tx.llmInferenceLog.delete({ where: { id: checkIn.recommendation.llmInferenceLog.id } })
-      }
+      await tx.checkIn.update({
+        where: { id: checkIn.id, status: 'active' },
+        data: { status: 'stale' },
+      })
       if (checkIn.recommendation) {
-        await tx.recommendation.delete({ where: { id: checkIn.recommendation.id } })
+        await tx.recommendation.update({
+          where: { id: checkIn.recommendation.id, status: 'active' },
+          data: { status: 'stale' },
+        })
       }
-      await tx.checkIn.delete({ where: { id: checkIn.id } })
     })
-
   }
 
   return endRequest(new NextResponse(null, { status: 204 }), ctx)
@@ -169,7 +171,7 @@ export async function POST(request: NextRequest) {
   }
 
   const priorCheckIns = await prisma.checkIn.findMany({
-    where: { userId: user.id, checkInDate: { lt: new Date(checkInDate) } },
+    where: { userId: user.id, checkInDate: { lt: new Date(checkInDate) }, status: 'active' },
     orderBy: { checkInDate: 'desc' },
     take: 14,
     select: {
@@ -273,8 +275,8 @@ export async function POST(request: NextRequest) {
       userId: ctx.userId,
     })
   } catch (err) {
-    const existing = await prisma.checkIn.findUnique({
-      where: { userId_checkInDate: { userId: user.id, checkInDate: new Date(checkInDate) } },
+    const existing = await prisma.checkIn.findFirst({
+      where: { userId: user.id, checkInDate: new Date(checkInDate), status: 'active' },
     })
     if (existing) Sentry.captureException(err)
     return endRequest(
@@ -290,9 +292,8 @@ export async function POST(request: NextRequest) {
 
   const dbStart = performance.now()
   await prisma.$transaction(async (tx) => {
-    const checkIn = await tx.checkIn.upsert({
-      where: { userId_checkInDate: { userId: user.id, checkInDate: new Date(checkInDate) } },
-      create: {
+    const checkIn = await tx.checkIn.create({
+      data: {
         userId: user.id,
         checkInDate: new Date(checkInDate),
         todaysPlannedWorkout: trimmedWorkout,
@@ -305,50 +306,21 @@ export async function POST(request: NextRequest) {
         cycleDay: cycleDay ?? undefined,
         stressors: stressors as string | undefined ?? undefined,
       },
-      update: {
-        todaysPlannedWorkout: trimmedWorkout,
-        sleepSatisfaction: sleepSatisfaction as number,
-        feelScore: feelScore as number,
-        yesterdayWorkoutType: (yesterdayWorkoutType as 'planned' | 'suggested' | 'other') ?? null,
-        yesterdayWorkoutDescription: (yesterdayWorkoutDescription as string) ?? null,
-        yesterdayWorkoutFeedback: (yesterdayWorkoutFeedback as string) ?? null,
-        periodStartedToday: (periodStartedToday as boolean) ?? null,
-        cycleDay: cycleDay ?? null,
-        stressors: (stressors as string) ?? null,
-      },
     })
 
-    const rec = await tx.recommendation.upsert({
-      where: { checkInId: checkIn.id },
-      create: {
+    const rec = await tx.recommendation.create({
+      data: {
         checkInId: checkIn.id,
         userId: user.id,
         recommendationType: recommendation.recommendationType,
         modificationDetail: recommendation.modificationDetail ?? undefined,
         rationale: recommendation.rationale,
       },
-      update: {
-        recommendationType: recommendation.recommendationType,
-        modificationDetail: recommendation.modificationDetail ?? null,
-        rationale: recommendation.rationale,
-      },
     })
 
-    await tx.llmInferenceLog.upsert({
-      where: { recommendationId: rec.id },
-      create: {
+    await tx.llmInferenceLog.create({
+      data: {
         recommendationId: rec.id,
-        model,
-        promptVersion: recommendation.promptVersion,
-        correlationId: ctx.correlationId,
-        rawResponse: JSON.stringify(recommendation),
-        rationaleInternal: recommendation.rationaleInternal,
-        readinessScore: recommendation.readinessScore,
-        inputTokens: recommendation.inputTokens,
-        outputTokens: recommendation.outputTokens,
-        latencyMs: recommendation.latencyMs,
-      },
-      update: {
         model,
         promptVersion: recommendation.promptVersion,
         correlationId: ctx.correlationId,

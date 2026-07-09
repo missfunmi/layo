@@ -106,6 +106,37 @@ describe('GET /api/recommendations', () => {
     expect(body.recommendation).toBeNull()
   })
 
+  test('only a stale recommendation exists for date: returns 200 with recommendation null', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    const checkIn = await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(TODAY),
+        todaysPlannedWorkout: '5km easy run',
+        sleepSatisfaction: 4,
+        feelScore: 4,
+        status: 'stale',
+      },
+    })
+    await getTestClient().recommendation.create({
+      data: {
+        checkInId: checkIn.id,
+        userId: testUser.id,
+        recommendationType: 'as_written',
+        rationale: 'Stale rationale from a previous redo.',
+        status: 'stale',
+      },
+    })
+
+    const response = await makeRequest(handler, 'GET', `/api/recommendations?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.recommendation).toBeNull()
+  })
+
   test('returns 401 when X-Device-ID header is missing', async () => {
     const response = await makeRequest(handler, 'GET', `/api/recommendations?date=${TODAY}`)
     expect(response.status).toBe(401)
