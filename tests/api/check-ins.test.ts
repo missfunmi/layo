@@ -456,6 +456,40 @@ describe('POST /api/check-ins', () => {
     expect(sentry.captureMessage).not.toHaveBeenCalled()
   })
 
+  test('history sent to the LLM excludes stale check-ins: a redone past day contributes only its active entry', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(YESTERDAY),
+        todaysPlannedWorkout: 'stale entry from before a redo',
+        sleepSatisfaction: 1,
+        feelScore: 1,
+        status: 'stale',
+      },
+    })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(YESTERDAY),
+        todaysPlannedWorkout: '5km easy',
+        sleepSatisfaction: 4,
+        feelScore: 4,
+        status: 'active',
+      },
+    })
+
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+    const [userMessage] = vi.mocked(generateRecommendation).mock.calls[0]
+    const parsed = JSON.parse(userMessage as string)
+    const yesterdayEntries = parsed.recentHistory.filter(
+      (h: { checkInDate: string }) => h.checkInDate === YESTERDAY
+    )
+    expect(yesterdayEntries).toHaveLength(1)
+    expect(yesterdayEntries[0].todaysPlannedWorkout).toBe('5km easy')
+  })
+
   test('user with no active wearable connection: fetchAndStoreTodayMetrics not called', async () => {
     const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
       'X-Device-ID': DEVICE_ID,
