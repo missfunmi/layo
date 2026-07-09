@@ -10,7 +10,8 @@
     "db:seed": "prisma db seed",
     "test": "vitest run",
     "test:watch": "vitest",
-    "update-prompt": "tsx scripts/update-prompt-config.ts"
+    "update-prompt": "tsx scripts/update-prompt-config.ts",
+    "backfill-wearable-metrics": "tsx scripts/backfill-wearable-metrics.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.107.0",

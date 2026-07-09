@@ -397,9 +397,10 @@ Provider-agnostic interface. Exports:
 
 Oura-specific implementation. Exports:
 - `fetchHistoricalData(accessToken, startDate, endDate)` — fetches and maps historical data
+- `fetchHistoricalDataWithRaw(accessToken, startDate, endDate)`: same as `fetchHistoricalData`, but each returned entry also includes that date's raw `readiness`/`dailySleep`/`sleepPeriods` API responses; used by `scripts/backfill-wearable-metrics.ts` to refresh `raw_data` alongside the normalized columns
 - `fetchTodayData(accessToken, date)` — fetches today's metrics from the Oura API
 - `refreshToken(userId)` — token refresh logic
-- `mapToNormalized(ouraResponse)` — maps Oura API response to `WearableDailyMetric` columns
+- `mapToNormalized(readiness, dailySleep, sleepPeriods)`: maps Oura API responses to `WearableDailyMetric` columns, aggregating across the day's sleep periods (see "Field mapping per provider" above)
 
 ### `lib/wearables/types.ts`
 

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { mapToNormalized, fetchHistoricalData, fetchTodayData } from '@/lib/wearables/providers/oura'
+import { mapToNormalized, fetchHistoricalData, fetchHistoricalDataWithRaw, fetchTodayData } from '@/lib/wearables/providers/oura'
 import * as Sentry from '@sentry/nextjs'
 
 vi.mock('@sentry/nextjs', () => ({
@@ -355,6 +355,79 @@ describe('lib/wearables/providers/oura', () => {
       expect(jan02?.readinessScore).toBe(75)
       expect(jan02?.sleepScore).toBeUndefined()
       expect(jan02?.sleepDurationMinutes).toBeUndefined()
+    })
+  })
+
+  describe('fetchHistoricalDataWithRaw', () => {
+    test('returns metrics and the raw readiness/dailySleep/sleepPeriods per date', async () => {
+      const readinessData = { data: [{ day: '2026-01-01', score: 80, temperature_deviation: 0.1 }] }
+      const dailySleepData = { data: [{ day: '2026-01-01', score: 70 }] }
+      const sleepData = { data: [{ ...MAIN_SLEEP_PERIOD, day: '2026-01-01' }] }
+
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => readinessData })
+          .mockResolvedValueOnce({ ok: true, json: async () => dailySleepData })
+          .mockResolvedValueOnce({ ok: true, json: async () => sleepData }),
+      )
+
+      const result = await fetchHistoricalDataWithRaw('token', '2026-01-01', '2026-01-01')
+      expect(result).toHaveLength(1)
+      expect(result[0].date).toBe('2026-01-01')
+      expect(result[0].metrics.readinessScore).toBe(80)
+      expect(result[0].metrics.sleepDurationMinutes).toBe(360)
+      expect(result[0].raw.readiness).toEqual(readinessData.data[0])
+      expect(result[0].raw.dailySleep).toEqual(dailySleepData.data[0])
+      expect(result[0].raw.sleepPeriods).toEqual([sleepData.data[0]])
+    })
+
+    test('raw fields are null/empty for a date with only readiness data', async () => {
+      const readinessData = { data: [{ day: '2026-02-01', score: 65 }] }
+
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => readinessData })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) }),
+      )
+
+      const result = await fetchHistoricalDataWithRaw('token', '2026-02-01', '2026-02-01')
+      expect(result[0].raw.dailySleep).toBeNull()
+      expect(result[0].raw.sleepPeriods).toEqual([])
+    })
+
+    test('does not throw when a 200 response has a missing data array', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({}) }),
+      )
+      await expect(fetchHistoricalDataWithRaw('token', '2026-01-01', '2026-01-02')).resolves.toEqual([])
+    })
+
+    test('error thrown when any endpoint returns a non-ok status', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            text: async () => '{"detail":"Authorization token is invalid."}',
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) }),
+      )
+      await expect(fetchHistoricalDataWithRaw('bad-token', '2026-01-01', '2026-01-02')).rejects.toThrow(
+        'Oura API error: 401 {"detail":"Authorization token is invalid."}',
+      )
     })
   })
 })
