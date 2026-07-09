@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Láyo: Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #e8e6df;
+        font-family: "Inter", sans-serif;
+        padding: 48px 32px;
+      }
+      h1 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #888780;
+        margin-bottom: 32px;
+        text-align: center;
+      }
+      .screens-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+      }
+      .screen-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .screen-name {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #b4b2a9;
+      }
+      .phone {
+        width: 320px;
+        min-height: 620px;
+        background: #f1efe8;
+        border-radius: 36px;
+        border: 0.5px solid rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+      .ph {
+        padding: 22px 24px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 52px;
+      }
+      .wm {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 21px;
+        color: #0f6e56;
+        letter-spacing: -0.5px;
+      }
+      .nav-row {
+        padding: 20px 24px 0;
+      }
+      .back-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1.5px solid #d3d1c7;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #5f5e5a;
+      }
+      .pb {
+        flex: 1;
+        padding: 20px 24px 26px;
+        display: flex;
+        flex-direction: column;
+      }
+      .page-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 24px;
+        color: #2c2c2a;
+        margin-bottom: 16px;
+      }
+      .profile-card {
+        background: #fff;
+        border: 0.5px solid #d3d1c7;
+        border-radius: 16px;
+        padding: 14px 16px;
+      }
+      .profile-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        padding: 10px 0;
+        border-bottom: 0.5px solid #f1efe8;
+      }
+      .profile-row:last-child {
+        border-bottom: none;
+      }
+      .profile-label {
+        color: #5f5e5a;
+        font-weight: 500;
+      }
+      .profile-value {
+        color: #2c2c2a;
+        text-align: right;
+        max-width: 60%;
+        word-break: break-all;
+      }
+      .error-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+      }
+      .error-heading {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        color: #2c2c2a;
+        margin-bottom: 8px;
+      }
+      .error-body {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #888780;
+        line-height: 1.6;
+        max-width: 220px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Láyo: Profile (diagnostic, URL access only)</h1>
+    <div class="screens-row">
+      <!-- Profile, populated -->
+      <div class="screen-col">
+        <div class="screen-name">Profile</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+          </div>
+          <div class="nav-row">
+            <div class="back-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </div>
+          </div>
+          <div class="pb">
+            <div class="page-title">Profile</div>
+            <div class="profile-card">
+              <div class="profile-row">
+                <span class="profile-label">Device ID</span>
+                <span class="profile-value"
+                  >3f9a21c0-8b7e-4f2a-9c1d-77e6b0a3f4e2</span
+                >
+              </div>
+              <div class="profile-row">
+                <span class="profile-label">User ID</span>
+                <span class="profile-value"
+                  >64fa271c-90ad-4897-bb46-bcf5197dc969</span
+                >
+              </div>
+              <div class="profile-row">
+                <span class="profile-label">Oura Ring</span>
+                <span class="profile-value">Connected</span>
+              </div>
+              <div class="profile-row">
+                <span class="profile-label">Recommendation Engine</span>
+                <span class="profile-value">1.2.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div class="screen-col">
+        <div class="screen-name">Error - could not load</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+          </div>
+          <div class="error-state">
+            <div class="error-heading">Couldn't load your profile</div>
+            <div class="error-body">
+              Check your connection and reload the page.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

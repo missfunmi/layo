@@ -19,10 +19,13 @@ The three core flows:
 
 ## MCP tools available
 
-The following MCP servers are connected to this Claude Code session:
+The following MCP servers are connected to agent coding sessions:
 
-- **Linear** — use for issue management (assigned throughout the per-issue workflow above)
-- **Vercel** — use for deployment work: checking deployment status, inspecting build logs for failures, and verifying environment variable configuration. Use `ToolSearch` with query `"vercel"` at the start of any session that touches deployments to discover the available tools.
+| MCP Server | Purpose                                                                                                                                                                                                                                                                 | Available                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Linear** | use for issue management (see the Per-issue workflow and Code reviewer workflow sections below)                                                                                                                                                                         | Claude Code, Gemini Antigravity CLI |
+| **Vercel** | use for deployment work: checking deployment status, inspecting build logs for failures, and verifying environment variable configuration. Use `ToolSearch` with query `"vercel"` at the start of any session that touches deployments to discover the available tools. | Claude Code                         |
+| **Sentry** | use for live service alert and incident investigation. Use `ToolSearch` with query `"sentry"` at the start of any session that involves a Sentry alert to discover the available tools.                                                                                 | Claude Code                         |
 
 ## Tech stack
 
@@ -142,7 +145,7 @@ git fetch origin && git checkout main && git pull origin main
 # If not, stop and resolve before continuing
 ```
 
-**Branch naming:** `feature/LAYO-[ID]-[short-description]` or `bugfix/LAYO-[ID]-[short-description]`
+**Branch naming:** `feature/LAYO-[ISSUE_ID]-[short-description]` or `bugfix/LAYO-[ISSUE_ID]-[short-description]`
 
 **No worktrees.** Never create a git worktree at any point. If any skill or tool attempts to create one, do not invoke it in that mode.
 
@@ -150,28 +153,32 @@ git fetch origin && git checkout main && git pull origin main
 If you are the implementing agent, for each issue:
 
 1. Use the Linear MCP to find the next unstarted issue in the v0.1.1 project containing the label "Claude", assign it, and mark it In Progress. Do not pick an issue that does not contain the "Claude" label. If you were working on a current issue that is still marked as "In Progress" or "In Review" and not Done, double-check with the user before proceeding
-2. If the issue is labeled "Bug", create a bugfix branch: `bugfix/LAYO-[ID]-[short-description]` off the latest `main` branch. Otherwise, if the issue is a feature, create a feature branch: `feature/LAYO-[ID]-[short-description]` off the latest `main` branch.
+2. If the issue is labeled "Bug", create a bugfix branch: `bugfix/LAYO-[ISSUE_ID]-[short-description]` off the latest `main` branch. Otherwise, if the issue is a feature, create a feature branch: `feature/LAYO-[ISSUE_ID]-[short-description]` off the latest `main` branch.
 3. Implement following the `superpowers:test-driven-development` skill for features and `superpowers:systematic-debugging` skill for bugs
 4. Push the branch, open a PR to `main`, and mark the Linear issue In Review
 5. Wait for code review (see Code Review Workflow below)
 6. Stop and wait — do not start the next issue until instructed
 
 ## Code reviewer workflow
-After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time. Only follow these steps if you are the code review agent:
+After a PR is opened, it is reviewed by a code reviewer agent before merge. The reviewing agent may be Claude, Gemini, Codex, etc. depending on what is configured for this project at the time.
 
-1. Use the Linear MCP to read the issue description of the linked Linear issue, whose key is referenced in the pull request's branch name, i.e. `LAYO-[ID]`
-2. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. Be sure to run the test suite (`npm test`) AND verify compile-time type-safety (`npx tsc --noEmit` or `npm run build`) locally while checked out on the PR branch. Go through the test plan written on the PR. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
-3. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`, where `counter` increments for each successive review round on the same PR.
-4. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete.
-5. After writing the feedback file, clean up: run `git checkout - && git branch -d pr-[number]` to delete the local PR branch and return the workspace to the previously active branch.
+Only follow these steps if you are the code review agent:
+
+1. Fetch and check out the PR branch locally by running `git fetch origin pull/[PR_NUMBER]/head:pr-[PR_NUMBER] && git checkout pr-[PR_NUMBER]`.
+2. Determine the Linear issue ID from the checked-out branch name: `git branch --show-current`. The branch name follows the pattern `feature/LAYO-[ISSUE_ID]-[description]` or `bugfix/LAYO-[ISSUE_ID]-[description]`, etc. Extract `LAYO-[ISSUE_ID]` from it.
+3. Use the Linear MCP to read the issue description of the In Review Linear issue `LAYO-[ISSUE_ID]`.
+4. Review the diff at the open PR against the requirements in the linked Linear issue using the `code-review-skill`. Be sure to run the test suite (`npm test`) AND verify compile-time type-safety (`npx tsc --noEmit` or `npm run build`) locally while checked out on the PR branch. Go through the test plan written on the Linear issue. If this is review round 2 or later, also read the most recently written response file for this PR in `.notes/.code-review-feedback/` before re-reviewing.
+5. Write feedback to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ISSUE_ID]-PR-[PR_NUMBER]-review-[counter].md`, where `counter` increments for each successive review round on the same PR.
+6. Print the full file path of the feedback file and the Verdict (Approved/Request Changes/etc.) when complete.
+7. After writing the feedback file, clean up: run `git checkout - && git branch -d pr-[PR_NUMBER]` to delete the local PR branch and return the workspace to the previously active branch.
 
 ## Addressing code review workflow
 If you are the implementing agent addressing code review feedback:
 
-1. Read the code review feedback file located at the `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md` path
+1. Read the code review feedback file located at the `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ISSUE_ID]-PR-[PR_NUMBER]-review-[counter].md` path
 2. Address feedback using the `superpowers:receiving-code-review` skill
 3. Commit code review feedback fixes to the same branch already in flight for this issue and PR
-4. Write a response summary to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ID]-PR-[number]-response-[counter].md`, using the same counter as the review file you are responding to. For each piece of feedback, state what was changed (or, if not changed, why) and reference the relevant commit(s).
+4. Write a response summary to `.notes/.code-review-feedback/YYYY-MM-DD-LAYO-[ISSUE_ID]-PR-[PR_NUMBER]-response-[counter].md`, using the same counter as the review file you are responding to. For each piece of feedback, state what was changed (or, if not changed, why) and reference the relevant commit(s).
 5. Print the full file path of the response file when complete
 6. Stop and wait — do not trigger another review round yourself. The user will initiate the next review round.
 
@@ -179,21 +186,21 @@ The two code review workflows above repeat until the reviewing agent reports no 
 
 ## Code review file naming
 All code review artifacts live in `.notes/.code-review-feedback/`:
-- Review: `YYYY-MM-DD-LAYO-[ID]-PR-[number]-review-[counter].md`
-- Response: `YYYY-MM-DD-LAYO-[ID]-PR-[number]-response-[counter].md`
+- Review: `YYYY-MM-DD-LAYO-[ISSUE_ID]-PR-[PR_NUMBER]-review-[counter].md`
+- Response: `YYYY-MM-DD-LAYO-[ISSUE_ID]-PR-[PR_NUMBER]-response-[counter].md`
 
 `counter` starts at 1 and increments once per review round. A review and its response share the same counter — `review-1.md` is addressed by `response-1.md`, then `review-2.md` follows. The date reflects when each file was written and may differ between a review and its response.
 
 ## Starting a new session
-When told "start the next issue", assume the role of the implementing agent and follow the "Per-issue workflow" above from step 1.
+When told "`start the next issue`", assume the role of the implementing agent and follow the "Per-issue workflow" above from step 1.
 
-When told "work on LAYO-[ID]", assume the role of the implementing agent, skip step 1 (issue selection), go directly to that issue, assign it, mark it In Progress, and follow the rest of the "Per-issue workflow" from step 2 onward.
+When told "`work on LAYO-[ISSUE_ID]`", assume the role of the implementing agent, skip step 1 (issue selection), go directly to that issue, assign it, mark it In Progress, and follow the rest of the "Per-issue workflow" from step 2 onward.
 
 ## Starting a code review
-When told "code review PR" or "re-review PR", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
+When told "`code review PR #[PR_NUMBER]`" or "`re-review PR #[PR_NUMBER]`", assume the role of the code review agent and follow the "Code reviewer workflow" above from step 1.
 
 ## Addressing code review
-When told "review the code review feedback", assume the role of the implementing agent and follow the "Addressing code review workflow" above from step 1.
+When told "`review the code review feedback`", assume the role of the implementing agent and follow the "Addressing code review workflow" above from step 1.
 
 ## Copy conventions
 No em-dashes in any generated copy, UI strings, or LLM prompt strings. Use commas or restructure the sentence instead.

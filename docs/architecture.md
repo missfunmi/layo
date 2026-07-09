@@ -35,8 +35,10 @@ layo/
 │   │   └── page.tsx
 │   ├── check-in/
 │   │   └── page.tsx
-│   └── recommendation/
-│       └── page.tsx
+│   ├── recommendation/
+│   │   └── page.tsx
+│   └── profile/
+│       └── page.tsx                # Diagnostic page, URL access only, no in-app nav entry point
 ├── components/
 │   ├── ui/                         # Primitives: Button, Card, ScaleInput, PillSelect, OptionCard, etc.
 │   └── flows/                      # Flow-specific composite components
@@ -64,6 +66,8 @@ layo/
 │   │   └── route.ts                # POST /api/check-ins, GET /api/check-ins?date=, DELETE /api/check-ins?date=
 │   ├── recommendations/
 │   │   └── route.ts                # GET /api/recommendations?date=
+│   ├── profile/
+│   │   └── route.ts                # GET /api/profile
 │   └── wearables/
 │       ├── route.ts                # GET /api/wearables
 │       └── oura/
@@ -98,6 +102,8 @@ The entry point (`app/page.tsx`) runs client-side on mount and routes the user t
    - Yes → redirect to `/recommendation`
 
 No persistent navigation chrome exists. Each screen is self-contained. The Láyo wordmark in the header is not a navigation link.
+
+**`/profile` is not part of this routing logic.** It is a diagnostic page reached only by typing the URL directly; there is no link to it anywhere in the app. It reads `deviceId` from localStorage itself (redirecting to `/onboarding` if absent) rather than going through the entry-point routing above. See `docs/specs/profile-page.md`.
 
 ---
 
@@ -493,6 +499,22 @@ On "delete and redo check-in" (`DELETE /api/check-ins?date=`): the current day's
 On check-in submission (`POST /api/check-ins`): a new check-in, recommendation, and LLM inference log are always inserted with `status = active` (LLM inference log has no status). A partial unique index (`check_ins_user_id_check_in_date_active_key` on `(user_id, check_in_date) WHERE status = 'active'`) guarantees at most one active check-in per user per day; the constraint is naturally satisfied by the normal flow because the entry-point routing only shows the check-in screen when no active check-in exists yet for today.
 
 **Edge case, user closes app mid-redo:** if a user marks today's check-in and recommendation `stale` and then closes the app before completing the new check-in, there is no `active` check-in for today. On return, entry-point routing finds no active check-in and correctly redirects to `/check-in`. The stale records remain in the database for audit purposes.
+
+---
+
+### GET /api/profile
+Returns lightweight diagnostic data for the `/profile` page: the user's ID and current Oura/prompt config status. Not part of the Oura wearable feature flag logic; it simply checks whether an active `wearable_connections` row exists for the user. No sensitive data (tokens, check-in content, etc.) is returned.
+
+**Response:** `200` with:
+```typescript
+{
+  userId: string
+  ouraConnected: boolean
+  promptVersion: string | null  // latest prompt config version, by created_at
+}
+```
+
+Returns `401` if `X-Device-ID` is missing or unknown, same as every other route.
 
 ---
 
