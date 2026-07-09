@@ -63,11 +63,11 @@ model CheckIn {
   periodStartedToday          Boolean?              @map("period_started_today")
   cycleDay                    Int?                  @map("cycle_day")
   stressors                   String?
+  status                      RecordStatus          @default(active)
   createdAt                   DateTime              @default(now()) @map("created_at")
   recommendation              Recommendation?
 
-  @@unique([userId, checkInDate])
-  @@index([userId])
+  @@index([userId, checkInDate])
   @@index([checkInDate])
   @@map("check_ins")
 }
@@ -81,6 +81,7 @@ model Recommendation {
   recommendationType RecommendationType @map("recommendation_type")
   modificationDetail String?            @map("modification_detail")
   rationale          String
+  status             RecordStatus       @default(active)
   createdAt          DateTime           @default(now()) @map("created_at")
   llmInferenceLog    LlmInferenceLog?
 
@@ -143,6 +144,11 @@ enum RecommendationType {
   as_written
   modify
   rest
+}
+
+enum RecordStatus {
+  active
+  stale
 }
 
 enum WearableProvider {

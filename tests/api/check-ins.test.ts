@@ -18,6 +18,7 @@ vi.mock('@/lib/wearables/index', () => ({
 import { setupTestDb, teardownTestDb, getTestClient } from '../helpers/db'
 import { makeRequest } from '../helpers/api'
 import * as handler from '@/app/api/check-ins/route'
+import * as recommendationsHandler from '@/app/api/recommendations/route'
 import { generateRecommendation } from '@/lib/llm/index'
 import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
 
@@ -446,32 +447,6 @@ describe('POST /api/check-ins', () => {
     expect(checkIns).toHaveLength(1)
   })
 
-  test('upsert retry: cycleDay is computed from prior history, not stale today check-in', async () => {
-    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
-    await getTestClient().checkIn.create({
-      data: {
-        userId: testUser.id,
-        checkInDate: new Date(YESTERDAY),
-        todaysPlannedWorkout: '5km easy',
-        sleepSatisfaction: 4,
-        feelScore: 4,
-        periodStartedToday: true,
-      },
-    })
-
-    // First submission: periodStartedToday: true (cycle day 1)
-    await makeRequest(handler, 'POST', '/api/check-ins', { ...BASE_BODY, periodStartedToday: true }, { 'X-Device-ID': DEVICE_ID })
-
-    // Second submission (retry): periodStartedToday: false — cycle day should be 2 (day after yesterday's period start)
-    const response = await makeRequest(handler, 'POST', '/api/check-ins', { ...BASE_BODY, periodStartedToday: false }, { 'X-Device-ID': DEVICE_ID })
-
-    expect(response.status).toBe(201)
-    const checkIn = await getTestClient().checkIn.findFirstOrThrow({
-      where: { userId: testUser.id, checkInDate: new Date(TODAY) },
-    })
-    expect(checkIn.cycleDay).toBe(2)
-  })
-
   test('does not call Sentry.captureMessage on successful check-in submission', async () => {
     const sentry = await import('@sentry/nextjs')
     vi.mocked(sentry.captureMessage).mockClear()
@@ -479,34 +454,6 @@ describe('POST /api/check-ins', () => {
       'X-Device-ID': DEVICE_ID,
     })
     expect(sentry.captureMessage).not.toHaveBeenCalled()
-  })
-
-  test('upsert: second submission for same date overwrites first, returns new recommendation, only 1 row in check_ins', async () => {
-    // First submission
-    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
-      'X-Device-ID': DEVICE_ID,
-    })
-
-    // Second submission with different planned workout
-    vi.mocked(generateRecommendation).mockResolvedValueOnce({
-      ...MOCK_RECOMMENDATION,
-      rationale: 'Strong signals. Go for it.',
-    })
-    const response = await makeRequest(
-      handler,
-      'POST',
-      '/api/check-ins',
-      { ...BASE_BODY, todaysPlannedWorkout: '10km tempo run' },
-      { 'X-Device-ID': DEVICE_ID }
-    )
-
-    expect(response.status).toBe(201)
-    const body = await response.json()
-    expect(body.rationale).toBe('Strong signals. Go for it.')
-
-    const checkIns = await getTestClient().checkIn.findMany()
-    expect(checkIns).toHaveLength(1)
-    expect(checkIns[0].todaysPlannedWorkout).toBe('10km tempo run')
   })
 
   test('user with no active wearable connection: fetchAndStoreTodayMetrics not called', async () => {
@@ -628,6 +575,28 @@ describe('GET /api/check-ins', () => {
     expect(body.checkIn).toBeNull()
   })
 
+  test('only a stale check-in exists for date: returns 200 with checkIn null', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(TODAY),
+        todaysPlannedWorkout: '5km easy run',
+        sleepSatisfaction: 4,
+        feelScore: 4,
+        status: 'stale',
+      },
+    })
+
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.checkIn).toBeNull()
+  })
+
   test('returns an x-request-id response header', async () => {
     const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
       'X-Device-ID': DEVICE_ID,
@@ -677,7 +646,7 @@ describe('DELETE /api/check-ins', () => {
 
   afterEach(teardownTestDb)
 
-  test('check-in exists: returns 204 and deletes check_in, recommendation, and llm_inference_log rows', async () => {
+  test('check-in exists: returns 204, marks check-in and recommendation as stale in a single transaction, and hard-deletes nothing', async () => {
     const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
     const checkIn = await getTestClient().checkIn.create({
       data: {
@@ -717,13 +686,48 @@ describe('DELETE /api/check-ins', () => {
     expect(response.status).toBe(204)
 
     const checkIns = await getTestClient().checkIn.findMany()
-    expect(checkIns).toHaveLength(0)
+    expect(checkIns).toHaveLength(1)
+    expect(checkIns[0].status).toBe('stale')
 
     const recommendations = await getTestClient().recommendation.findMany()
-    expect(recommendations).toHaveLength(0)
+    expect(recommendations).toHaveLength(1)
+    expect(recommendations[0].status).toBe('stale')
 
     const logs = await getTestClient().llmInferenceLog.findMany()
-    expect(logs).toHaveLength(0)
+    expect(logs).toHaveLength(1)
+  })
+
+  test('if the recommendation was already staled by a concurrent request, the transaction fails and the check-in is left active (rollback confirmed)', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    const checkIn = await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(TODAY),
+        todaysPlannedWorkout: '5km easy run',
+        sleepSatisfaction: 4,
+        feelScore: 4,
+      },
+    })
+    // Simulates a race: another request already marked the recommendation stale
+    // between this request's read and its transaction.
+    await getTestClient().recommendation.create({
+      data: {
+        checkInId: checkIn.id,
+        userId: testUser.id,
+        recommendationType: 'as_written',
+        rationale: 'Test rationale',
+        status: 'stale',
+      },
+    })
+
+    const response = await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+
+    expect(response.status).toBeGreaterThanOrEqual(500)
+
+    const unchangedCheckIn = await getTestClient().checkIn.findUniqueOrThrow({ where: { id: checkIn.id } })
+    expect(unchangedCheckIn.status).toBe('active')
   })
 
   test('does not call Sentry.captureMessage when check-in is deleted (redo)', async () => {
@@ -791,5 +795,126 @@ describe('DELETE /api/check-ins', () => {
       'X-Device-ID': DEVICE_ID,
     })
     expect(response.status).toBe(400)
+  })
+})
+
+describe('delete-and-redo history preservation', () => {
+  beforeEach(async () => {
+    await setupTestDb()
+    vi.clearAllMocks()
+    vi.mocked(generateRecommendation).mockResolvedValue(MOCK_RECOMMENDATION)
+    await seedTestUser()
+  })
+
+  afterEach(teardownTestDb)
+
+  async function submitAndRedo(): Promise<void> {
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+    await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, { 'X-Device-ID': DEVICE_ID })
+  }
+
+  test('GET /api/check-ins returns only the new active check-in after a redo, not the stale one', async () => {
+    await submitAndRedo()
+
+    await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, todaysPlannedWorkout: '10km tempo run' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+
+    const response = await makeRequest(handler, 'GET', `/api/check-ins?date=${TODAY}`, undefined, {
+      'X-Device-ID': DEVICE_ID,
+    })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.checkIn.todaysPlannedWorkout).toBe('10km tempo run')
+  })
+
+  test('GET /api/recommendations returns only the new active recommendation after a redo, not the stale one', async () => {
+    await submitAndRedo()
+
+    vi.mocked(generateRecommendation).mockResolvedValueOnce({
+      ...MOCK_RECOMMENDATION,
+      rationale: 'Second attempt rationale.',
+    })
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+    const response = await makeRequest(
+      recommendationsHandler,
+      'GET',
+      `/api/recommendations?date=${TODAY}`,
+      undefined,
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.recommendation.rationale).toBe('Second attempt rationale.')
+  })
+
+  test('submitting a new check-in after redo inserts a new active row; the previous stale row remains in the database', async () => {
+    await submitAndRedo()
+
+    await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, todaysPlannedWorkout: '10km tempo run' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+
+    const checkIns = await getTestClient().checkIn.findMany({ orderBy: { createdAt: 'asc' } })
+    expect(checkIns).toHaveLength(2)
+    expect(checkIns[0].status).toBe('stale')
+    expect(checkIns[0].todaysPlannedWorkout).toBe('5km easy run')
+    expect(checkIns[1].status).toBe('active')
+    expect(checkIns[1].todaysPlannedWorkout).toBe('10km tempo run')
+  })
+
+  test('llm inference logs accumulate as inserts across a redo; no previous log is overwritten', async () => {
+    await submitAndRedo()
+
+    await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+    const logs = await getTestClient().llmInferenceLog.findMany()
+    expect(logs).toHaveLength(2)
+  })
+
+  test('cycle day after a redo is computed from prior history, not the now-stale check-in for today', async () => {
+    const testUser = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+    await getTestClient().checkIn.create({
+      data: {
+        userId: testUser.id,
+        checkInDate: new Date(YESTERDAY),
+        todaysPlannedWorkout: '5km easy',
+        sleepSatisfaction: 4,
+        feelScore: 4,
+        periodStartedToday: true,
+      },
+    })
+
+    await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedToday: true },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    await makeRequest(handler, 'DELETE', `/api/check-ins?date=${TODAY}`, undefined, { 'X-Device-ID': DEVICE_ID })
+
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedToday: false },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+
+    expect(response.status).toBe(201)
+    const activeCheckIn = await getTestClient().checkIn.findFirstOrThrow({
+      where: { userId: testUser.id, checkInDate: new Date(TODAY), status: 'active' },
+    })
+    expect(activeCheckIn.cycleDay).toBe(2)
   })
 })

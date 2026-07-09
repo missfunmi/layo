@@ -135,7 +135,7 @@ The only API calls in each flow are:
 
 **Exception — Oura connect step:** The optional Oura connect step in onboarding requires a browser redirect to Oura's authorization server. This is a departure from the purely client-side architecture. The PKCE code verifier is stored in `sessionStorage` (not localStorage) to survive the redirect within the same tab; only the code verifier requires client-side storage. The `state` parameter encodes both a CSRF nonce and the `deviceId` as an encrypted JSON payload, allowing the callback route to identify the user server-side without any session or header (the callback is a browser redirect from Oura and carries no `X-Device-ID`). After the OAuth callback, the browser is redirected back to `/onboarding?wearable=connected`, and the onboarding page detects this param on mount to show the confirmation screen. React state from before the redirect is not recoverable; the confirmation screen is a terminal step that does not depend on prior React state.
 
-If the user refreshes mid-flow or after a submission failure, React state is lost and the flow restarts from the beginning. This is acceptable for the current implementation. The retry CTA on error screens re-submits the same API call — upsert semantics on both endpoints mean this is safe regardless of whether the previous attempt partially succeeded.
+If the user refreshes mid-flow or after a submission failure, React state is lost and the flow restarts from the beginning. This is acceptable for the current implementation. The retry CTA on error screens re-submits the same API call. `POST /api/users` upserts, so this is always safe. `POST /api/check-ins` always inserts, so this is safe as long as the previous attempt failed before its database write — see [Upsert semantics](#upsert-semantics).
 
 ---
 
@@ -209,10 +209,11 @@ model CheckIn {
   periodStartedToday          Boolean?              @map("period_started_today")
   cycleDay                    Int?                  @map("cycle_day")
   stressors                   String?
+  status                      RecordStatus          @default(active)
   createdAt                   DateTime              @default(now()) @map("created_at")
   recommendation              Recommendation?
 
-  @@unique([userId, checkInDate])
+  @@index([userId, checkInDate])
   @@map("check_ins")
 }
 
@@ -225,6 +226,7 @@ model Recommendation {
   recommendationType RecommendationType @map("recommendation_type")
   modificationDetail String?            @map("modification_detail")
   rationale          String
+  status             RecordStatus       @default(active)
   createdAt          DateTime           @default(now()) @map("created_at")
   llmInferenceLog    LlmInferenceLog?
 
@@ -331,6 +333,11 @@ enum RecommendationType {
   rest
 }
 
+enum RecordStatus {
+  active
+  stale
+}
+
 enum WearableProvider {
   oura
 }
@@ -348,14 +355,19 @@ enum ConnectionStatus {
 2. Any existing rows retain their values — the integer range and semantics are identical
 3. The LLM prompt config must be updated to use the new field label ("sleep satisfaction (1–5, subjective)" instead of "sleep score (1–5)")
 
+`check_ins` and `recommendations` gain a `status` column (`RecordStatus`: `active | stale`, default `active`) so that delete-and-redo preserves history instead of overwriting it. This requires:
+1. A Prisma migration that adds the `status` column to both tables and drops the old `@@unique([userId, checkInDate])` constraint on `check_ins` (multiple stale rows can now share a date)
+2. A hand-written partial unique index, `check_ins_user_id_check_in_date_active_key`, on `(user_id, check_in_date) WHERE status = 'active'` — this replaces the dropped constraint's guarantee (at most one *active* check-in per user per day) without blocking stale history from accumulating
+3. Existing rows default to `status = 'active'` on migration, so no backfill is needed
+
 ### Key indexes and constraints
 
 Prisma `@unique` directives automatically create unique indexes. Additional non-unique indexes are added explicitly for frequently queried foreign keys.
 
 - `users.device_id`: unique index (auto-created by `@unique`) — also used for upsert
 - `user_profiles.user_id`: unique index (auto-created by `@unique`)
-- `check_ins.(user_id, check_in_date)`: composite unique index (auto-created by `@@unique`) — enforces one check-in per user per day; used for upsert and date-scoped queries
-- `check_ins.user_id`: non-unique index — for querying a user's check-in history
+- `check_ins.(user_id, check_in_date)`: non-unique composite index — for date-scoped queries across all statuses
+- `check_ins_user_id_check_in_date_active_key`: partial unique index on `(user_id, check_in_date) WHERE status = 'active'` (hand-written, not expressible in `schema.prisma`) — enforces at most one active check-in per user per day
 - `check_ins.check_in_date`: non-unique index — for date-scoped queries
 - `recommendations.user_id`: non-unique index — for querying a user's recommendation history
 - `recommendations.check_in_id`: unique index (auto-created by `@unique`)
@@ -382,7 +394,9 @@ Returns the authenticated user's profile. Called on check-in page mount to obtai
 
 ### Upsert semantics
 
-Both `POST /api/users` and `POST /api/check-ins` use upsert rather than insert. This means retrying a failed submission is always safe — the client does not need to know whether the previous attempt partially succeeded. There is no separate retry endpoint.
+`POST /api/users` uses upsert rather than insert. This means retrying a failed onboarding submission is always safe — the client does not need to know whether the previous attempt partially succeeded. There is no separate retry endpoint.
+
+`POST /api/check-ins` always inserts (see [Check-in, recommendation, and LLM inference log history](#check-in-recommendation-and-llm-inference-log-history) below) — retrying is only safe when the previous attempt failed before its database write (e.g. the LLM call itself failed), since no `active` check-in exists yet in that case. A retry after a fully successful submission whose response was lost in transit (e.g. a network timeout) would fail on the partial unique index, since an `active` check-in for that day already exists. This is an accepted tradeoff of insert-only history; the client's entry-point routing prevents this from being reachable in normal usage, since a check-in flow is only shown when no check-in exists yet for today.
 
 A near-term improvement is to add idempotency key support (client generates a UUID per submission attempt, server deduplicates on it), but this is not required for the current implementation given the small user base.
 
@@ -411,7 +425,7 @@ Creates or updates a user, user profile, and event (if training for a race). Cal
 ---
 
 ### POST /api/check-ins
-Submits today's check-in, calculates cycle day, fetches and processes wearable data (if connected), generates a recommendation, and persists everything atomically. Upserts on `(user_id, check_in_date)`.
+Submits today's check-in, calculates cycle day, fetches and processes wearable data (if connected), generates a recommendation, and persists everything atomically. Always inserts a new `check_ins` row with `status = active` (see [Check-in, recommendation, and LLM inference log history](#check-in-recommendation-and-llm-inference-log-history)); it does not upsert.
 
 **Request body:**
 ```typescript
@@ -440,33 +454,45 @@ Submits today's check-in, calculates cycle day, fetches and processes wearable d
 7. Fetch rolling history (last 14 check-ins) for LLM context
 8. Call LLM with enriched context, measure latency
 9. Parse LLM response
-10. Upsert check-in, upsert recommendation, insert LLM inference log — all in a single transaction
+10. Insert check-in (`status = active`), insert recommendation (`status = active`), insert LLM inference log — all in a single transaction
 11. Return recommendation to client
 
 **Note on wearable sync approach:** Today's Oura data is fetched live at check-in submission time (steps 4 and 6) rather than by a background polling job. This is a deliberate simplification for v0.1.1. The planned migration is Oura webhooks, which will push data ~30 seconds after ring sync and eliminate the live fetch entirely. The webhook route and registration will be added as part of that future version.
 
-**Error:** If LLM call fails or response cannot be parsed, the check-in record is retained and `503` is returned with a retryable error payload. The client re-submits `POST /api/check-ins` on retry — upsert semantics make this safe.
+**Error:** If LLM call fails or response cannot be parsed, no rows are inserted and `503` is returned with a retryable error payload (`checkInSaved` reflects whether an `active` check-in already exists for the date from an earlier attempt). The client re-submits `POST /api/check-ins` on retry; this is safe because a failed attempt never inserts a row (see [Upsert semantics](#upsert-semantics) for the one case where a retry is not safe).
 
 ---
 
 ### GET /api/check-ins?date={date}
-Returns the check-in for the given date. `date` is an ISO date string (e.g. `2026-06-25`). Used by the entry point routing logic to determine whether a check-in exists for today.
+Returns the `active` check-in for the given date, or `null` if none exists. `date` is an ISO date string (e.g. `2026-06-25`). Used by the entry point routing logic to determine whether a check-in exists for today. Stale check-ins (from a prior delete-and-redo) are never returned.
 
-**Response:** `200` with `{ checkIn: <data> }` if a check-in exists, or `200` with `{ checkIn: null }` if not.
+**Response:** `200` with `{ checkIn: <data> }` if an active check-in exists, or `200` with `{ checkIn: null }` if not.
 
 ---
 
 ### DELETE /api/check-ins?date={date}
-Deletes the check-in for the given date and its associated recommendation and LLM inference log. Called after the user confirms the "Redo" action.
+Marks the `active` check-in for the given date, and its corresponding `active` recommendation, as `stale` in a single database transaction. No rows are deleted — see [Check-in, recommendation, and LLM inference log history](#check-in-recommendation-and-llm-inference-log-history). Called after the user confirms the "Redo" action; the client then redirects to the check-in flow as normal. Idempotent: if no `active` check-in exists for the date, this is a no-op.
 
 **Response:** `204`.
 
 ---
 
 ### GET /api/recommendations?date={date}
-Returns the recommendation for the given date.
+Returns the `active` recommendation for the given date, or `null` if none exists. Stale recommendations (from a prior delete-and-redo) are never returned.
 
-**Response:** `200` with `{ recommendation: <data> }` if a recommendation exists, or `200` with `{ recommendation: null }` if not.
+**Response:** `200` with `{ recommendation: <data> }` if an active recommendation exists, or `200` with `{ recommendation: null }` if not.
+
+---
+
+### Check-in, recommendation, and LLM inference log history
+
+`check_ins` and `recommendations` are never updated in place or hard-deleted after creation; both carry a `status` field (`active | stale`, default `active`) so that troubleshooting a past recommendation stays possible after a redo. `llm_inference_logs` has no `status` field — it is purely an audit trail and every inference always inserts a new row, regardless of retries or redos.
+
+On "delete and redo check-in" (`DELETE /api/check-ins?date=`): the current day's `active` check-in and its `active` recommendation are both marked `stale` in one transaction. These two updates use an extended `where` clause (`{ id, status: 'active' }`) so that if either row was already staled by a concurrent request, the update affects zero rows and Prisma raises `P2025`, rolling back the whole transaction — the check-in and recommendation are never left in a mismatched state (one `stale`, one still `active`).
+
+On check-in submission (`POST /api/check-ins`): a new check-in, recommendation, and LLM inference log are always inserted with `status = active` (LLM inference log has no status). A partial unique index (`check_ins_user_id_check_in_date_active_key` on `(user_id, check_in_date) WHERE status = 'active'`) guarantees at most one active check-in per user per day; the constraint is naturally satisfied by the normal flow because the entry-point routing only shows the check-in screen when no active check-in exists yet for today.
+
+**Edge case — user closes app mid-redo:** if a user marks today's check-in and recommendation `stale` and then closes the app before completing the new check-in, there is no `active` check-in for today. On return, entry-point routing finds no active check-in and correctly redirects to `/check-in`. The stale records remain in the database for audit purposes.
 
 ---
 
@@ -672,7 +698,7 @@ The system prompt must instruct the LLM to:
 | Malformed JSON response | Log to Sentry with raw response, return `503`, retain check-in record |
 | Invalid `recommendation_type` | Log to Sentry, return `503`, retain check-in record |
 
-In all error cases the check-in record is persisted. The client shows a retry option that re-submits `POST /api/check-ins` — upsert semantics ensure this is safe.
+In all error cases, no check-in row is written by the failed attempt (the insert only happens after the LLM call succeeds), so a pre-existing `active` check-in from an earlier successful attempt is left untouched. The client shows a retry option that re-submits `POST /api/check-ins`; this is safe whenever no `active` check-in exists yet for the date — see [Upsert semantics](#upsert-semantics).
 
 ---
 
@@ -796,11 +822,13 @@ Neon Postgres connection pooling is used in production via the `@neondatabase/se
 
 ## Key architectural decisions
 
-**Upsert semantics on `POST /api/users` and `POST /api/check-ins`.** Both endpoints upsert rather than insert. This means the client never needs to know whether a previous attempt partially succeeded — retrying is always safe. A future improvement is idempotency key support for more robust deduplication.
+**Upsert semantics on `POST /api/users`.** The endpoint upserts rather than inserts. This means the client never needs to know whether a previous onboarding attempt partially succeeded — retrying is always safe. A future improvement is idempotency key support for more robust deduplication.
+
+**`POST /api/check-ins` inserts rather than upserts, to preserve history.** Every submission creates a new `check_ins`/`recommendations` row (`status = active`) and a new `llm_inference_logs` row, rather than overwriting the prior day's attempt. This trades away blind retry-safety after a fully successful submission (see [Upsert semantics](#upsert-semantics)) for the ability to inspect what a past recommendation was actually based on — the driving requirement behind delete-and-redo history preservation (see [Check-in, recommendation, and LLM inference log history](#check-in-recommendation-and-llm-inference-log-history)).
 
 **`check_in_date` is a plain date string sent by the client.** It represents the user's local calendar date (derived from `new Date().toLocaleDateString()` or equivalent), not a UTC-derived timestamp. The server stores it exactly as provided. "June 25" in Berlin and "June 25" in San Diego are the same check-in date — consistent with how a user thinks about their day regardless of where they are. The client sets this programmatically; the user never enters a date manually.
 
-**One check-in per user per day is enforced at the database level** via a unique constraint on `(user_id, check_in_date)`, not just application logic.
+**One *active* check-in per user per day is enforced at the database level** via a partial unique index on `(user_id, check_in_date) WHERE status = 'active'`, not just application logic. Stale check-ins from prior redos are exempt, since the index only covers active rows.
 
 **Recommendation generation is synchronous with check-in submission.** The user waits for the LLM response before seeing the recommendation screen. Simpler than async/polling for the current scale.
 
