@@ -152,10 +152,10 @@ export async function fetchHistoricalData(
     sleepRes.json() as Promise<{ data: Array<{ day: string } & OuraSleepPeriod> }>,
   ])
 
-  const readinessByDate = new Map(readinessData.data.map((r) => [r.day, r]))
-  const dailySleepByDate = new Map(dailySleepData.data.map((s) => [s.day, s]))
+  const readinessByDate = new Map((readinessData.data ?? []).map((r) => [r.day, r]))
+  const dailySleepByDate = new Map((dailySleepData.data ?? []).map((s) => [s.day, s]))
   const sleepPeriodsByDate = new Map<string, OuraSleepPeriod[]>()
-  for (const period of sleepData.data) {
+  for (const period of sleepData.data ?? []) {
     const existing = sleepPeriodsByDate.get(period.day) ?? []
     existing.push(period)
     sleepPeriodsByDate.set(period.day, existing)

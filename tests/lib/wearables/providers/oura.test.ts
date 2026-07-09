@@ -301,6 +301,18 @@ describe('lib/wearables/providers/oura', () => {
       )
     })
 
+    test('does not throw when a 200 response has a missing data array', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({}) }),
+      )
+      await expect(fetchHistoricalData('token', '2026-01-01', '2026-01-02')).resolves.toEqual([])
+    })
+
     test('returns metrics with their corresponding dates, aggregating sleep periods per day', async () => {
       const readinessData = {
         data: [

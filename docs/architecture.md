@@ -746,7 +746,7 @@ No structural schema changes are required.
 - Historical backfill: 90 days, triggered synchronously on OAuth callback
 - Daily sync: today's data fetched live during `POST /api/check-ins`, upserted to `wearable_daily_metrics` before LLM context is built
 - API base URL: `https://api.ouraring.com/v2`
-- Endpoints used: `/usercollection/daily_readiness` (readiness score, temperature deviation), `/usercollection/daily_sleep` (sleep score only), `/usercollection/sleep` (HRV, resting heart rate, sleep durations, efficiency — see `docs/specs/wearable-integration.md` for exact field mapping and per-day aggregation across multiple sleep periods)
+- Endpoints used: `/usercollection/daily_readiness` (readiness score, temperature deviation), `/usercollection/daily_sleep` (sleep score only), `/usercollection/sleep` (HRV, resting heart rate, sleep durations, efficiency). See `docs/specs/wearable-integration.md` for exact field mapping and per-day aggregation across multiple sleep periods.
 - Response shapes verified against Oura's official OpenAPI spec: [`openapi-1.35.json`](https://cloud.ouraring.com/v2/static/json/openapi-1.35.json)
 
 ### Baseline computation
