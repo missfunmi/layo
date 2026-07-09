@@ -129,11 +129,7 @@ export async function fetchTodayData(accessToken: string, date: string): Promise
   return { metrics, raw: { readiness, dailySleep, sleepPeriods } }
 }
 
-export async function fetchHistoricalData(
-  accessToken: string,
-  startDate: string,
-  endDate: string,
-): Promise<Array<{ date: string } & NormalizedDailyMetric>> {
+async function fetchHistoricalGroupedByDate(accessToken: string, startDate: string, endDate: string) {
   const headers = { Authorization: `Bearer ${accessToken}` }
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
   const base = 'https://api.ouraring.com/v2/usercollection'
@@ -162,6 +158,20 @@ export async function fetchHistoricalData(
   }
 
   const allDates = new Set([...readinessByDate.keys(), ...dailySleepByDate.keys(), ...sleepPeriodsByDate.keys()])
+  return { readinessByDate, dailySleepByDate, sleepPeriodsByDate, allDates }
+}
+
+export async function fetchHistoricalData(
+  accessToken: string,
+  startDate: string,
+  endDate: string,
+): Promise<Array<{ date: string } & NormalizedDailyMetric>> {
+  const { readinessByDate, dailySleepByDate, sleepPeriodsByDate, allDates } = await fetchHistoricalGroupedByDate(
+    accessToken,
+    startDate,
+    endDate,
+  )
+
   return Array.from(allDates).map((date) => ({
     date,
     ...mapToNormalized(
@@ -170,6 +180,35 @@ export async function fetchHistoricalData(
       sleepPeriodsByDate.get(date) ?? null,
     ),
   }))
+}
+
+export type FetchHistoricalWithRawResult = {
+  date: string
+  metrics: NormalizedDailyMetric
+  raw: { readiness: unknown; dailySleep: unknown; sleepPeriods: unknown }
+}
+
+export async function fetchHistoricalDataWithRaw(
+  accessToken: string,
+  startDate: string,
+  endDate: string,
+): Promise<FetchHistoricalWithRawResult[]> {
+  const { readinessByDate, dailySleepByDate, sleepPeriodsByDate, allDates } = await fetchHistoricalGroupedByDate(
+    accessToken,
+    startDate,
+    endDate,
+  )
+
+  return Array.from(allDates).map((date) => {
+    const readiness = (readinessByDate.get(date) ?? null) as OuraReadiness
+    const dailySleep = (dailySleepByDate.get(date) ?? null) as OuraDailySleep
+    const sleepPeriods = sleepPeriodsByDate.get(date) ?? []
+    return {
+      date,
+      metrics: mapToNormalized(readiness, dailySleep, sleepPeriods),
+      raw: { readiness, dailySleep, sleepPeriods },
+    }
+  })
 }
 
 export async function refreshToken(userId: string): Promise<string> {

@@ -195,6 +195,8 @@ Oura returns durations in seconds. Division by 60 happens in the mapping layer b
 - **`resting_heart_rate`** takes the **minimum** `lowest_heart_rate` across periods, since it is already a "lowest observed" statistic rather than an average or a sum.
 - **`sleep_efficiency`** is **recomputed** from summed components (`sum(total_sleep_duration) / sum(time_in_bed) * 100`) rather than averaging each period's already-rounded percentage, since this is the literal definition of sleep efficiency.
 
+**Backfilling historical rows.** Rows written before this mapping fix landed have null values for the affected columns. `npm run backfill-wearable-metrics -- --dry-run` re-fetches each active Oura connection's existing `wearable_daily_metrics` date range and previews the update; drop `--dry-run` to write. It only updates rows that already exist for a user, it does not create new ones for gaps.
+
 ---
 
 ## Historical data backfill
@@ -397,9 +399,10 @@ Provider-agnostic interface. Exports:
 
 Oura-specific implementation. Exports:
 - `fetchHistoricalData(accessToken, startDate, endDate)` — fetches and maps historical data
+- `fetchHistoricalDataWithRaw(accessToken, startDate, endDate)`: same as `fetchHistoricalData`, but each returned entry also includes that date's raw `readiness`/`dailySleep`/`sleepPeriods` API responses; used by `scripts/backfill-wearable-metrics.ts` to refresh `raw_data` alongside the normalized columns
 - `fetchTodayData(accessToken, date)` — fetches today's metrics from the Oura API
 - `refreshToken(userId)` — token refresh logic
-- `mapToNormalized(ouraResponse)` — maps Oura API response to `WearableDailyMetric` columns
+- `mapToNormalized(readiness, dailySleep, sleepPeriods)`: maps Oura API responses to `WearableDailyMetric` columns, aggregating across the day's sleep periods (see "Field mapping per provider" above)
 
 ### `lib/wearables/types.ts`
 
