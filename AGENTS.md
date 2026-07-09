@@ -19,10 +19,13 @@ The three core flows:
 
 ## MCP tools available
 
-The following MCP servers are connected to there Claude Code session:
+The following MCP servers are connected to agent coding sessions:
 
-- **Linear** — use for issue management (assigned throughout the per-issue workflow)
-- **Vercel** — use for deployment work: checking deployment status, inspecting build logs for failures, and verifying environment variable configuration. Use `ToolSearch` with query `"vercel"` at the start of any session that touches deployments to discover the available tools.
+| MCP Server | Purpose                                                                                                                                                                                                                                                                 | Available                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Linear** | use for issue management (see the Per-issue workflow and Code reviewer workflow sections below)                                                                                                                                                                         | Claude Code, Gemini Antigravity CLI |
+| **Vercel** | use for deployment work: checking deployment status, inspecting build logs for failures, and verifying environment variable configuration. Use `ToolSearch` with query `"vercel"` at the start of any session that touches deployments to discover the available tools. | Claude Code                         |
+| **Sentry** | use for live service alert and incident investigation. Use `ToolSearch` with query `"sentry"` at the start of any session that involves a Sentry alert to discover the available tools.                                                                                 | Claude Code                         |
 
 ## Tech stack
 
