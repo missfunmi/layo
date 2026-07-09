@@ -4,36 +4,92 @@ import * as Sentry from '@sentry/nextjs'
 import type { NormalizedDailyMetric } from '@/lib/wearables/types'
 
 type OuraReadiness = Record<string, unknown> | null | undefined
-type OuraSleep = Record<string, unknown> | null | undefined
+type OuraDailySleep = Record<string, unknown> | null | undefined
+type OuraSleepPeriod = Record<string, unknown>
 
-export function mapToNormalized(ouraReadiness: OuraReadiness, ouraSleep: OuraSleep): NormalizedDailyMetric {
-  const readiness = ouraReadiness ?? {}
-  const sleep = ouraSleep ?? {}
+const EXCLUDED_SLEEP_PERIOD_TYPES = new Set(['rest', 'deleted'])
 
-  const toMinutes = (seconds: unknown): number | undefined => {
-    if (typeof seconds !== 'number') return undefined
-    return Math.round(seconds / 60)
+function num(val: unknown): number | undefined {
+  return typeof val === 'number' ? val : undefined
+}
+
+function aggregateSleepPeriods(periods: OuraSleepPeriod[]): Pick<
+  NormalizedDailyMetric,
+  'hrvAvg' | 'restingHeartRate' | 'sleepDurationMinutes' | 'deepSleepMinutes' | 'remSleepMinutes' | 'sleepEfficiency'
+> {
+  const contributing = periods.filter((p) => !EXCLUDED_SLEEP_PERIOD_TYPES.has(String(p.type)))
+
+  let totalSleepSum: number | undefined
+  let deepSleepSum: number | undefined
+  let remSleepSum: number | undefined
+  let timeInBedSum: number | undefined
+  let hrvWeightedSum = 0
+  let hrvWeight = 0
+  let restingHeartRate: number | undefined
+
+  for (const period of contributing) {
+    const totalSleep = num(period.total_sleep_duration)
+    const deepSleep = num(period.deep_sleep_duration)
+    const remSleep = num(period.rem_sleep_duration)
+    const timeInBed = num(period.time_in_bed)
+    const averageHrv = num(period.average_hrv)
+    const lowestHeartRate = num(period.lowest_heart_rate)
+
+    if (totalSleep !== undefined) totalSleepSum = (totalSleepSum ?? 0) + totalSleep
+    if (deepSleep !== undefined) deepSleepSum = (deepSleepSum ?? 0) + deepSleep
+    if (remSleep !== undefined) remSleepSum = (remSleepSum ?? 0) + remSleep
+    if (timeInBed !== undefined) timeInBedSum = (timeInBedSum ?? 0) + timeInBed
+    if (averageHrv !== undefined && totalSleep !== undefined) {
+      hrvWeightedSum += averageHrv * totalSleep
+      hrvWeight += totalSleep
+    }
+    if (lowestHeartRate !== undefined) {
+      restingHeartRate = restingHeartRate === undefined ? lowestHeartRate : Math.min(restingHeartRate, lowestHeartRate)
+    }
   }
 
-  const num = (val: unknown): number | undefined =>
-    typeof val === 'number' ? val : undefined
+  return {
+    hrvAvg: hrvWeight > 0 ? hrvWeightedSum / hrvWeight : undefined,
+    restingHeartRate,
+    sleepDurationMinutes: totalSleepSum !== undefined ? Math.round(totalSleepSum / 60) : undefined,
+    deepSleepMinutes: deepSleepSum !== undefined ? Math.round(deepSleepSum / 60) : undefined,
+    remSleepMinutes: remSleepSum !== undefined ? Math.round(remSleepSum / 60) : undefined,
+    sleepEfficiency:
+      totalSleepSum !== undefined && timeInBedSum !== undefined && timeInBedSum > 0
+        ? (totalSleepSum / timeInBedSum) * 100
+        : undefined,
+  }
+}
+
+export function mapToNormalized(
+  ouraReadiness: OuraReadiness,
+  ouraDailySleep: OuraDailySleep,
+  ouraSleepPeriods: OuraSleepPeriod[] | null | undefined,
+): NormalizedDailyMetric {
+  const readiness = ouraReadiness ?? {}
+  const dailySleep = ouraDailySleep ?? {}
+  const periods = ouraSleepPeriods ?? []
 
   return {
     readinessScore: num(readiness.score),
     bodyTempDeviation: num(readiness.temperature_deviation),
-    hrvAvg: num(sleep.average_hrv),
-    restingHeartRate: num(sleep.lowest_resting_heart_rate),
-    sleepScore: num(sleep.score),
-    sleepDurationMinutes: toMinutes(sleep.total_sleep_duration),
-    deepSleepMinutes: toMinutes(sleep.deep_sleep_duration),
-    remSleepMinutes: toMinutes(sleep.rem_sleep_duration),
-    sleepEfficiency: num(sleep.efficiency),
+    sleepScore: num(dailySleep.score),
+    ...aggregateSleepPeriods(periods),
   }
 }
 
 export type FetchTodayResult = {
   metrics: NormalizedDailyMetric
-  raw: { readiness: unknown; sleep: unknown }
+  raw: { readiness: unknown; dailySleep: unknown; sleepPeriods: unknown }
+}
+
+async function throwOnFirstFailedResponse(responses: Response[]): Promise<void> {
+  const failedRes = responses.find((res) => !res.ok)
+  if (!failedRes) return
+  const status = failedRes.status
+  let detail = ''
+  try { detail = await failedRes.text() } catch { /* ignore */ }
+  throw new Error(`Oura API error: ${status}${detail ? ` ${detail}` : ''}`)
 }
 
 export async function fetchTodayData(accessToken: string, date: string): Promise<FetchTodayResult | null> {
@@ -41,39 +97,36 @@ export async function fetchTodayData(accessToken: string, date: string): Promise
   const params = new URLSearchParams({ start_date: date, end_date: date })
   const base = 'https://api.ouraring.com/v2/usercollection'
 
-  const [readinessRes, sleepRes] = await Promise.all([
+  const [readinessRes, dailySleepRes, sleepRes] = await Promise.all([
     fetch(`${base}/daily_readiness?${params}`, { headers }),
     fetch(`${base}/daily_sleep?${params}`, { headers }),
+    fetch(`${base}/sleep?${params}`, { headers }),
   ])
 
-  if (!readinessRes.ok || !sleepRes.ok) {
-    const failedRes = !readinessRes.ok ? readinessRes : sleepRes
-    const status = failedRes.status
-    let detail = ''
-    try { detail = await failedRes.text() } catch { /* ignore */ }
-    throw new Error(`Oura API error: ${status}${detail ? ` ${detail}` : ''}`)
-  }
+  await throwOnFirstFailedResponse([readinessRes, dailySleepRes, sleepRes])
 
-  const [readinessData, sleepData] = await Promise.all([
+  const [readinessData, dailySleepData, sleepData] = await Promise.all([
     readinessRes.json() as Promise<{ data: unknown[] }>,
-    sleepRes.json() as Promise<{ data: unknown[] }>,
+    dailySleepRes.json() as Promise<{ data: unknown[] }>,
+    sleepRes.json() as Promise<{ data: OuraSleepPeriod[] }>,
   ])
 
   const readiness = readinessData.data?.[0] ?? null
-  const sleep = sleepData.data?.[0] ?? null
+  const dailySleep = dailySleepData.data?.[0] ?? null
+  const sleepPeriods = (sleepData.data ?? []).filter((p) => p.day === date)
 
-  if (!readiness && !sleep) return null
+  if (!readiness && !dailySleep && sleepPeriods.length === 0) return null
 
-  const metrics = mapToNormalized(readiness as OuraReadiness, sleep as OuraSleep)
+  const metrics = mapToNormalized(readiness as OuraReadiness, dailySleep as OuraDailySleep, sleepPeriods)
   const allUndefined = Object.values(metrics).every((v) => v === undefined)
   if (allUndefined) {
     Sentry.captureMessage('Oura metric dropout: all mapped metrics are undefined despite non-null API response', {
       level: 'error',
-      extra: { readiness, sleep },
+      extra: { readiness, dailySleep, sleepPeriods },
     })
   }
 
-  return { metrics, raw: { readiness, sleep } }
+  return { metrics, raw: { readiness, dailySleep, sleepPeriods } }
 }
 
 export async function fetchHistoricalData(
@@ -85,33 +138,36 @@ export async function fetchHistoricalData(
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
   const base = 'https://api.ouraring.com/v2/usercollection'
 
-  const [readinessRes, sleepRes] = await Promise.all([
+  const [readinessRes, dailySleepRes, sleepRes] = await Promise.all([
     fetch(`${base}/daily_readiness?${params}`, { headers }),
     fetch(`${base}/daily_sleep?${params}`, { headers }),
+    fetch(`${base}/sleep?${params}`, { headers }),
   ])
 
-  if (!readinessRes.ok || !sleepRes.ok) {
-    const failedRes = !readinessRes.ok ? readinessRes : sleepRes
-    const status = failedRes.status
-    let detail = ''
-    try { detail = await failedRes.text() } catch { /* ignore */ }
-    throw new Error(`Oura API error: ${status}${detail ? ` ${detail}` : ''}`)
-  }
+  await throwOnFirstFailedResponse([readinessRes, dailySleepRes, sleepRes])
 
-  const [readinessData, sleepData] = await Promise.all([
+  const [readinessData, dailySleepData, sleepData] = await Promise.all([
     readinessRes.json() as Promise<{ data: Array<{ day: string } & Record<string, unknown>> }>,
-    sleepRes.json() as Promise<{ data: Array<{ day: string } & Record<string, unknown>> }>,
+    dailySleepRes.json() as Promise<{ data: Array<{ day: string } & Record<string, unknown>> }>,
+    sleepRes.json() as Promise<{ data: Array<{ day: string } & OuraSleepPeriod> }>,
   ])
 
   const readinessByDate = new Map(readinessData.data.map((r) => [r.day, r]))
-  const sleepByDate = new Map(sleepData.data.map((s) => [s.day, s]))
+  const dailySleepByDate = new Map(dailySleepData.data.map((s) => [s.day, s]))
+  const sleepPeriodsByDate = new Map<string, OuraSleepPeriod[]>()
+  for (const period of sleepData.data) {
+    const existing = sleepPeriodsByDate.get(period.day) ?? []
+    existing.push(period)
+    sleepPeriodsByDate.set(period.day, existing)
+  }
 
-  const allDates = new Set([...readinessByDate.keys(), ...sleepByDate.keys()])
+  const allDates = new Set([...readinessByDate.keys(), ...dailySleepByDate.keys(), ...sleepPeriodsByDate.keys()])
   return Array.from(allDates).map((date) => ({
     date,
     ...mapToNormalized(
       (readinessByDate.get(date) ?? null) as OuraReadiness,
-      (sleepByDate.get(date) ?? null) as OuraSleep,
+      (dailySleepByDate.get(date) ?? null) as OuraDailySleep,
+      sleepPeriodsByDate.get(date) ?? null,
     ),
   }))
 }
