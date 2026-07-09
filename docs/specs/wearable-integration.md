@@ -171,21 +171,29 @@ model WearableDailyMetric {
 
 ### Field mapping per provider
 
-Each provider module defines a static mapping from its API response shape to the normalized columns. For Oura:
+Each provider module defines a static mapping from its API response shape to the normalized columns. For Oura, verified against Oura's official OpenAPI spec ([`openapi-1.35.json`](https://cloud.ouraring.com/v2/static/json/openapi-1.35.json), schemas `PublicDailyReadiness`, `PublicDailySleep`, `PublicModifiedSleepModel`):
 
 | Normalized column | Oura API field | Source endpoint |
 |---|---|---|
 | `readiness_score` | `readiness.score` | `/v2/usercollection/daily_readiness` |
-| `hrv_avg` | `sleep.average_hrv` | `/v2/usercollection/daily_sleep` |
-| `resting_heart_rate` | `sleep.lowest_resting_heart_rate` | `/v2/usercollection/daily_sleep` |
-| `sleep_score` | `sleep.score` | `/v2/usercollection/daily_sleep` |
-| `sleep_duration_minutes` | `sleep.total_sleep_duration / 60` | `/v2/usercollection/daily_sleep` |
-| `deep_sleep_minutes` | `sleep.deep_sleep_duration / 60` | `/v2/usercollection/daily_sleep` |
-| `rem_sleep_minutes` | `sleep.rem_sleep_duration / 60` | `/v2/usercollection/daily_sleep` |
-| `sleep_efficiency` | `sleep.efficiency` | `/v2/usercollection/daily_sleep` |
 | `body_temp_deviation` | `readiness.temperature_deviation` | `/v2/usercollection/daily_readiness` |
+| `sleep_score` | `dailySleep.score` | `/v2/usercollection/daily_sleep` |
+| `hrv_avg` | duration-weighted average of `average_hrv` across the day's sleep periods | `/v2/usercollection/sleep` |
+| `resting_heart_rate` | minimum of `lowest_heart_rate` across the day's sleep periods | `/v2/usercollection/sleep` |
+| `sleep_duration_minutes` | sum of `total_sleep_duration` across the day's sleep periods, in minutes | `/v2/usercollection/sleep` |
+| `deep_sleep_minutes` | sum of `deep_sleep_duration` across the day's sleep periods, in minutes | `/v2/usercollection/sleep` |
+| `rem_sleep_minutes` | sum of `rem_sleep_duration` across the day's sleep periods, in minutes | `/v2/usercollection/sleep` |
+| `sleep_efficiency` | `sum(total_sleep_duration) / sum(time_in_bed) * 100` across the day's sleep periods | `/v2/usercollection/sleep` |
 
 Oura returns durations in seconds. Division by 60 happens in the mapping layer before storage.
+
+**`daily_sleep` and `daily_readiness` do not contain raw metric values.** Both endpoints return only a `score` plus a `contributors` object of 0-100 sub-scores (e.g. `contributors.hrv_balance`, `contributors.resting_heart_rate`, `contributors.efficiency`); they never return raw HRV (ms), heart rate (bpm), duration (seconds), or efficiency (%) values. Those raw values live on the separate `/v2/usercollection/sleep` endpoint (individual sleep-period records), which is why it's the source for every field below `sleep_score` in the table above. There is also no field named `resting_heart_rate` anywhere in Oura's API that carries a bpm value; the closest analog is `lowest_heart_rate` on a sleep period.
+
+**Aggregating multiple sleep periods per day.** `/v2/usercollection/sleep` can return more than one record for a given day (main sleep plus naps), each with a `type` of `long_sleep`, `sleep`, `late_nap`, `rest`, or `deleted`. A day's contributing periods are all records with that `day` value (Oura's `day` field already accounts for the 6pm cutoff that reassigns late naps to the following day) excluding `type: rest` and `type: deleted`. Different fields aggregate differently across those periods:
+- **Durations** (`sleep_duration_minutes`, `deep_sleep_minutes`, `rem_sleep_minutes`) are **summed**. This matches what the Oura app displays (e.g. a 6h main sleep plus a 1h15m nap shows as 7h15m total), and total sleep including naps is what matters for assessing next-day readiness.
+- **`hrv_avg`** is a **duration-weighted average** (weighted by each period's `total_sleep_duration`), since an average cannot be summed and unweighted averaging would let a short nap skew the value as much as the main sleep.
+- **`resting_heart_rate`** takes the **minimum** `lowest_heart_rate` across periods, since it is already a "lowest observed" statistic rather than an average or a sum.
+- **`sleep_efficiency`** is **recomputed** from summed components (`sum(total_sleep_duration) / sum(time_in_bed) * 100`) rather than averaging each period's already-rounded percentage, since this is the literal definition of sleep efficiency.
 
 ---
 
