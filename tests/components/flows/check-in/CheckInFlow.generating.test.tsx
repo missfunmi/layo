@@ -376,6 +376,7 @@ describe('app/check-in/page.tsx', () => {
     vi.mocked(global.fetch)
       .mockResolvedValueOnce(new Response(JSON.stringify({ user: { name: 'Funmi', hormonalLifeStage: ['post_menopausal'] } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ checkIn: null }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ recommendation: null }), { status: 200 }))
     render(<CheckInPage />)
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /start today's check-in/i })).toBeInTheDocument()
@@ -386,6 +387,7 @@ describe('app/check-in/page.tsx', () => {
     vi.mocked(global.fetch)
       .mockResolvedValueOnce(new Response(JSON.stringify({ user: { name: 'Amara', hormonalLifeStage: [] } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ checkIn: null }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ recommendation: null }), { status: 200 }))
     render(<CheckInPage />)
     await waitFor(() => {
       expect(screen.getByText(/ready for today, amara/i)).toBeInTheDocument()
@@ -396,16 +398,36 @@ describe('app/check-in/page.tsx', () => {
     vi.mocked(global.fetch)
       .mockResolvedValueOnce(new Response(JSON.stringify({ user: { name: 'Funmi', hormonalLifeStage: [] } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ checkIn: { todaysPlannedWorkout: '6mi tempo' } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ recommendation: null }), { status: 200 }))
     render(<CheckInPage />)
     await waitFor(() => screen.getByRole('button', { name: /start today's check-in/i }))
     fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
     expect(screen.getByText('6mi tempo')).toBeInTheDocument()
   })
 
+  test('passes recommendationHeading built from yesterday\'s recommendation to CheckInFlow', async () => {
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ user: { name: 'Funmi', hormonalLifeStage: [] } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ checkIn: { todaysPlannedWorkout: '6mi tempo' } }), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            recommendation: { recommendationType: 'modify', modificationDetail: '4x6\' @ HM pace', rationale: 'x' },
+          }),
+          { status: 200 }
+        )
+      )
+    render(<CheckInPage />)
+    await waitFor(() => screen.getByRole('button', { name: /start today's check-in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
+    expect(screen.getByText('4x6\' @ HM pace')).toBeInTheDocument()
+  })
+
   test('passes null previousCheckIn when no previous check-in exists', async () => {
     vi.mocked(global.fetch)
       .mockResolvedValueOnce(new Response(JSON.stringify({ user: { name: 'Funmi', hormonalLifeStage: [] } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ checkIn: null }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ recommendation: null }), { status: 200 }))
     render(<CheckInPage />)
     await waitFor(() => screen.getByRole('button', { name: /start today's check-in/i }))
     fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))

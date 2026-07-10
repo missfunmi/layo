@@ -15,7 +15,18 @@ vi.mock('@/lib/device', () => ({
 }))
 
 vi.mock('@/components/flows/check-in/CheckInFlow', () => ({
-  CheckInFlow: ({ name }: { name: string }) => <div data-testid="check-in-flow">{name}</div>,
+  CheckInFlow: ({
+    name,
+    previousCheckIn,
+  }: {
+    name: string
+    previousCheckIn?: { plannedWorkout?: string; recommendationHeading?: string } | null
+  }) => (
+    <div data-testid="check-in-flow">
+      {name}
+      <div data-testid="recommendation-heading">{previousCheckIn?.recommendationHeading ?? ''}</div>
+    </div>
+  ),
 }))
 
 beforeEach(() => {
@@ -36,11 +47,13 @@ const PREVIOUS_CHECK_IN = {
     todaysPlannedWorkout: '8mi easy run',
   },
 }
+const NO_RECOMMENDATION = { recommendation: null }
 
-function mockFetchSuccess() {
+function mockFetchSuccess(recommendationResponse: unknown = NO_RECOMMENDATION) {
   vi.mocked(global.fetch)
     .mockResolvedValueOnce(new Response(JSON.stringify(USER), { status: 200 }))
     .mockResolvedValueOnce(new Response(JSON.stringify(PREVIOUS_CHECK_IN), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify(recommendationResponse), { status: 200 }))
 }
 
 // ─── Loading state ────────────────────────────────────────────────────────────
@@ -70,6 +83,55 @@ describe('app/check-in/page.tsx — success state', () => {
     await waitFor(() => {
       expect(screen.getByText('Amara')).toBeInTheDocument()
     })
+  })
+
+  test('fetches yesterday\'s recommendation', async () => {
+    mockFetchSuccess()
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('check-in-flow')).toBeInTheDocument()
+    })
+    const requestedUrls = vi.mocked(global.fetch).mock.calls.map((call) => call[0])
+    expect(requestedUrls.some((url) => String(url).startsWith('/api/recommendations?date='))).toBe(true)
+  })
+
+  test('passes a recommendationHeading built from yesterday\'s "modify" recommendation to CheckInFlow', async () => {
+    mockFetchSuccess({
+      recommendation: {
+        recommendationType: 'modify',
+        modificationDetail: "Reduce to 4x6' @ HM pace with 1'30\" rest",
+        rationale: 'Stacking two hard days is not the move.',
+      },
+    })
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('recommendation-heading')).toHaveTextContent(
+        "Reduce to 4x6' @ HM pace with 1'30\" rest"
+      )
+    })
+  })
+
+  test('passes a recommendationHeading built from yesterday\'s "rest" recommendation to CheckInFlow', async () => {
+    mockFetchSuccess({
+      recommendation: {
+        recommendationType: 'rest',
+        modificationDetail: null,
+        rationale: 'You need recovery.',
+      },
+    })
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('recommendation-heading')).toHaveTextContent('Take a rest day today.')
+    })
+  })
+
+  test('leaves recommendationHeading undefined when no recommendation exists for yesterday', async () => {
+    mockFetchSuccess(NO_RECOMMENDATION)
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('check-in-flow')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('recommendation-heading')).toHaveTextContent('')
   })
 })
 

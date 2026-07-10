@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckInFlow } from '@/components/flows/check-in/CheckInFlow'
 import { getOrCreateDeviceId } from '@/lib/device'
+import { getRecommendationHeading, type RecommendationType } from '@/lib/recommendation'
 import { Button } from '@/components/ui/Button'
 
 type PageState =
@@ -13,7 +14,7 @@ type PageState =
       status: 'ready'
       name: string
       hormonalLifeStage: string[]
-      previousCheckIn: { plannedWorkout?: string } | null
+      previousCheckIn: { plannedWorkout?: string; recommendationHeading?: string } | null
     }
 
 export default function CheckInPage() {
@@ -33,14 +34,25 @@ export default function CheckInPage() {
     Promise.all([
       fetch('/api/users', { headers }).then((r) => r.json()),
       fetch(`/api/check-ins?date=${yesterdayStr}`, { headers }).then((r) => r.json()),
+      fetch(`/api/recommendations?date=${yesterdayStr}`, { headers }).then((r) => r.json()),
     ])
-      .then(([userData, checkInData]) => {
+      .then(([userData, checkInData, recommendationData]) => {
+        const recommendation = recommendationData.recommendation as {
+          recommendationType: RecommendationType
+          modificationDetail?: string | null
+        } | null
+
         setState({
           status: 'ready',
           name: userData.user.name,
           hormonalLifeStage: userData.user.hormonalLifeStage,
           previousCheckIn: checkInData.checkIn
-            ? { plannedWorkout: checkInData.checkIn.todaysPlannedWorkout }
+            ? {
+                plannedWorkout: checkInData.checkIn.todaysPlannedWorkout,
+                recommendationHeading: recommendation
+                  ? getRecommendationHeading(recommendation.recommendationType, recommendation.modificationDetail)
+                  : undefined,
+              }
             : null,
         })
       })
