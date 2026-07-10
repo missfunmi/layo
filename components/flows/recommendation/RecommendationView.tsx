@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { getOrCreateDeviceId } from '@/lib/device'
+import { getRecommendationHeading, type RecommendationType } from '@/lib/recommendation'
 
-type RecommendationType = 'as_written' | 'modify' | 'rest'
 type YesterdayWorkoutType = 'planned' | 'suggested' | 'other'
 
 interface Recommendation {
@@ -33,11 +33,6 @@ const STATE_COLORS: Record<RecommendationType, { overline: string; divider: stri
   as_written: { overline: '#0F6E56', divider: '#5DCAA5' },
   modify: { overline: '#BA7517', divider: '#FAC775' },
   rest: { overline: '#993C1D', divider: '#F0997B' },
-}
-
-const STATE_HEADINGS: Partial<Record<RecommendationType, string>> = {
-  as_written: 'Do your workout as planned.',
-  rest: 'Take a rest day today.',
 }
 
 const YESTERDAY_LABELS: Record<YesterdayWorkoutType, string> = {
@@ -105,7 +100,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
   const { recommendationType, rationale, modificationDetail } = recommendation!
   const safeCheckIn = checkIn!
   const colors = STATE_COLORS[recommendationType]
-  const heading = STATE_HEADINGS[recommendationType] ?? modificationDetail ?? ''
+  const heading = getRecommendationHeading(recommendationType, modificationDetail)
 
   async function handleConfirmRedo() {
     const today = new Date().toLocaleDateString('en-CA')
