@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: 'Fitness coaching assistant for female endurance athletes',
   icons: {
     icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/apple-icon.svg', sizes: '180x180' }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 }
 
