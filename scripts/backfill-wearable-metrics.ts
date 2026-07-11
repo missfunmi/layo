@@ -1,9 +1,12 @@
 import { config as loadEnv } from 'dotenv'
 import { resolve } from 'path'
-import { PrismaClient, Prisma } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import type { PrismaClient, Prisma } from '@prisma/client'
 import { decrypt } from '../lib/crypto'
-import { fetchHistoricalDataWithRaw, refreshToken } from '../lib/wearables/providers/oura'
+// Imported for its types only; the runtime module is loaded dynamically in main(), after
+// loadEnv() runs below. oura.ts statically imports lib/db.ts (for the shared prisma client),
+// and a static import here would evaluate that whole chain before loadEnv() populates
+// DATABASE_URL from .env.local.
+import type { fetchHistoricalDataWithRaw, refreshToken } from '../lib/wearables/providers/oura'
 
 loadEnv({ path: resolve(process.cwd(), '.env.local'), override: false })
 
@@ -26,14 +29,15 @@ if (missingEnvVars.length > 0) {
   process.exit(1)
 }
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({ adapter })
-
 function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
-async function backfillConnection(connection: { id: string; userId: string; accessToken: string }) {
+async function backfillConnection(
+  prisma: PrismaClient,
+  oura: { fetchHistoricalDataWithRaw: typeof fetchHistoricalDataWithRaw; refreshToken: typeof refreshToken },
+  connection: { id: string; userId: string; accessToken: string }
+) {
   const existingRows = await prisma.wearableDailyMetric.findMany({
     where: { userId: connection.userId, provider: 'oura' },
     select: { metricDate: true },
@@ -52,12 +56,12 @@ async function backfillConnection(connection: { id: string; userId: string; acce
   let accessToken = decrypt(connection.accessToken)
   let entries: Awaited<ReturnType<typeof fetchHistoricalDataWithRaw>>
   try {
-    entries = await fetchHistoricalDataWithRaw(accessToken, startDate, endDate)
+    entries = await oura.fetchHistoricalDataWithRaw(accessToken, startDate, endDate)
   } catch (err) {
     const isUnauthorized = err instanceof Error && err.message.includes('401')
     if (!isUnauthorized) throw err
-    accessToken = await refreshToken(connection.userId)
-    entries = await fetchHistoricalDataWithRaw(accessToken, startDate, endDate)
+    accessToken = await oura.refreshToken(connection.userId)
+    entries = await oura.fetchHistoricalDataWithRaw(accessToken, startDate, endDate)
   }
 
   let updated = 0
@@ -85,36 +89,40 @@ async function backfillConnection(connection: { id: string; userId: string; acce
 }
 
 async function main() {
-  const connections = await prisma.wearableConnection.findMany({
-    where: { provider: 'oura', status: 'active' },
-  })
+  const { prisma } = await import('../lib/db')
+  const oura = await import('../lib/wearables/providers/oura')
+  try {
+    const connections = await prisma.wearableConnection.findMany({
+      where: { provider: 'oura', status: 'active' },
+    })
 
-  console.log(`Found ${connections.length} active Oura connection(s)${DRY_RUN ? ' (dry run, no writes)' : ''}`)
+    console.log(`Found ${connections.length} active Oura connection(s)${DRY_RUN ? ' (dry run, no writes)' : ''}`)
 
-  let totalUpdated = 0
-  let totalSkipped = 0
-  let totalErrors = 0
+    let totalUpdated = 0
+    let totalSkipped = 0
+    let totalErrors = 0
 
-  for (const connection of connections) {
-    console.log(`Processing user ${connection.userId}...`)
-    try {
-      const { updated, skipped } = await backfillConnection(connection)
-      console.log(`  updated ${updated} row(s), skipped ${skipped} date(s) with no existing row`)
-      totalUpdated += updated
-      totalSkipped += skipped
-    } catch (err) {
-      totalErrors++
-      console.error(`  error processing user ${connection.userId}:`, (err as Error).message)
+    for (const connection of connections) {
+      console.log(`Processing user ${connection.userId}...`)
+      try {
+        const { updated, skipped } = await backfillConnection(prisma, oura, connection)
+        console.log(`  updated ${updated} row(s), skipped ${skipped} date(s) with no existing row`)
+        totalUpdated += updated
+        totalSkipped += skipped
+      } catch (err) {
+        totalErrors++
+        console.error(`  error processing user ${connection.userId}:`, (err as Error).message)
+      }
     }
-  }
 
-  console.log('---')
-  console.log(`Done. ${totalUpdated} row(s) updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    console.log('---')
+    console.log(`Done. ${totalUpdated} row(s) updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+  } finally {
+    await prisma.$disconnect()
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error('Fatal error:', (e as Error).message)
-    process.exitCode = 1
-  })
-  .finally(() => prisma.$disconnect())
+main().catch((e) => {
+  console.error('Fatal error:', (e as Error).message)
+  process.exitCode = 1
+})
