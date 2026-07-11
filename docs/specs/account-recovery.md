@@ -24,7 +24,7 @@ This feature closes that gap without introducing accounts, passwords, or email. 
    >
    > `[deviceId]` `[Copy]`
 
-   This value is the same `deviceId` already shown elsewhere on the page; see [User-facing label conventions](#user-facing-label-conventions) below for why it's presented as an instruction rather than a labeled value.
+   See [User-facing label conventions](#user-facing-label-conventions) below for why this is presented as an instruction rather than a labeled value.
 
 2. On the onboarding "name" step (`What should we call you?`), a low-emphasis link appears below the Continue button:
 
