@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckInFlow } from '@/components/flows/check-in/CheckInFlow'
-import { getOrCreateDeviceId } from '@/lib/device'
+import { getDeviceId } from '@/lib/device'
 import { getRecommendationHeading, type RecommendationType } from '@/lib/recommendation'
 import { Button } from '@/components/ui/Button'
 
@@ -24,7 +24,11 @@ export default function CheckInPage() {
 
   useEffect(() => {
     setState({ status: 'loading' })
-    const deviceId = getOrCreateDeviceId()
+    const deviceId = getDeviceId()
+    if (!deviceId) {
+      router.push('/onboarding')
+      return
+    }
     const headers = { 'X-Device-ID': deviceId }
 
     const yesterday = new Date()
@@ -32,11 +36,25 @@ export default function CheckInPage() {
     const yesterdayStr = yesterday.toLocaleDateString('en-CA')
 
     Promise.all([
-      fetch('/api/users', { headers }).then((r) => r.json()),
-      fetch(`/api/check-ins?date=${yesterdayStr}`, { headers }).then((r) => r.json()),
-      fetch(`/api/recommendations?date=${yesterdayStr}`, { headers }).then((r) => r.json()),
+      fetch('/api/users', { headers }),
+      fetch(`/api/check-ins?date=${yesterdayStr}`, { headers }),
+      fetch(`/api/recommendations?date=${yesterdayStr}`, { headers }),
     ])
-      .then(([userData, checkInData, recommendationData]) => {
+      .then(async ([userRes, checkInRes, recommendationRes]) => {
+        if (userRes.status === 401 || checkInRes.status === 401 || recommendationRes.status === 401) {
+          router.push('/onboarding')
+          return
+        }
+        if (!userRes.ok || !checkInRes.ok || !recommendationRes.ok) {
+          setState({ status: 'error' })
+          return
+        }
+
+        const [userData, checkInData, recommendationData] = await Promise.all([
+          userRes.json(),
+          checkInRes.json(),
+          recommendationRes.json(),
+        ])
         const recommendation = recommendationData.recommendation as {
           recommendationType: RecommendationType
           modificationDetail?: string | null
@@ -59,6 +77,7 @@ export default function CheckInPage() {
       .catch(() => {
         setState({ status: 'error' })
       })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryCount])
 
   if (state.status === 'loading') {
