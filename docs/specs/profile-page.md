@@ -26,7 +26,7 @@ A card with three fields:
 | Oura Ring             | `GET /api/profile` → `ouraConnected` | "Connected" or "Not connected"; true if an active `wearable_connections` row exists |
 | Recommendation Engine | `GET /api/profile` → `promptVersion` | The latest `prompt_configs.version` by `created_at`                                 |
 
-Below the card, a separate instructional block shows the device's `deviceId` (from `layo_device_id` in localStorage, read directly on the client, not fetched from the API) with a copy button. This used to be a "Device ID" row in the card above; see [Device-switching value](#device-switching-value) below for why it moved and changed format.
+Below the card, a separate instructional block shows the device's `deviceId` (from `layo_device_id` in localStorage, read directly on the client, not fetched from the API) with a copy button. See [Device-switching value](#device-switching-value) below.
 
 No sensitive data (tokens, check-in content, rationale text) is displayed or returned by the API.
 
@@ -40,9 +40,9 @@ Below the diagnostic card, a separate block reads:
 >
 > `[deviceId]` `[Copy]`
 
-This is the same `deviceId` that was previously shown as a plain "Device ID" row in the card above. It moved out of the card and became an instructional block, rather than staying a relabeled row, for two reasons:
-1. It's now load-bearing: pasting this value into `/restore` (see `docs/specs/account-recovery.md`) is the only way to restore access to an existing account in a browser context that never had a local `deviceId`. This is a strictly heavier purpose than the plain read-only diagnostic snapshot the other three fields provide.
-2. A single-word label for "your `deviceId`, reused as a way back in" (candidates included "recovery code," "account ID") always read as technical, regardless of the word. Describing the action instead of naming a "thing" avoids that problem, but doesn't fit the terse label/value row format the rest of the card uses.
+This is a separate instructional block rather than a row in the card above for two reasons:
+1. It's load-bearing: pasting this value into `/restore` (see `docs/specs/account-recovery.md`) is the only way to restore access to an existing account in a browser context that has no local `deviceId`. That's a heavier purpose than the plain read-only diagnostic snapshot the other three fields provide.
+2. Naming the value as a single-word label in a terse row reads as technical regardless of the word chosen. Describing the action instead avoids that problem, but doesn't fit the label/value row format the rest of the card uses.
 
 See `docs/specs/account-recovery.md` for the full recovery flow this value supports.
 

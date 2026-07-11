@@ -2,7 +2,7 @@
 
 ## What this is
 
-A manual way for a user to restore access to their existing account on a browser or device context where their `deviceId` is missing from `localStorage`, most commonly after adding the app to an iOS home screen (which runs in a storage context isolated from Safari; see [LAYO-127](https://linear.app/layo-app/issue/LAYO-127)). A new page at `/restore` accepts a pasted value (the user's existing `deviceId`), validates it against the backend, and if valid, adopts it as this browser context's device identity.
+A manual way for a user to restore access to their existing account on a browser or device context where their `deviceId` is missing from `localStorage`, most commonly after adding the app to an iOS home screen (which runs in a storage context isolated from Safari). A new page at `/restore` accepts a pasted value (the user's existing `deviceId`), validates it against the backend, and if valid, adopts it as this browser context's device identity.
 
 This is scoped to v0.1.1.
 
@@ -10,7 +10,7 @@ This is scoped to v0.1.1.
 
 ## Purpose
 
-`deviceId` is the sole account identifier in this app (see `docs/architecture.md` — Device identity). If a browser context never had it (or lost it), there was previously no way back into an existing account short of asking a developer to intervene directly in the database. That's a bad experience, and one that's difficult to explain to a non-technical user: from their perspective, the app just "forgot" them.
+`deviceId` is the sole account identifier in this app (see `docs/architecture.md`, Device identity). Without a supported way to carry it into a new browser context, a user who loses it has no way back into an existing account short of a developer intervening directly in the database. That's a bad experience, and one that's difficult to explain to a non-technical user: from their perspective, the app just "forgot" them.
 
 This feature closes that gap without introducing accounts, passwords, or email. The user's `deviceId` already **is** their full authentication today (`X-Device-ID` header, no additional secret). Account recovery just gives them a supported way to carry that same value into a new context by hand.
 
@@ -24,7 +24,7 @@ This feature closes that gap without introducing accounts, passwords, or email. 
    >
    > `[deviceId]` `[Copy]`
 
-   This value is the same `deviceId` already shown elsewhere on the page (previously a plain "Device ID" row; see [User-facing label conventions](#user-facing-label-conventions) below for why the row was replaced with this instructional format instead of relabeled in place).
+   This value is the same `deviceId` already shown elsewhere on the page; see [User-facing label conventions](#user-facing-label-conventions) below for why it's presented as an instruction rather than a labeled value.
 
 2. On the onboarding "name" step (`What should we call you?`), a low-emphasis link appears below the Continue button:
 
@@ -52,15 +52,13 @@ See `docs/mockups/restore.html` for the visual spec (empty, filled, and error st
 
 ## User-facing label conventions
 
-Earlier drafts tried to find a single noun for "your `deviceId`, reused as a way back into your account" — candidates included "recovery code" and "account ID." Every candidate read as technical regardless of the specific word chosen, because naming it as a "thing" at all is what feels technical, not the word itself.
-
-The resolved approach avoids naming it as a noun anywhere in the UI and instead describes the action: "Switching devices? Copy this and paste it in when Láyo asks" (on `/profile`) and "Paste what's on your profile page to get your data back" (on `/restore`). This mirrors the `sleep_score` → `sleep_satisfaction` precedent (see `docs/specs/wearable-integration.md`) and the `prompt_version` → "Recommendation Engine" precedent (see `docs/specs/profile-page.md`): internal naming and user-facing copy are allowed to diverge when the internal name doesn't read well to an end user. Here, the divergence goes further: there's no user-facing name for the value at all, only an instruction for what to do with it.
+The UI never names the recovery value as a noun ("code," "ID," or similar); every screen describes the action to take with it instead: "Switching devices? Copy this and paste it in when Láyo asks" (on `/profile`) and "Paste what's on your profile page to get your data back" (on `/restore`). This mirrors the `sleep_score` → `sleep_satisfaction` precedent (see `docs/specs/wearable-integration.md`) and the `prompt_version` → "Recommendation Engine" precedent (see `docs/specs/profile-page.md`): internal naming and user-facing copy are allowed to diverge when the internal name doesn't read well to an end user. Here, the divergence goes further: there's no user-facing name for the value at all, only an instruction for what to do with it.
 
 ---
 
 ## Security posture
 
-No new secret, DB column, or backend endpoint is introduced. `deviceId` (a UUID v4, 122 bits of entropy) is already the entire auth model in this app — anyone holding a user's `deviceId` can already send it as `X-Device-ID` and fully act as that user. Surfacing it in a copy-pasteable format on `/profile` and accepting it as a paste target on `/restore` does not create a new class of access; it makes existing access more usable by hand. Validity is checked by calling the existing `GET /api/users`, so there's no separate lookup path to reason about.
+No new secret, DB column, or backend endpoint is introduced. `deviceId` (a UUID v4, 122 bits of entropy) is already the entire auth model in this app: anyone holding a user's `deviceId` can already send it as `X-Device-ID` and fully act as that user. Surfacing it in a copy-pasteable format on `/profile` and accepting it as a paste target on `/restore` does not create a new class of access; it makes existing access more usable by hand. Validity is checked by calling the existing `GET /api/users`, so there's no separate lookup path to reason about.
 
 ---
 
@@ -74,4 +72,4 @@ This is accepted for the current scope: this feature ships for a beta of fewer t
 
 ## Future scope
 
-If the user base grows, or if devices are more frequently lost outright (not just a storage-partition mismatch, but a genuinely new phone with no access to any prior session), this manual paste flow does not help — it depends on the user still having access to a session where `/profile` is reachable. A more complete solution (email-based recovery, or full authentication) would remove that dependency, but is a larger product change than this spec covers. See `docs/architecture.md` — Device identity for the broader authentication roadmap note.
+If the user base grows, or if devices are more frequently lost outright (not just a storage-partition mismatch, but a genuinely new phone with no access to any prior session), this manual paste flow does not help: it depends on the user still having access to a session where `/profile` is reachable. A more complete solution (email-based recovery, or full authentication) would remove that dependency, but is a larger product change than this spec covers. See `docs/architecture.md`, Device identity, for the broader authentication roadmap note.

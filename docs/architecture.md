@@ -38,7 +38,7 @@ layo/
 │   ├── recommendation/
 │   │   └── page.tsx
 │   ├── restore/
-│   │   └── page.tsx                # Account recovery — paste an existing deviceId to restore access
+│   │   └── page.tsx                # Account recovery: paste an existing deviceId to restore access
 │   └── profile/
 │       └── page.tsx                # Diagnostic page, URL access only, no in-app nav entry point
 ├── components/
@@ -404,7 +404,7 @@ Prisma `@unique` directives automatically create unique indexes. Additional non-
 All routes return JSON. All routes except `POST /api/users` require the `X-Device-ID` header. Missing header or unknown deviceId returns `401`.
 
 ### GET /api/users
-Returns the authenticated user's profile. Called on check-in page mount to obtain `name` and `hormonalLifeStage` for the check-in flow. Also reused (unmodified) by `/restore` to validate a pasted `deviceId` before adopting it — a `200` confirms the value belongs to a real user; no new endpoint was added for this. See `docs/specs/account-recovery.md`.
+Returns the authenticated user's profile. Called on check-in page mount to obtain `name` and `hormonalLifeStage` for the check-in flow. Also reused (unmodified) by `/restore` to validate a pasted `deviceId` before adopting it: a `200` confirms the value belongs to a real user; no new endpoint was added for this. See `docs/specs/account-recovery.md`.
 
 **Response:** `200` with `{ user: { name: string, hormonalLifeStage: string[] } }`. Returns `404` if the user exists but has no profile (unexpected in normal usage after onboarding).
 

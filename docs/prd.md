@@ -25,7 +25,7 @@ Triggered on first launch when no deviceId is found in localStorage.
 1. Welcome screen with Láyo wordmark centered
 2. "What should we call you?" — text input (name)
 
-   A low-emphasis link below the Continue button reads "Already used Láyo?" for a user who already has an account but landed on onboarding because this browser context has no local `deviceId` (most commonly: an iOS home screen bookmark, which runs in a storage context isolated from Safari). Tapping it navigates to `/restore` — see [Account recovery](#account-recovery-restore) below. This is the only onboarding screen with this link; the welcome screen's single CTA ("Get started") is left uncluttered.
+   A low-emphasis link below the Continue button reads "Already used Láyo?" for a user who already has an account but landed on onboarding because this browser context has no local `deviceId` (most commonly: an iOS home screen bookmark, which runs in a storage context isolated from Safari). Tapping it navigates to `/restore`, see [Account recovery](#account-recovery-restore) below. This is the only onboarding screen with this link; the welcome screen keeps its single CTA ("Get started").
 
 3. "What year were you born?" — numeric input (birth year)
    Subtext: "We use this to tailor recommendations to your life stage, nothing else."
@@ -74,7 +74,7 @@ Onboarding data is only written to the database when the user reaches and comple
 
 ### Account recovery (/restore)
 
-A manual way to restore access to an existing account in a browser context that has no local `deviceId` — most commonly, an iOS home screen bookmark, which runs in a storage context isolated from Safari (see `docs/specs/account-recovery.md` for the full spec and rationale).
+A manual way to restore access to an existing account in a browser context that has no local `deviceId`, most commonly an iOS home screen bookmark, which runs in a storage context isolated from Safari (see `docs/specs/account-recovery.md` for the full spec and rationale).
 
 **Entry point:** the "Already used Láyo?" link on the onboarding "name" step (see Flow 1, step 2). `/restore` is a dedicated route, not another step inside the onboarding flow's internal state.
 
