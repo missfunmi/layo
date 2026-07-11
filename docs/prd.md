@@ -24,6 +24,9 @@ Triggered on first launch when no deviceId is found in localStorage.
 
 1. Welcome screen with Láyo wordmark centered
 2. "What should we call you?" — text input (name)
+
+   A low-emphasis link below the Continue button reads "Already used Láyo?" for a user who already has an account but landed on onboarding because this browser context has no local `deviceId` (most commonly: an iOS home screen bookmark, which runs in a storage context isolated from Safari). Tapping it navigates to `/restore` — see [Account recovery](#account-recovery-restore) below. This is the only onboarding screen with this link; the welcome screen's single CTA ("Get started") is left uncluttered.
+
 3. "What year were you born?" — numeric input (birth year)
    Subtext: "We use this to tailor recommendations to your life stage, nothing else."
 4. "Which of these applies to you? Select all that apply." — multi-select pill options:
@@ -66,6 +69,24 @@ Onboarding data is only written to the database when the user reaches and comple
 **Submission error handling:** If the `POST /api/users` call fails, the user remains on the confirmation screen and sees an inline error message with a retry CTA. If they tap retry without refreshing, their entered data is still in React state and they do not need to re-enter it. The error message is direct and action-oriented.
 
 **Outcome:** User and user profile written to the database. deviceId generated and persisted to localStorage. If Oura was connected, wearable credentials stored and 90-day historical data fetched. User lands on the daily check-in flow.
+
+---
+
+### Account recovery (/restore)
+
+A manual way to restore access to an existing account in a browser context that has no local `deviceId` — most commonly, an iOS home screen bookmark, which runs in a storage context isolated from Safari (see `docs/specs/account-recovery.md` for the full spec and rationale).
+
+**Entry point:** the "Already used Láyo?" link on the onboarding "name" step (see Flow 1, step 2). `/restore` is a dedicated route, not another step inside the onboarding flow's internal state.
+
+**Content:**
+- Heading: "Welcome back"
+- Subtext: "Paste what's on your profile page to get your data back."
+- Text input for pasting the value
+- CTA: "Continue"
+
+**Behavior:** on submit, the pasted value is validated against the backend (reusing `GET /api/users`; no new API endpoint). If it matches an existing user, it's persisted to this browser's localStorage and the user is routed to `/check-in` or `/recommendation` via the normal entry-point logic, bypassing the rest of onboarding entirely. If it doesn't match, an inline error appears: "We don't recognize that. Double check what you pasted and try again," and the user can retry or go back to onboarding.
+
+**Where the value comes from:** `/profile` (see below) displays the current device's value with a "Copy" button, alongside instructions to use it when switching devices or browsers.
 
 ---
 
@@ -187,12 +208,13 @@ Displayed after check-in submission, and on all subsequent app opens for the sam
 
 Not part of the numbered flows above: there is no navigation entry point to this page from within the app. Users reach it only by typing the URL directly, when asked to for troubleshooting during beta testing.
 
-**Content:** a single card displaying:
+**Content:** a card displaying:
 
-- Device ID (from localStorage)
 - User ID (the database record corresponding to this device)
 - Oura Ring connection status ("Connected" or "Not connected")
 - Recommendation Engine (the active prompt config version)
+
+Below the card, a separate instructional block: "Switching devices? Copy this and paste it in when Láyo asks." with the device's value and a "Copy" button. This is used together with `/restore` (see Account recovery above) to move access to a new browser context.
 
 **Navigation:** a back button (top-left) returns to the app root (`/`). The Láyo wordmark appears top-left, same position as all other screens. No other navigation.
 

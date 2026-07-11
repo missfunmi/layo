@@ -18,16 +18,33 @@ Beta testers may hit issues that are hard to diagnose from a bug report alone ("
 
 ## Data displayed
 
-A single card with four fields:
+A card with three fields:
 
 | Field                 | Source                               | Notes                                                                               |
 | --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
-| Device ID             | `layo_device_id` from localStorage   | Read directly on the client; not fetched from the API                               |
 | User ID               | `GET /api/profile` → `userId`        | The database `users.id` this device resolves to                                     |
 | Oura Ring             | `GET /api/profile` → `ouraConnected` | "Connected" or "Not connected"; true if an active `wearable_connections` row exists |
 | Recommendation Engine | `GET /api/profile` → `promptVersion` | The latest `prompt_configs.version` by `created_at`                                 |
 
+Below the card, a separate instructional block shows the device's `deviceId` (from `layo_device_id` in localStorage, read directly on the client, not fetched from the API) with a copy button. This used to be a "Device ID" row in the card above; see [Device-switching value](#device-switching-value) below for why it moved and changed format.
+
 No sensitive data (tokens, check-in content, rationale text) is displayed or returned by the API.
+
+---
+
+## Device-switching value
+
+Below the diagnostic card, a separate block reads:
+
+> Switching devices? Copy this and paste it in when Láyo asks.
+>
+> `[deviceId]` `[Copy]`
+
+This is the same `deviceId` that was previously shown as a plain "Device ID" row in the card above. It moved out of the card and became an instructional block, rather than staying a relabeled row, for two reasons:
+1. It's now load-bearing: pasting this value into `/restore` (see `docs/specs/account-recovery.md`) is the only way to restore access to an existing account in a browser context that never had a local `deviceId`. This is a strictly heavier purpose than the plain read-only diagnostic snapshot the other three fields provide.
+2. A single-word label for "your `deviceId`, reused as a way back in" (candidates included "recovery code," "account ID") always read as technical, regardless of the word. Describing the action instead of naming a "thing" avoids that problem, but doesn't fit the terse label/value row format the rest of the card uses.
+
+See `docs/specs/account-recovery.md` for the full recovery flow this value supports.
 
 ---
 
@@ -49,4 +66,4 @@ This is enforced by omission, not by an auth gate: `/profile` uses the same `X-D
 
 ## Future scope
 
-Full profile management (editable settings, data export/deletion, authentication, account recovery) is out of scope for this version. `/profile` is a read-only diagnostic snapshot, not the beginning of a settings surface. If profile management is built later, it will likely warrant its own spec and may not reuse this page's route or layout.
+Full profile management (editable settings, data export/deletion, authentication) is out of scope for this version. `/profile` is still a read-only diagnostic snapshot, not the beginning of a settings surface, aside from the device-switching value described above. Account recovery has its own spec: see `docs/specs/account-recovery.md`. If broader profile management is built later, it will likely warrant its own spec and may not reuse this page's route or layout.

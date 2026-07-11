@@ -130,6 +130,47 @@
         max-width: 60%;
         word-break: break-all;
       }
+      .switch-devices-card {
+        background: #fff;
+        border: 0.5px solid #d3d1c7;
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 12px;
+      }
+      .switch-devices-text {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #5f5e5a;
+        line-height: 1.5;
+        margin-bottom: 12px;
+      }
+      .switch-devices-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f1efe8;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .switch-devices-value {
+        flex: 1;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: #2c2c2a;
+        word-break: break-all;
+      }
+      .copy-btn {
+        flex-shrink: 0;
+        padding: 6px 14px;
+        border-radius: 100px;
+        border: 1.5px solid #d3d1c7;
+        background: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        color: #5f5e5a;
+        cursor: pointer;
+      }
       .error-state {
         flex: 1;
         display: flex;
@@ -156,7 +197,10 @@
     </style>
   </head>
   <body>
-    <h1>Láyo: Profile (diagnostic, URL access only)</h1>
+    <h1>
+      Láyo: Profile (diagnostic, URL access only, plus device-switching
+      value)
+    </h1>
     <div class="screens-row">
       <!-- Profile, populated -->
       <div class="screen-col">
@@ -186,12 +230,6 @@
             <div class="page-title">Profile</div>
             <div class="profile-card">
               <div class="profile-row">
-                <span class="profile-label">Device ID</span>
-                <span class="profile-value"
-                  >3f9a21c0-8b7e-4f2a-9c1d-77e6b0a3f4e2</span
-                >
-              </div>
-              <div class="profile-row">
                 <span class="profile-label">User ID</span>
                 <span class="profile-value"
                   >64fa271c-90ad-4897-bb46-bcf5197dc969</span
@@ -204,6 +242,17 @@
               <div class="profile-row">
                 <span class="profile-label">Recommendation Engine</span>
                 <span class="profile-value">1.2.0</span>
+              </div>
+            </div>
+            <div class="switch-devices-card">
+              <div class="switch-devices-text">
+                Switching devices? Copy this and paste it in when Láyo asks.
+              </div>
+              <div class="switch-devices-row">
+                <span class="switch-devices-value"
+                  >3f9a21c0-8b7e-4f2a-9c1d-77e6b0a3f4e2</span
+                >
+                <button class="copy-btn">Copy</button>
               </div>
             </div>
           </div>

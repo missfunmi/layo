@@ -213,6 +213,13 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
           <Button onClick={() => setStep('birth_year')} disabled={!isNameValid}>
             Continue
           </Button>
+          <button
+            type="button"
+            onClick={() => router.push('/restore')}
+            className="font-sans text-[12px] text-[#B4B2A9] text-center mt-[14px] bg-transparent border-0 cursor-pointer"
+          >
+            Already used Láyo?
+          </button>
         </div>
       </div>
     )

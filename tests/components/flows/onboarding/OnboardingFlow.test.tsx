@@ -139,6 +139,17 @@ describe('OnboardingFlow — step 1: name', () => {
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     expect(screen.getByText(/what year were you born/i)).toBeInTheDocument()
   })
+
+  test('shows "Already used Láyo?" link', () => {
+    renderAtNameStep()
+    expect(screen.getByText('Already used Láyo?')).toBeInTheDocument()
+  })
+
+  test('"Already used Láyo?" navigates to /restore', () => {
+    renderAtNameStep()
+    fireEvent.click(screen.getByText('Already used Láyo?'))
+    expect(mockPush).toHaveBeenCalledWith('/restore')
+  })
 })
 
 // ─── Step 2: birth year ───────────────────────────────────────────────────────

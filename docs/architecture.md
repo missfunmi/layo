@@ -37,6 +37,8 @@ layo/
 │   │   └── page.tsx
 │   ├── recommendation/
 │   │   └── page.tsx
+│   ├── restore/
+│   │   └── page.tsx                # Account recovery — paste an existing deviceId to restore access
 │   └── profile/
 │       └── page.tsx                # Diagnostic page, URL access only, no in-app nav entry point
 ├── components/
@@ -105,6 +107,8 @@ No persistent navigation chrome exists. Each screen is self-contained. The Láyo
 
 **`/profile` is not part of this routing logic.** It is a diagnostic page reached only by typing the URL directly; there is no link to it anywhere in the app. It reads `deviceId` from localStorage itself (redirecting to `/onboarding` if absent) rather than going through the entry-point routing above. See `docs/specs/profile-page.md`.
 
+**`/restore` is also not part of this routing logic.** It's reached via a link on the onboarding "name" step, not via `app/page.tsx`. On successful validation it writes a `deviceId` to localStorage and redirects to `/`, which then runs the entry-point routing above as normal. See `docs/specs/account-recovery.md`.
+
 ---
 
 ## Device identity
@@ -123,11 +127,17 @@ export function getOrCreateDeviceId(): string {
   }
   return deviceId
 }
+
+export function setDeviceId(deviceId: string): void {
+  localStorage.setItem(DEVICE_ID_KEY, deviceId)
+}
 ```
 
 All API route handlers resolve the user via the `X-Device-ID` request header. If the header is missing or no matching user is found, the API returns `401`. The client handles this by redirecting to `/onboarding`.
 
-**Limitation:** localStorage-based deviceId does not survive a browser reset or device wipe. If a user loses their localStorage, they lose access to their account and all historical data, as a new deviceId will be generated on next launch. This is a known limitation of the current implementation. The planned long-term fix is proper authentication (email/password or OAuth), at which point deviceId becomes a secondary fallback. No manual recovery mechanism exists in the current implementation.
+**Limitation:** localStorage-based deviceId does not survive a browser reset or device wipe. If a user loses their localStorage, they lose access to their account and all historical data, as a new deviceId will be generated on next launch. This is a known limitation of the current implementation. The planned long-term fix is proper authentication (email/password or OAuth), at which point deviceId becomes a secondary fallback.
+
+**Manual recovery (`/restore`):** a user who still has access to a browser context where their `deviceId` is known (read from `/profile`) can carry it by hand into a new context via `/restore`, which calls `setDeviceId` after validating the pasted value against `GET /api/users`. This does not help a user who has lost every context with a working `deviceId` (e.g. a factory-reset phone with no prior Safari session); that case still requires the authentication work described above. See `docs/specs/account-recovery.md`.
 
 ---
 
@@ -394,7 +404,7 @@ Prisma `@unique` directives automatically create unique indexes. Additional non-
 All routes return JSON. All routes except `POST /api/users` require the `X-Device-ID` header. Missing header or unknown deviceId returns `401`.
 
 ### GET /api/users
-Returns the authenticated user's profile. Called on check-in page mount to obtain `name` and `hormonalLifeStage` for the check-in flow.
+Returns the authenticated user's profile. Called on check-in page mount to obtain `name` and `hormonalLifeStage` for the check-in flow. Also reused (unmodified) by `/restore` to validate a pasted `deviceId` before adopting it — a `200` confirms the value belongs to a real user; no new endpoint was added for this. See `docs/specs/account-recovery.md`.
 
 **Response:** `200` with `{ user: { name: string, hormonalLifeStage: string[] } }`. Returns `404` if the user exists but has no profile (unexpected in normal usage after onboarding).
 
@@ -870,3 +880,5 @@ Neon Postgres connection pooling is used in production via the `@neondatabase/se
 **Provider-agnostic wearable tables.** `wearable_connections` and `wearable_daily_metrics` use a `provider` enum rather than Oura-specific naming. Adding a second provider is a configuration and mapping exercise — no schema migration required beyond adding the enum value.
 
 **`sleep_score` renamed to `sleep_satisfaction` in v0.1.1.** The column rename reflects the semantic change from an objective quality rating to a subjective satisfaction rating. Existing data is preserved; the integer values remain valid under the new interpretation.
+
+**Account recovery reuses `deviceId` directly rather than introducing a separate secret.** `deviceId` (a UUID v4, 122 bits of entropy) is already the entire auth model in this app; a purpose-built short recovery code would need either low entropy (bad for a public, unauthenticated, unrate-limited endpoint) or high entropy (bad for a human to hand-type), and would add a DB column and generation logic for no real security benefit, since anyone holding a `deviceId` can already fully act as that user. `/restore` validates a pasted `deviceId` by calling the existing `GET /api/users` rather than a new endpoint. See `docs/specs/account-recovery.md`.
