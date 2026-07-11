@@ -172,6 +172,14 @@ describe("app/profile/page.tsx — single-line values", () => {
     });
   });
 
+  test("row labels never shrink or wrap, even under width pressure from a long value", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText("User ID")).toHaveClass("flex-shrink-0");
+    });
+  });
+
   test("User ID, Oura Ring, and Recommendation Engine rows share the same font-size", async () => {
     mockFetchSuccess();
     render(<ProfilePage />);

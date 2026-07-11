@@ -31,9 +31,9 @@ function Header() {
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-baseline font-sans text-[11px] py-[10px] border-b border-[#F1EFE8] last:border-b-0">
-      <span className="text-[#5F5E5A] font-medium">{label}</span>
-      <span className="text-[#2C2C2A] text-right max-w-[85%] whitespace-nowrap overflow-hidden text-ellipsis">
+    <div className="flex justify-between items-baseline gap-2 font-sans text-[11px] py-[10px] border-b border-[#F1EFE8] last:border-b-0">
+      <span className="flex-shrink-0 text-[#5F5E5A] font-medium">{label}</span>
+      <span className="min-w-0 max-w-[85%] text-[#2C2C2A] text-right whitespace-nowrap overflow-hidden text-ellipsis">
         {value}
       </span>
     </div>
