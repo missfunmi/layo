@@ -15,9 +15,7 @@ export function TextInput({ value, onChange, placeholder, maxLength, type = 'tex
   const [focused, setFocused] = useState(false)
   const isActive = focused || value.length > 0
 
-  // text-[16px] is a hard floor, not a style choice: iOS Safari auto-zooms the viewport on
-  // focus for any input under 16px, which breaks layout on this and every subsequent page
-  // (LAYO-62, reintroduced and re-fixed in LAYO-132). Do not add a smaller-font variant here.
+  // text-[16px] is a hard floor: see "Text inputs" in docs/design-brief.md before changing it.
   return (
     <input
       type={type}
