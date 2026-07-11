@@ -9,13 +9,15 @@ interface TextInputProps {
   maxLength?: number
   type?: string
   invalid?: boolean
-  small?: boolean
 }
 
-export function TextInput({ value, onChange, placeholder, maxLength, type = 'text', invalid = false, small = false }: TextInputProps) {
+export function TextInput({ value, onChange, placeholder, maxLength, type = 'text', invalid = false }: TextInputProps) {
   const [focused, setFocused] = useState(false)
   const isActive = focused || value.length > 0
 
+  // text-[16px] is a hard floor, not a style choice: iOS Safari auto-zooms the viewport on
+  // focus for any input under 16px, which breaks layout on this and every subsequent page
+  // (LAYO-62, reintroduced and re-fixed in LAYO-132). Do not add a smaller-font variant here.
   return (
     <input
       type={type}
@@ -25,9 +27,7 @@ export function TextInput({ value, onChange, placeholder, maxLength, type = 'tex
       onChange={(e) => onChange(e.target.value)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      className={`w-full bg-white rounded-[14px] py-[13px] px-[15px] font-sans outline-none box-border border-[1.5px] border-solid ${
-        small ? 'text-[13px]' : 'text-[16px]'
-      } ${
+      className={`w-full bg-white rounded-[14px] py-[13px] px-[15px] font-sans text-[16px] outline-none box-border border-[1.5px] border-solid ${
         invalid
           ? 'border-[#D85A30] text-[#2C2C2A]'
           : isActive

@@ -58,7 +58,6 @@ export default function RestorePage() {
           }}
           placeholder="Paste here"
           invalid={error}
-          small
         />
         {error && (
           <p className="font-sans text-[12px] text-[#D85A30] leading-[1.5] mb-4">

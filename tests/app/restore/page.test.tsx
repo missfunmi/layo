@@ -31,6 +31,11 @@ function typeValue(value: string) {
 // ─── Initial state ────────────────────────────────────────────────────────────
 
 describe('app/restore/page.tsx — initial state', () => {
+  test('renders the paste input at 16px font, never smaller, to avoid iOS Safari auto-zoom on focus (regression: LAYO-62, LAYO-132)', () => {
+    render(<RestorePage />)
+    expect(screen.getByPlaceholderText('Paste here')).toHaveClass('text-[16px]')
+  })
+
   test('shows the welcome back heading', () => {
     render(<RestorePage />)
     expect(screen.getByText('Welcome back')).toBeInTheDocument()
