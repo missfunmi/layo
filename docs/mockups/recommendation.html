@@ -152,6 +152,18 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .summary-row.expanded {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .summary-val.expanded {
+        text-align: left;
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+      }
       .footer {
         display: flex;
         justify-content: flex-end;
@@ -310,6 +322,70 @@
               <div class="summary-row">
                 <span>Planned workout</span
                 ><span class="summary-val">10mi tempo run</span>
+              </div>
+              <div class="summary-row">
+                <span>Yesterday</span
+                ><span class="summary-val">Planned workout</span>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="redo-link">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+                Redo today's check-in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- As written, planned workout expanded -->
+      <div class="screen-col">
+        <div class="screen-name">As written — planned workout expanded</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="verdict-label" style="color: #0f6e56">
+              Today's recommendation
+            </div>
+            <div class="verdict-heading">Do your workout as planned.</div>
+            <div class="verdict-divider" style="background: #5dcaa5"></div>
+            <div class="rationale">
+              You slept well and you're feeling good this morning. Yesterday's
+              run went to plan and there's nothing new weighing on you. Nothing
+              in today's picture suggests holding back , go get it.
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Today's check-in</div>
+              <div class="summary-row">
+                <span>Sleep</span><span class="summary-val">5 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Feel</span><span class="summary-val">4 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Cycle day</span><span class="summary-val">7</span>
+              </div>
+              <div class="summary-row expanded">
+                <span>Planned workout</span
+                ><span class="summary-val expanded"
+                  >Subthreshold run: 10' wu, 10x3' @ threshold pace w/ 90s jog
+                  recovery, 10' cd</span
+                >
               </div>
               <div class="summary-row">
                 <span>Yesterday</span

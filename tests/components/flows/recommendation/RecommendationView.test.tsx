@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, afterEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 
 afterEach(cleanup)
 
@@ -161,6 +161,40 @@ describe('RecommendationView — check-in summary card', () => {
       />
     )
     expect(screen.getByText('A very long workout description that exc...')).toBeInTheDocument()
+  })
+
+  test('tapping the planned workout value expands it to show the full text', () => {
+    const longWorkout = 'A very long workout description that exceeds forty characters'
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
+      />
+    )
+    fireEvent.click(screen.getByTestId('planned-workout-value'))
+    expect(screen.getByText(longWorkout)).toBeInTheDocument()
+    expect(screen.queryByText('A very long workout description that exc...')).not.toBeInTheDocument()
+  })
+
+  test('tapping the planned workout value again collapses it back to truncated text', () => {
+    const longWorkout = 'A very long workout description that exceeds forty characters'
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
+      />
+    )
+    const toggle = screen.getByTestId('planned-workout-value')
+    fireEvent.click(toggle)
+    fireEvent.click(screen.getByTestId('planned-workout-value'))
+    expect(screen.getByText('A very long workout description that exc...')).toBeInTheDocument()
+    expect(screen.queryByText(longWorkout)).not.toBeInTheDocument()
+  })
+
+  test('planned workout value renders as a button with no visible button styling', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    const toggle = screen.getByTestId('planned-workout-value')
+    expect(toggle.tagName).toBe('BUTTON')
   })
 
   test('shows yesterday row with "Planned workout" when type is planned', () => {
