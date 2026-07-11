@@ -11,6 +11,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/lib/device', () => ({
+  getDeviceId: () => 'test-device-id',
   getOrCreateDeviceId: () => 'test-device-id',
   generateCorrelationId: () => 'test-correlation-id',
 }))

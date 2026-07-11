@@ -10,12 +10,15 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }))
 
+const mockGetDeviceId = vi.fn<() => string | null>()
+
 vi.mock('@/lib/device', () => ({
-  getOrCreateDeviceId: () => 'test-device-id',
+  getDeviceId: () => mockGetDeviceId(),
 }))
 
 beforeEach(() => {
   mockPush.mockReset()
+  mockGetDeviceId.mockReturnValue('test-device-id')
   global.fetch = vi.fn()
 })
 
@@ -137,6 +140,41 @@ describe('app/recommendation/page.tsx — null recommendation fallback', () => {
     render(<RecommendationPage />)
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/check-in')
+    })
+  })
+})
+
+// ─── No local deviceId ─────────────────────────────────────────────────────────
+
+describe('app/recommendation/page.tsx — no deviceId', () => {
+  test('redirects to /onboarding when no deviceId exists', async () => {
+    mockGetDeviceId.mockReturnValue(null)
+    render(<RecommendationPage />)
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/onboarding')
+    })
+  })
+
+  test('does not fetch when no deviceId exists', async () => {
+    mockGetDeviceId.mockReturnValue(null)
+    render(<RecommendationPage />)
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/onboarding')
+    })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+})
+
+// ─── 401 unauthorized ─────────────────────────────────────────────────────────
+
+describe('app/recommendation/page.tsx — 401 response', () => {
+  test('redirects to /onboarding when GET /api/recommendations returns 401', async () => {
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ checkIn: CHECK_IN }), { status: 200 }))
+    render(<RecommendationPage />)
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/onboarding')
     })
   })
 })

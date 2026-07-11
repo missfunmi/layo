@@ -10,8 +10,10 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }))
 
+const mockGetDeviceId = vi.fn<() => string | null>()
+
 vi.mock('@/lib/device', () => ({
-  getOrCreateDeviceId: () => 'test-device-id',
+  getDeviceId: () => mockGetDeviceId(),
 }))
 
 vi.mock('@/components/flows/check-in/CheckInFlow', () => ({
@@ -31,6 +33,7 @@ vi.mock('@/components/flows/check-in/CheckInFlow', () => ({
 
 beforeEach(() => {
   mockPush.mockReset()
+  mockGetDeviceId.mockReturnValue('test-device-id')
   global.fetch = vi.fn()
 })
 
@@ -132,6 +135,42 @@ describe('app/check-in/page.tsx — success state', () => {
       expect(screen.getByTestId('check-in-flow')).toBeInTheDocument()
     })
     expect(screen.getByTestId('recommendation-heading')).toHaveTextContent('')
+  })
+})
+
+// ─── No local deviceId ─────────────────────────────────────────────────────────
+
+describe('app/check-in/page.tsx — no deviceId', () => {
+  test('redirects to /onboarding when no deviceId exists', async () => {
+    mockGetDeviceId.mockReturnValue(null)
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/onboarding')
+    })
+  })
+
+  test('does not fetch when no deviceId exists', async () => {
+    mockGetDeviceId.mockReturnValue(null)
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/onboarding')
+    })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+})
+
+// ─── 401 unauthorized ─────────────────────────────────────────────────────────
+
+describe('app/check-in/page.tsx — 401 response', () => {
+  test('redirects to /onboarding when GET /api/users returns 401', async () => {
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(PREVIOUS_CHECK_IN), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(NO_RECOMMENDATION), { status: 200 }))
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/onboarding')
+    })
   })
 })
 
