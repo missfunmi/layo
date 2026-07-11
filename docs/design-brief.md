@@ -135,7 +135,9 @@ Láyo is not a clinical health app, not a generic fitness tracker, and not a dar
 
 **Close / exit button:** Bare icon only — no background, no border. Grey (`#B4B2A9`), 16px icon, 8px padding for tap target. Positioned top-right in the navigation row. Visually subordinate to the back button.
 
-**Text inputs:** White background, `#D3D1C7` border at rest, `#0F6E56` border when active or filled, 14px Inter, 13–15px vertical padding, 14px border radius. Character counts displayed right-aligned below the field in `#B4B2A9`.
+**Text inputs:** White background, `#D3D1C7` border at rest, `#0F6E56` border when active or filled, 16px Inter, 13–15px vertical padding, 14px border radius. Character counts displayed right-aligned below the field in `#B4B2A9`.
+
+16px is a hard floor for any real, focusable text input or textarea, not a style choice. Below it, iOS Safari auto-zooms the viewport on focus, which visibly breaks page layout (zoomed content overflows the screen width, and the effect can persist after navigating away). Never introduce a smaller font-size variant for text inputs or textareas, even for a single field with a specific fit problem; solve that with padding, width, or wrapping instead.
 
 **Scale inputs (1–5):** Equal-width pill buttons in a horizontal row. White background and `#D3D1C7` border at rest; mint background (`#E1F5EE`) and green border (`#0F6E56`) when selected. Scale labels (e.g. "rough" / "great") displayed below in `#B4B2A9` at 11px.
 

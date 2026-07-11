@@ -13,6 +13,7 @@ export function TextArea({ value, onChange, placeholder, maxLength = 280 }: Text
   const [focused, setFocused] = useState(false)
   const isActive = focused || value.length > 0
 
+  // text-[16px] is a hard floor: see "Text inputs" in docs/design-brief.md before changing it.
   return (
     <div>
       <textarea
