@@ -15,6 +15,11 @@ export function getOrCreateDeviceId(): string {
   return deviceId
 }
 
+export function setDeviceId(deviceId: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(DEVICE_ID_KEY, deviceId)
+}
+
 export function generateCorrelationId(): string {
   return crypto.randomUUID()
 }

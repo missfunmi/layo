@@ -40,6 +40,34 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SwitchingDevicesBlock({ deviceId }: { deviceId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className="bg-white border border-[#D3D1C7] rounded-[16px] px-4 py-4 mt-3">
+      <p className="font-sans text-[13px] text-[#5F5E5A] leading-[1.5] mb-3">
+        Switching devices? Copy this and paste it in when Láyo asks.
+      </p>
+      <div className="flex items-center gap-2 bg-[#F1EFE8] rounded-[10px] px-3 py-[10px]">
+        <span className="flex-1 font-sans text-[12px] text-[#2C2C2A] break-all">
+          {deviceId}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard.writeText(deviceId);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          className="flex-shrink-0 px-[14px] py-[6px] rounded-full border-[1.5px] border-solid border-[#D3D1C7] bg-white font-sans text-[12px] font-medium text-[#5F5E5A] cursor-pointer"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [state, setState] = useState<PageState>({ status: "loading" });
@@ -104,7 +132,6 @@ export default function ProfilePage() {
           Profile
         </h1>
         <div className="bg-white border border-[#D3D1C7] rounded-[16px] px-4 py-[14px]">
-          <ProfileRow label="Device ID" value={deviceId} />
           <ProfileRow label="User ID" value={profile.userId} />
           <ProfileRow
             label="Oura Ring"
@@ -115,6 +142,7 @@ export default function ProfilePage() {
             value={profile.promptVersion ?? "Unknown"}
           />
         </div>
+        <SwitchingDevicesBlock deviceId={deviceId} />
       </div>
     </div>
   );

@@ -18,16 +18,29 @@ Beta testers may hit issues that are hard to diagnose from a bug report alone ("
 
 ## Data displayed
 
-A single card with four fields:
+A card with three fields:
 
 | Field                 | Source                               | Notes                                                                               |
 | --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
-| Device ID             | `layo_device_id` from localStorage   | Read directly on the client; not fetched from the API                               |
 | User ID               | `GET /api/profile` → `userId`        | The database `users.id` this device resolves to                                     |
 | Oura Ring             | `GET /api/profile` → `ouraConnected` | "Connected" or "Not connected"; true if an active `wearable_connections` row exists |
 | Recommendation Engine | `GET /api/profile` → `promptVersion` | The latest `prompt_configs.version` by `created_at`                                 |
 
+Below the card, a separate instructional block shows the device's `deviceId` (from `layo_device_id` in localStorage, read directly on the client, not fetched from the API) with a copy button. See [Device-switching value](#device-switching-value) below.
+
 No sensitive data (tokens, check-in content, rationale text) is displayed or returned by the API.
+
+---
+
+## Device-switching value
+
+Below the diagnostic card, a separate block reads:
+
+> Switching devices? Copy this and paste it in when Láyo asks.
+>
+> `[deviceId]` `[Copy]`
+
+It's a separate instructional block rather than a row in the card above: pasting this value into `/restore` restores access to an existing account from a browser context with no local `deviceId`, and the value is shown with instructional text rather than a single-word label. See `docs/specs/account-recovery.md` for the full recovery flow.
 
 ---
 
@@ -49,4 +62,4 @@ This is enforced by omission, not by an auth gate: `/profile` uses the same `X-D
 
 ## Future scope
 
-Full profile management (editable settings, data export/deletion, authentication, account recovery) is out of scope for this version. `/profile` is a read-only diagnostic snapshot, not the beginning of a settings surface. If profile management is built later, it will likely warrant its own spec and may not reuse this page's route or layout.
+Full profile management (editable settings, data export/deletion, authentication) is out of scope for this version. `/profile` is still a read-only diagnostic snapshot, not the beginning of a settings surface, aside from the device-switching value described above. Account recovery has its own spec: see `docs/specs/account-recovery.md`. If broader profile management is built later, it will likely warrant its own spec and may not reuse this page's route or layout.

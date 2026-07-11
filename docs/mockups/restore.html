@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Láyo: Restore Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #e8e6df;
+        font-family: "Inter", sans-serif;
+        padding: 48px 32px;
+      }
+      h1 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #888780;
+        margin-bottom: 32px;
+        text-align: center;
+      }
+      .screens-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+      }
+      .screen-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .screen-name {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #b4b2a9;
+      }
+      .phone {
+        width: 320px;
+        min-height: 580px;
+        background: #f1efe8;
+        border-radius: 36px;
+        border: 0.5px solid rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+      .ph {
+        padding: 22px 24px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 52px;
+      }
+      .wm {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 21px;
+        color: #0f6e56;
+        letter-spacing: -0.5px;
+      }
+      .nav-row {
+        padding: 20px 24px 0;
+      }
+      .back-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1.5px solid #d3d1c7;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #5f5e5a;
+        cursor: pointer;
+      }
+      .pb {
+        flex: 1;
+        padding: 20px 24px 26px;
+        display: flex;
+        flex-direction: column;
+      }
+      .qh {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 22px;
+        line-height: 1.25;
+        color: #2c2c2a;
+        margin-bottom: 8px;
+      }
+      .qs {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #888780;
+        line-height: 1.55;
+        margin-bottom: 24px;
+      }
+      .text-input {
+        width: 100%;
+        background: #fff;
+        border: 1.5px solid #d3d1c7;
+        border-radius: 14px;
+        padding: 13px 15px;
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: #b4b2a9;
+        margin-bottom: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .text-input.filled {
+        color: #2c2c2a;
+        border-color: #0f6e56;
+      }
+      .text-input.invalid {
+        color: #2c2c2a;
+        border-color: #d85a30;
+      }
+      .cta {
+        width: 100%;
+        padding: 15px;
+        border-radius: 100px;
+        border: none;
+        background: #0f6e56;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        margin-top: auto;
+        cursor: pointer;
+      }
+      .cta.disabled {
+        background: #b4b2a9;
+        cursor: not-allowed;
+      }
+      .inline-error {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        margin-top: -4px;
+        margin-bottom: 16px;
+      }
+      .inline-error-text {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: #d85a30;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Láyo: Restore access (/restore)</h1>
+    <div class="screens-row">
+      <!-- Empty state -->
+      <div class="screen-col">
+        <div class="screen-name">Empty</div>
+        <div class="phone">
+          <div class="ph"><div class="wm">láyo</div></div>
+          <div class="nav-row">
+            <div class="back-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </div>
+          </div>
+          <div class="pb">
+            <div class="qh">Welcome back</div>
+            <div class="qs">
+              Paste what's on your profile page to get your data back.
+            </div>
+            <div class="text-input">Paste here</div>
+            <button class="cta disabled">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filled state -->
+      <div class="screen-col">
+        <div class="screen-name">Filled</div>
+        <div class="phone">
+          <div class="ph"><div class="wm">láyo</div></div>
+          <div class="nav-row">
+            <div class="back-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </div>
+          </div>
+          <div class="pb">
+            <div class="qh">Welcome back</div>
+            <div class="qs">
+              Paste what's on your profile page to get your data back.
+            </div>
+            <div class="text-input filled">
+              3f9a21c0-8b7e-4f2a-9c1d-77e6b0a3f4e2
+            </div>
+            <button class="cta">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error state: not recognized -->
+      <div class="screen-col">
+        <div class="screen-name">Not recognized</div>
+        <div class="phone">
+          <div class="ph"><div class="wm">láyo</div></div>
+          <div class="nav-row">
+            <div class="back-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </div>
+          </div>
+          <div class="pb">
+            <div class="qh">Welcome back</div>
+            <div class="qs">
+              Paste what's on your profile page to get your data back.
+            </div>
+            <div class="text-input invalid">
+              not-a-real-value-12345
+            </div>
+            <div class="inline-error">
+              <svg
+                style="flex-shrink: 0; margin-top: 2px"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#D85A30"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <div class="inline-error-text">
+                We don't recognize that. Double check what you pasted and try
+                again.
+              </div>
+            </div>
+            <button class="cta">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

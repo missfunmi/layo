@@ -22,11 +22,16 @@ vi.mock("@/lib/device", () => ({
   getDeviceId: () => mockGetDeviceId(),
 }));
 
+const mockWriteText = vi.fn();
+
 beforeEach(() => {
   mockPush.mockReset();
   mockGetDeviceId.mockReset();
   mockGetDeviceId.mockReturnValue("test-device-id");
   global.fetch = vi.fn();
+  mockWriteText.mockReset();
+  mockWriteText.mockResolvedValue(undefined);
+  Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
 });
 
 import ProfilePage from "@/app/profile/page";
@@ -153,6 +158,50 @@ describe("app/profile/page.tsx — success state", () => {
     });
     fireEvent.click(screen.getByLabelText("Go back"));
     expect(mockPush).toHaveBeenCalledWith("/");
+  });
+});
+
+// ─── Switching-devices block ─────────────────────────────────────────────────
+
+describe("app/profile/page.tsx — switching-devices block", () => {
+  test("shows the switching-devices instructional text", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(
+        screen.getByText("Switching devices? Copy this and paste it in when Láyo asks."),
+      ).toBeInTheDocument();
+    });
+  });
+
+  test("shows the deviceId value in the switching-devices block", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText("test-device-id")).toBeInTheDocument();
+    });
+  });
+
+  test("copy button copies the deviceId to the clipboard", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /copy/i }));
+    expect(mockWriteText).toHaveBeenCalledWith("test-device-id");
+  });
+
+  test('copy button shows "Copied" after being clicked', async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /copy/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /copied/i })).toBeInTheDocument();
+    });
   });
 });
 
