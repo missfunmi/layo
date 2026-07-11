@@ -30,6 +30,7 @@ This document describes the technical architecture of Láyo. It is the authorita
 layo/
 ├── app/
 │   ├── layout.tsx                  # Root layout with Sentry, fonts
+│   ├── manifest.ts                 # Web app manifest (standalone display for iOS home-screen installs)
 │   ├── page.tsx                    # Entry point — routing logic only
 │   ├── onboarding/
 │   │   └── page.tsx
@@ -85,8 +86,10 @@ layo/
 │   ├── mockups/
 │   └── specs/
 └── public/
-    ├── layo-logo-light.svg
-    └── layo-logo-dark.svg
+    ├── icon.svg
+    ├── icon-192x192.png             # Manifest icon
+    ├── icon-512x512.png             # Manifest icon
+    └── apple-touch-icon.png
 ```
 
 ---
@@ -882,5 +885,7 @@ Neon Postgres connection pooling is used in production via the `@neondatabase/se
 **`sleep_score` renamed to `sleep_satisfaction` in v0.1.1.** The column rename reflects the semantic change from an objective quality rating to a subjective satisfaction rating. Existing data is preserved; the integer values remain valid under the new interpretation.
 
 **Account recovery reuses `deviceId` directly rather than introducing a separate secret.** `deviceId` (a UUID v4, 122 bits of entropy) is already the entire auth model in this app; a purpose-built short recovery code would need either low entropy (bad for a public, unauthenticated, unrate-limited endpoint) or high entropy (bad for a human to hand-type), and would add a DB column and generation logic for no real security benefit, since anyone holding a `deviceId` can already fully act as that user. `/restore` validates a pasted `deviceId` by calling the existing `GET /api/users` rather than a new endpoint. See `docs/specs/account-recovery.md`.
+
+**The app declares itself as a standalone web app for iOS home-screen installs.** `app/manifest.ts` (Next.js's manifest file convention, served at `/manifest.webmanifest`) sets `display: 'standalone'`, and `app/layout.tsx`'s `metadata.appleWebApp` sets the companion `apple-mobile-web-app-capable` meta tag. Both are kept together rather than manifest-only: iOS only honors the manifest's `display` mode when it loads successfully, and falls back to the legacy meta tag otherwise, so the meta tag stays as a compatibility floor. Without either, iOS treats a home-screen icon as a legacy web clip, which can inject browser-style navigation chrome (a URL bar, an X to exit, and native back/forward controls) on real page navigations and disrupts viewport height calculations.
 
 **`DATABASE_URL` has its `sslmode` rewritten before use, not left as provisioned.** Neon's connection strings use `sslmode=require`, which the installed version of `pg-connection-string` currently treats as an alias for `verify-full` but flags with a process warning (logged as an error by Vercel, despite no functional impact) because a future major version changes the alias to weaker, spec-correct libpq semantics. `lib/db.ts`'s `withExplicitSslMode` rewrites `prefer`/`require`/`verify-ca` to the explicit `verify-full` before constructing the Prisma adapter, silencing the warning while keeping today's connection behavior identical (verified empirically: both parse to the same `pg` SSL config). The alternative the warning also offers, `uselibpqcompat=true`, was rejected after testing: it opts into the future weaker semantics immediately rather than preserving current behavior.
