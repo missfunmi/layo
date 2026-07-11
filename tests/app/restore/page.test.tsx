@@ -31,9 +31,28 @@ function typeValue(value: string) {
 // ─── Initial state ────────────────────────────────────────────────────────────
 
 describe('app/restore/page.tsx — initial state', () => {
-  test('renders the paste input at 16px font, never smaller, to avoid iOS Safari auto-zoom on focus (regression: LAYO-62, LAYO-132)', () => {
+  test('renders the paste field at 16px font, never smaller, to avoid iOS Safari auto-zoom on focus (regression: LAYO-62, LAYO-132)', () => {
     render(<RestorePage />)
     expect(screen.getByPlaceholderText('Paste here')).toHaveClass('text-[16px]')
+  })
+
+  test('renders the paste field as a textarea so a full pasted value wraps instead of needing horizontal scroll', () => {
+    render(<RestorePage />)
+    expect(screen.getByPlaceholderText('Paste here').tagName).toBe('TEXTAREA')
+  })
+
+  test('paste field has a fixed height and does not resize to fit content', () => {
+    render(<RestorePage />)
+    const field = screen.getByPlaceholderText('Paste here')
+    expect(field).toHaveClass('h-[72px]')
+    expect(field).toHaveClass('resize-none')
+  })
+
+  test('paste field retains the full pasted value without truncation', () => {
+    render(<RestorePage />)
+    const longValue = '3f9a21c0-8b7e-4f2a-9c1d-77e6b0a3f4e2'
+    fireEvent.change(screen.getByPlaceholderText('Paste here'), { target: { value: longValue } })
+    expect(screen.getByPlaceholderText('Paste here')).toHaveValue(longValue)
   })
 
   test('shows the welcome back heading', () => {
