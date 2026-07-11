@@ -74,6 +74,48 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+const PLANNED_WORKOUT_TRUNCATE_LEN = 40
+
+function PlannedWorkoutRow({ value }: { value: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isTruncatable = value.length > PLANNED_WORKOUT_TRUNCATE_LEN
+
+  if (!isTruncatable) {
+    return (
+      <div className="flex justify-between items-baseline font-sans text-[12px] text-[#888780] py-1 border-b border-[#F1EFE8] last:border-b-0">
+        <span>Planned workout</span>
+        <span
+          data-testid="planned-workout-value"
+          className="font-medium text-[#2C2C2A] text-right max-w-[58%] overflow-hidden text-ellipsis whitespace-nowrap"
+        >
+          {value}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`flex font-sans text-[12px] text-[#888780] py-1 border-b border-[#F1EFE8] last:border-b-0 ${
+        expanded ? 'flex-col items-start gap-1' : 'justify-between items-baseline'
+      }`}
+    >
+      <span>Planned workout</span>
+      <button
+        type="button"
+        data-testid="planned-workout-value"
+        aria-label={expanded ? 'Collapse planned workout' : 'Expand planned workout'}
+        onClick={() => setExpanded((e) => !e)}
+        className={`font-sans text-[12px] font-medium text-[#2C2C2A] bg-transparent border-0 p-0 cursor-pointer ${
+          expanded ? 'text-left whitespace-normal w-full' : 'text-right max-w-[58%] overflow-hidden text-ellipsis whitespace-nowrap'
+        }`}
+      >
+        {expanded ? value : truncate(value, PLANNED_WORKOUT_TRUNCATE_LEN)}
+      </button>
+    </div>
+  )
+}
+
 export function RecommendationView({ recommendation, checkIn, onRedo, isError, onRetry }: RecommendationViewProps) {
   const [showRedoModal, setShowRedoModal] = useState(false)
 
@@ -146,7 +188,7 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
           {safeCheckIn.cycleDay != null && (
             <SummaryRow label="Cycle day" value={String(safeCheckIn.cycleDay)} />
           )}
-          <SummaryRow label="Planned workout" value={truncate(safeCheckIn.todaysPlannedWorkout, 40)} />
+          <PlannedWorkoutRow value={safeCheckIn.todaysPlannedWorkout} />
           {safeCheckIn.yesterdayWorkoutType != null && (
             <SummaryRow
               label="Yesterday"
