@@ -1,8 +1,6 @@
 import { config as loadEnv } from 'dotenv'
 import { resolve } from 'path'
 import { readFileSync, existsSync } from 'fs'
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
 
 loadEnv({ path: resolve(process.cwd(), '.env.local'), override: false })
 
@@ -68,29 +66,29 @@ if (!process.env.DATABASE_URL) {
   process.exit(1)
 }
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({ adapter })
-
 async function main() {
-  const row = await prisma.promptConfig.create({
-    data: {
-      version: (parsed.version as string).trim(),
-      systemPrompt: parsed.systemPrompt as string,
-      temperature: parsed.temperature as number,
-      maxTokens: parsed.maxTokens as number,
-      ...(parsed.notes !== undefined && { notes: parsed.notes as string }),
-      ...(parsed.additionalParams !== undefined && { additionalParams: parsed.additionalParams as object }),
-    },
-  })
-  console.log('Inserted PromptConfig:')
-  console.log(`  id:         ${row.id}`)
-  console.log(`  version:    ${row.version}`)
-  console.log(`  created_at: ${row.createdAt.toISOString()}`)
+  const { prisma } = await import('../lib/db')
+  try {
+    const row = await prisma.promptConfig.create({
+      data: {
+        version: (parsed.version as string).trim(),
+        systemPrompt: parsed.systemPrompt as string,
+        temperature: parsed.temperature as number,
+        maxTokens: parsed.maxTokens as number,
+        ...(parsed.notes !== undefined && { notes: parsed.notes as string }),
+        ...(parsed.additionalParams !== undefined && { additionalParams: parsed.additionalParams as object }),
+      },
+    })
+    console.log('Inserted PromptConfig:')
+    console.log(`  id:         ${row.id}`)
+    console.log(`  version:    ${row.version}`)
+    console.log(`  created_at: ${row.createdAt.toISOString()}`)
+  } finally {
+    await prisma.$disconnect()
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error('Error:', (e as Error).message)
-    process.exitCode = 1
-  })
-  .finally(() => prisma.$disconnect())
+main().catch((e) => {
+  console.error('Error:', (e as Error).message)
+  process.exitCode = 1
+})
