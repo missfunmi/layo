@@ -56,12 +56,8 @@ No new secret, DB column, or endpoint. `deviceId` (a UUID v4) is already the ent
 
 ---
 
-## Known limitation
+## Limitations
 
-A user who starts onboarding inside an iOS home-screen standalone context can't reach `/profile` for their value from within that context, since there's no in-app link to it. They need their original Safari session, or another authenticated device or browser, first.
-
----
-
-## Future scope
-
-This flow only helps when the user still has access to a session where `/profile` is reachable. A device with no such session (e.g. a new phone) would need a different mechanism, such as email-based recovery or full authentication. See `docs/architecture.md`, Device identity.
+This flow depends on a session where `/profile` is reachable existing somewhere:
+- Onboarding started inside an iOS home-screen standalone context can't reach `/profile` from within that context, since there's no in-app link to it. The user's original Safari session, or another authenticated device or browser, has it.
+- If no such session exists anywhere (e.g. a new phone), this flow can't help. A different mechanism, such as email-based recovery or full authentication, would be needed. See `docs/architecture.md`, Device identity.
