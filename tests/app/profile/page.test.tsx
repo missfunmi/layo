@@ -161,6 +161,46 @@ describe("app/profile/page.tsx — success state", () => {
   });
 });
 
+// ─── Single-line values (LAYO-131) ───────────────────────────────────────────
+
+describe("app/profile/page.tsx — single-line values", () => {
+  test("User ID value does not wrap (regression: LAYO-131)", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText("user-123")).toHaveClass("whitespace-nowrap");
+    });
+  });
+
+  test("row labels never shrink or wrap, even under width pressure from a long value", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText("User ID")).toHaveClass("flex-shrink-0");
+    });
+  });
+
+  test("User ID, Oura Ring, and Recommendation Engine rows share the same font-size", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText("user-123")).toBeInTheDocument();
+    });
+    const rows = [
+      screen.getByText("User ID").closest("div"),
+      screen.getByText("Oura Ring").closest("div"),
+      screen.getByText("Recommendation Engine").closest("div"),
+    ];
+    const fontSizeClasses = rows.map((row) => {
+      const match = row?.className.match(/text-\[\d+px\]/);
+      return match?.[0];
+    });
+    expect(fontSizeClasses[0]).toBeDefined();
+    expect(fontSizeClasses[1]).toBe(fontSizeClasses[0]);
+    expect(fontSizeClasses[2]).toBe(fontSizeClasses[0]);
+  });
+});
+
 // ─── Switching-devices block ─────────────────────────────────────────────────
 
 describe("app/profile/page.tsx — switching-devices block", () => {
@@ -179,6 +219,14 @@ describe("app/profile/page.tsx — switching-devices block", () => {
     render(<ProfilePage />);
     await waitFor(() => {
       expect(screen.getByText("test-device-id")).toBeInTheDocument();
+    });
+  });
+
+  test("deviceId value does not wrap (regression: LAYO-131)", async () => {
+    mockFetchSuccess();
+    render(<ProfilePage />);
+    await waitFor(() => {
+      expect(screen.getByText("test-device-id")).toHaveClass("whitespace-nowrap");
     });
   });
 

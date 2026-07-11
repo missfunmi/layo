@@ -112,8 +112,9 @@
         display: flex;
         justify-content: space-between;
         align-items: baseline;
+        gap: 8px;
         font-family: "Inter", sans-serif;
-        font-size: 13px;
+        font-size: 11px;
         padding: 10px 0;
         border-bottom: 0.5px solid #f1efe8;
       }
@@ -121,14 +122,18 @@
         border-bottom: none;
       }
       .profile-label {
+        flex-shrink: 0;
         color: #5f5e5a;
         font-weight: 500;
       }
       .profile-value {
+        min-width: 0;
+        max-width: 85%;
         color: #2c2c2a;
         text-align: right;
-        max-width: 60%;
-        word-break: break-all;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .switch-devices-card {
         background: #fff;
@@ -150,18 +155,20 @@
         gap: 8px;
         background: #f1efe8;
         border-radius: 10px;
-        padding: 10px 12px;
+        padding: 10px 10px;
       }
       .switch-devices-value {
         flex: 1;
         font-family: "Inter", sans-serif;
-        font-size: 12px;
+        font-size: 10px;
         color: #2c2c2a;
-        word-break: break-all;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .copy-btn {
         flex-shrink: 0;
-        padding: 6px 14px;
+        padding: 6px 10px;
         border-radius: 100px;
         border: 1.5px solid #d3d1c7;
         background: #fff;
