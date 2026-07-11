@@ -31,9 +31,9 @@ function Header() {
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-baseline font-sans text-[13px] py-[10px] border-b border-[#F1EFE8] last:border-b-0">
+    <div className="flex justify-between items-baseline font-sans text-[11px] py-[10px] border-b border-[#F1EFE8] last:border-b-0">
       <span className="text-[#5F5E5A] font-medium">{label}</span>
-      <span className="text-[#2C2C2A] text-right max-w-[60%] break-all">
+      <span className="text-[#2C2C2A] text-right max-w-[85%] whitespace-nowrap overflow-hidden text-ellipsis">
         {value}
       </span>
     </div>
@@ -48,8 +48,8 @@ function SwitchingDevicesBlock({ deviceId }: { deviceId: string }) {
       <p className="font-sans text-[13px] text-[#5F5E5A] leading-[1.5] mb-3">
         Switching devices? Copy this and paste it in when Láyo asks.
       </p>
-      <div className="flex items-center gap-2 bg-[#F1EFE8] rounded-[10px] px-3 py-[10px]">
-        <span className="flex-1 font-sans text-[12px] text-[#2C2C2A] break-all">
+      <div className="flex items-center gap-2 bg-[#F1EFE8] rounded-[10px] px-[10px] py-[10px]">
+        <span className="flex-1 font-sans text-[10px] text-[#2C2C2A] whitespace-nowrap overflow-hidden text-ellipsis">
           {deviceId}
         </span>
         <button
@@ -59,7 +59,7 @@ function SwitchingDevicesBlock({ deviceId }: { deviceId: string }) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
-          className="flex-shrink-0 px-[14px] py-[6px] rounded-full border-[1.5px] border-solid border-[#D3D1C7] bg-white font-sans text-[12px] font-medium text-[#5F5E5A] cursor-pointer"
+          className="flex-shrink-0 px-[10px] py-[6px] rounded-full border-[1.5px] border-solid border-[#D3D1C7] bg-white font-sans text-[12px] font-medium text-[#5F5E5A] cursor-pointer"
         >
           {copied ? "Copied" : "Copy"}
         </button>
