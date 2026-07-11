@@ -40,11 +40,7 @@ Below the diagnostic card, a separate block reads:
 >
 > `[deviceId]` `[Copy]`
 
-This is a separate instructional block rather than a row in the card above for two reasons:
-1. It's load-bearing: pasting this value into `/restore` (see `docs/specs/account-recovery.md`) is the only way to restore access to an existing account in a browser context that has no local `deviceId`. That's a heavier purpose than the plain read-only diagnostic snapshot the other three fields provide.
-2. Naming the value as a single-word label in a terse row reads as technical regardless of the word chosen. Describing the action instead avoids that problem, but doesn't fit the label/value row format the rest of the card uses.
-
-See `docs/specs/account-recovery.md` for the full recovery flow this value supports.
+It's a separate instructional block rather than a row in the card above: pasting this value into `/restore` restores access to an existing account from a browser context with no local `deviceId`, and the value is shown with instructional text rather than a single-word label. See `docs/specs/account-recovery.md` for the full recovery flow.
 
 ---
 
