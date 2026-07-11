@@ -191,10 +191,47 @@ describe('RecommendationView — check-in summary card', () => {
     expect(screen.queryByText(longWorkout)).not.toBeInTheDocument()
   })
 
-  test('planned workout value renders as a button with no visible button styling', () => {
-    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+  test('planned workout value renders as a button when text is truncated', () => {
+    const longWorkout = 'A very long workout description that exceeds forty characters'
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
+      />
+    )
     const toggle = screen.getByTestId('planned-workout-value')
     expect(toggle.tagName).toBe('BUTTON')
+  })
+
+  test('planned workout value renders as plain text, not a button, when it fits without truncation', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    const value = screen.getByTestId('planned-workout-value')
+    expect(value.tagName).not.toBe('BUTTON')
+  })
+
+  test('tapping a non-truncated planned workout value does nothing (no button to click)', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    fireEvent.click(screen.getByTestId('planned-workout-value'))
+    expect(screen.getByText('10mi tempo run')).toBeInTheDocument()
+  })
+
+  test('planned workout row has no bottom border on the last row (last:border-b-0)', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    const value = screen.getByTestId('planned-workout-value')
+    const row = value.closest('div')
+    expect(row).toHaveClass('last:border-b-0')
+  })
+
+  test('planned workout button spans full width when expanded', () => {
+    const longWorkout = 'A very long workout description that exceeds forty characters'
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
+      />
+    )
+    fireEvent.click(screen.getByTestId('planned-workout-value'))
+    expect(screen.getByTestId('planned-workout-value')).toHaveClass('w-full')
   })
 
   test('shows yesterday row with "Planned workout" when type is planned', () => {
