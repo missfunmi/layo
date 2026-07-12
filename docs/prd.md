@@ -123,7 +123,7 @@ Check-in data is only submitted to the server when the user completes the final 
    Subtext: "Pick the closest match."
    Three tappable cards, each with an icon and label:
    - "Your planned workout" — displays the workout the user entered as today's plan on the previous day's check-in, if available
-   - "Láyo's suggested workout" — displays Láyo's recommendation from the previous day, if it differed from planned
+   - "Láyo's suggested alternative" — shown only when yesterday's recommendation was `modify` or `rest`; displays the recommendation heading from that day
    - "Something else" — expands into a free-form text input
 
    If there is no check-in record for the previous calendar day (i.e. the user skipped one or more days), this question and the following feedback question are omitted. The check-in proceeds from question 3.
