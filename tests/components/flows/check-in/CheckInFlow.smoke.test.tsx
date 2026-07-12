@@ -14,6 +14,7 @@ import { CheckInFlow } from '@/components/flows/check-in/CheckInFlow'
 const PREV = {
   plannedWorkout: '8mi easy run @ Z2',
   recommendationHeading: '6mi easy run, no strides',
+  recommendationType: 'modify' as const,
 }
 
 const GENERATING_HEADERS = [
@@ -66,7 +67,7 @@ describe('CheckInFlow smoke — yesterday_workout: three option cards', () => {
   test('renders exactly three option cards', () => {
     render(<CheckInFlow name="Funmi" previousCheckIn={PREV} />)
     fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
-    const cards = screen.getAllByRole('button', { name: /your planned workout|láyo's suggested workout|something else/i })
+    const cards = screen.getAllByRole('button', { name: /your planned workout|láyo's suggested alternative|something else/i })
     expect(cards).toHaveLength(3)
   })
 

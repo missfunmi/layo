@@ -107,9 +107,10 @@ describe('CheckInFlow — landing screen: time-based greeting', () => {
 const PREV = {
   plannedWorkout: '8mi easy run @ Z2',
   recommendationHeading: '6mi easy run, no strides',
+  recommendationType: 'modify' as const,
 }
 
-function navigateToYesterdayWorkout(previousCheckIn: { plannedWorkout?: string; recommendationHeading?: string } = PREV) {
+function navigateToYesterdayWorkout(previousCheckIn: { plannedWorkout?: string; recommendationHeading?: string; recommendationType?: 'as_written' | 'modify' | 'rest' } = PREV) {
   render(<CheckInFlow name="Funmi" previousCheckIn={previousCheckIn} />)
   fireEvent.click(screen.getByRole('button', { name: /start today's check-in/i }))
 }
@@ -184,19 +185,29 @@ describe('CheckInFlow — step yesterday_workout: option cards', () => {
   })
 
   test('shows "No workout on record" when plannedWorkout is undefined', () => {
-    navigateToYesterdayWorkout({ plannedWorkout: undefined, recommendationHeading: '6mi easy run' })
+    navigateToYesterdayWorkout({ plannedWorkout: undefined, recommendationHeading: '6mi easy run', recommendationType: 'modify' })
     expect(screen.getByText('No workout on record')).toBeInTheDocument()
   })
 
-  test('shows "Láyo\'s suggested workout" card with recommendationHeading as detail', () => {
+  test('shows "Láyo\'s suggested alternative" card with recommendationHeading as detail', () => {
     navigateToYesterdayWorkout()
-    expect(screen.getByRole('button', { name: /láyo's suggested workout/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /láyo's suggested alternative/i })).toBeInTheDocument()
     expect(screen.getByText('6mi easy run, no strides')).toBeInTheDocument()
   })
 
-  test('shows "No suggestion on record" when recommendationHeading is undefined', () => {
-    navigateToYesterdayWorkout({ plannedWorkout: '8mi easy run', recommendationHeading: undefined })
+  test('shows "No suggestion on record" when recommendationHeading is undefined and recommendationType is modify', () => {
+    navigateToYesterdayWorkout({ plannedWorkout: '8mi easy run', recommendationHeading: undefined, recommendationType: 'modify' })
     expect(screen.getByText('No suggestion on record')).toBeInTheDocument()
+  })
+
+  test('does not show "Láyo\'s suggested alternative" card when recommendationType is "as_written"', () => {
+    navigateToYesterdayWorkout({ plannedWorkout: '8mi easy run', recommendationHeading: 'Do your workout as planned.', recommendationType: 'as_written' })
+    expect(screen.queryByRole('button', { name: /láyo's suggested alternative/i })).not.toBeInTheDocument()
+  })
+
+  test('does not show "Láyo\'s suggested alternative" card when no recommendationType', () => {
+    navigateToYesterdayWorkout({ plannedWorkout: '8mi easy run', recommendationHeading: undefined })
+    expect(screen.queryByRole('button', { name: /láyo's suggested alternative/i })).not.toBeInTheDocument()
   })
 
   test('shows "Something else" card with "Tell us what you did" detail', () => {
@@ -216,9 +227,9 @@ describe('CheckInFlow — step yesterday_workout: option cards', () => {
     expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
   })
 
-  test('Continue is enabled after selecting "Láyo\'s suggested workout"', () => {
+  test('Continue is enabled after selecting "Láyo\'s suggested alternative"', () => {
     navigateToYesterdayWorkout()
-    fireEvent.click(screen.getByRole('button', { name: /láyo's suggested workout/i }))
+    fireEvent.click(screen.getByRole('button', { name: /láyo's suggested alternative/i }))
     expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
   })
 

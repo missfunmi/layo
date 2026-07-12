@@ -10,6 +10,7 @@ import { TextArea } from '@/components/ui/TextArea'
 import { ScaleInput } from '@/components/ui/ScaleInput'
 import { YesNoSelector } from '@/components/ui/YesNoSelector'
 import { getOrCreateDeviceId, generateCorrelationId } from '@/lib/device'
+import { type RecommendationType } from '@/lib/recommendation'
 
 type Step = 'landing' | 'yesterday_workout' | 'yesterday_feedback' | 'today_workout' | 'sleep_feel' | 'cycle_tracking' | 'stressors' | 'generating' | 'error'
 
@@ -18,6 +19,7 @@ type SubmissionError = 'check_in_failed' | 'recommendation_failed' | null
 interface PreviousCheckIn {
   plannedWorkout?: string
   recommendationHeading?: string
+  recommendationType?: RecommendationType
 }
 
 interface CheckInFlowProps {
@@ -225,13 +227,15 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
               selected={yesterdayWorkout === 'planned'}
               onClick={() => { setYesterdayWorkout('planned'); setSomethingElseText('') }}
             />
-            <OptionCard
-              icon="ti-sparkles"
-              label="Láyo's suggested workout"
-              detail={previousCheckIn?.recommendationHeading ?? 'No suggestion on record'}
-              selected={yesterdayWorkout === 'suggested'}
-              onClick={() => { setYesterdayWorkout('suggested'); setSomethingElseText('') }}
-            />
+            {(previousCheckIn?.recommendationType === 'modify' || previousCheckIn?.recommendationType === 'rest') && (
+              <OptionCard
+                icon="ti-sparkles"
+                label="Láyo's suggested alternative"
+                detail={previousCheckIn.recommendationHeading ?? 'No suggestion on record'}
+                selected={yesterdayWorkout === 'suggested'}
+                onClick={() => { setYesterdayWorkout('suggested'); setSomethingElseText('') }}
+              />
+            )}
             <OptionCard
               icon="ti-edit"
               label="Something else"

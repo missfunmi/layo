@@ -22,11 +22,12 @@ vi.mock('@/components/flows/check-in/CheckInFlow', () => ({
     previousCheckIn,
   }: {
     name: string
-    previousCheckIn?: { plannedWorkout?: string; recommendationHeading?: string } | null
+    previousCheckIn?: { plannedWorkout?: string; recommendationHeading?: string; recommendationType?: string } | null
   }) => (
     <div data-testid="check-in-flow">
       {name}
       <div data-testid="recommendation-heading">{previousCheckIn?.recommendationHeading ?? ''}</div>
+      <div data-testid="recommendation-type">{previousCheckIn?.recommendationType ?? ''}</div>
     </div>
   ),
 }))
@@ -135,6 +136,57 @@ describe('app/check-in/page.tsx — success state', () => {
       expect(screen.getByTestId('check-in-flow')).toBeInTheDocument()
     })
     expect(screen.getByTestId('recommendation-heading')).toHaveTextContent('')
+  })
+
+  test('passes recommendationType "modify" to CheckInFlow for a modify recommendation', async () => {
+    mockFetchSuccess({
+      recommendation: {
+        recommendationType: 'modify',
+        modificationDetail: "Reduce to 4x6' @ HM pace",
+        rationale: 'x',
+      },
+    })
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('recommendation-type')).toHaveTextContent('modify')
+    })
+  })
+
+  test('passes recommendationType "rest" to CheckInFlow for a rest recommendation', async () => {
+    mockFetchSuccess({
+      recommendation: {
+        recommendationType: 'rest',
+        modificationDetail: null,
+        rationale: 'x',
+      },
+    })
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('recommendation-type')).toHaveTextContent('rest')
+    })
+  })
+
+  test('passes recommendationType "as_written" to CheckInFlow for an as_written recommendation', async () => {
+    mockFetchSuccess({
+      recommendation: {
+        recommendationType: 'as_written',
+        modificationDetail: null,
+        rationale: 'x',
+      },
+    })
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('recommendation-type')).toHaveTextContent('as_written')
+    })
+  })
+
+  test('leaves recommendationType undefined when no recommendation exists for yesterday', async () => {
+    mockFetchSuccess(NO_RECOMMENDATION)
+    render(<CheckInPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('check-in-flow')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('recommendation-type')).toHaveTextContent('')
   })
 })
 

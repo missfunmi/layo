@@ -14,7 +14,7 @@ type PageState =
       status: 'ready'
       name: string
       hormonalLifeStage: string[]
-      previousCheckIn: { plannedWorkout?: string; recommendationHeading?: string } | null
+      previousCheckIn: { plannedWorkout?: string; recommendationHeading?: string; recommendationType?: RecommendationType } | null
     }
 
 export default function CheckInPage() {
@@ -70,6 +70,7 @@ export default function CheckInPage() {
                 recommendationHeading: recommendation
                   ? getRecommendationHeading(recommendation.recommendationType, recommendation.modificationDetail)
                   : undefined,
+                recommendationType: recommendation?.recommendationType,
               }
             : null,
         })
