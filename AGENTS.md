@@ -87,7 +87,7 @@ npm run build     # runs: prisma migrate deploy && next build
 
 **Token encryption**: `lib/crypto.ts` implements AES-256-GCM encrypt/decrypt for wearable token storage. Key is read from the `WEARABLE_TOKEN_KEY` env var (32-byte hex string).
 
-**Recommendation heading**: `lib/recommendation.ts` exports `getRecommendationHeading(recommendationType, modificationDetail)`, the single source of truth for turning a recommendation into display text (fixed copy for `as_written`/`rest`, `modificationDetail` for `modify`). Used by both `RecommendationView` and the check-in page's "Láyo's suggested workout" option.
+**Recommendation heading**: `lib/recommendation.ts` exports `getRecommendationHeading(recommendationType, modificationDetail)`, the single source of truth for turning a recommendation into display text (fixed copy for `as_written`/`rest`, `modificationDetail` for `modify`). Used by both `RecommendationView` and the check-in page's "Láyo's suggested alternative" option.
 
 **Prompt config**: The latest `PromptConfig` row (by `created_at`) is fetched from the database at inference time. This allows the system prompt and inference parameters to be updated without a code deployment. Every inference logs the `prompt_version` used.
 
