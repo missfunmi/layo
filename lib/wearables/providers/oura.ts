@@ -95,12 +95,19 @@ async function throwOnFirstFailedResponse(responses: Response[]): Promise<void> 
 export async function fetchTodayData(accessToken: string, date: string): Promise<FetchTodayResult | null> {
   const headers = { Authorization: `Bearer ${accessToken}` }
   const params = new URLSearchParams({ start_date: date, end_date: date })
+  // The /usercollection/sleep endpoint filters by bedtime_start date, not by the day field.
+  // Overnight sleep starting the previous evening has bedtime_start on the prior day, so
+  // querying start_date=date alone misses it. We extend the range by one day; the
+  // p.day === date filter below then restricts results to the check-in date only.
+  const prevDate = new Date(date)
+  prevDate.setUTCDate(prevDate.getUTCDate() - 1)
+  const sleepParams = new URLSearchParams({ start_date: prevDate.toISOString().slice(0, 10), end_date: date })
   const base = 'https://api.ouraring.com/v2/usercollection'
 
   const [readinessRes, dailySleepRes, sleepRes] = await Promise.all([
     fetch(`${base}/daily_readiness?${params}`, { headers }),
     fetch(`${base}/daily_sleep?${params}`, { headers }),
-    fetch(`${base}/sleep?${params}`, { headers }),
+    fetch(`${base}/sleep?${sleepParams}`, { headers }),
   ])
 
   await throwOnFirstFailedResponse([readinessRes, dailySleepRes, sleepRes])
@@ -132,12 +139,18 @@ export async function fetchTodayData(accessToken: string, date: string): Promise
 async function fetchHistoricalGroupedByDate(accessToken: string, startDate: string, endDate: string) {
   const headers = { Authorization: `Bearer ${accessToken}` }
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
+  // Same bedtime_start date issue as fetchTodayData: extend the sleep range by one day so
+  // overnight sleep on startDate (whose bedtime_start is the prior evening) is returned.
+  // Sleep periods with day < startDate are filtered out below.
+  const prevStartDate = new Date(startDate)
+  prevStartDate.setUTCDate(prevStartDate.getUTCDate() - 1)
+  const sleepParams = new URLSearchParams({ start_date: prevStartDate.toISOString().slice(0, 10), end_date: endDate })
   const base = 'https://api.ouraring.com/v2/usercollection'
 
   const [readinessRes, dailySleepRes, sleepRes] = await Promise.all([
     fetch(`${base}/daily_readiness?${params}`, { headers }),
     fetch(`${base}/daily_sleep?${params}`, { headers }),
-    fetch(`${base}/sleep?${params}`, { headers }),
+    fetch(`${base}/sleep?${sleepParams}`, { headers }),
   ])
 
   await throwOnFirstFailedResponse([readinessRes, dailySleepRes, sleepRes])
@@ -152,6 +165,7 @@ async function fetchHistoricalGroupedByDate(accessToken: string, startDate: stri
   const dailySleepByDate = new Map((dailySleepData.data ?? []).map((s) => [s.day, s]))
   const sleepPeriodsByDate = new Map<string, OuraSleepPeriod[]>()
   for (const period of sleepData.data ?? []) {
+    if (period.day < startDate || period.day > endDate) continue
     const existing = sleepPeriodsByDate.get(period.day) ?? []
     existing.push(period)
     sleepPeriodsByDate.set(period.day, existing)

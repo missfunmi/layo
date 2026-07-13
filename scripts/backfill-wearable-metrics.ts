@@ -10,15 +10,44 @@ import type { fetchHistoricalDataWithRaw, refreshToken } from '../lib/wearables/
 
 loadEnv({ path: resolve(process.cwd(), '.env.local'), override: false })
 
-const KNOWN_ARGS = new Set(['--dry-run'])
-const unknownArgs = process.argv.slice(2).filter((arg) => !KNOWN_ARGS.has(arg))
+function getArgValue(prefix: string): string | undefined {
+  const arg = process.argv.slice(2).find((a) => a.startsWith(prefix))
+  return arg ? arg.slice(prefix.length) : undefined
+}
+
+const KNOWN_ARG_PREFIXES = ['--start-date=', '--end-date=']
+const unknownArgs = process.argv
+  .slice(2)
+  .filter((arg) => arg !== '--dry-run' && !KNOWN_ARG_PREFIXES.some((p) => arg.startsWith(p)))
 if (unknownArgs.length > 0) {
   console.error(`Error: unrecognized argument(s): ${unknownArgs.join(', ')}`)
-  console.error('Usage: npm run backfill-wearable-metrics -- [--dry-run]')
+  console.error('Usage: npm run backfill-wearable-metrics -- [--dry-run] [--start-date=YYYY-MM-DD --end-date=YYYY-MM-DD]')
   process.exit(1)
 }
 
 const DRY_RUN = process.argv.includes('--dry-run')
+const START_DATE = getArgValue('--start-date=')
+const END_DATE = getArgValue('--end-date=')
+
+if (!!START_DATE !== !!END_DATE) {
+  console.error('Error: --start-date and --end-date must be provided together')
+  console.error('Usage: npm run backfill-wearable-metrics -- [--dry-run] [--start-date=YYYY-MM-DD --end-date=YYYY-MM-DD]')
+  process.exit(1)
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+if (START_DATE && !DATE_RE.test(START_DATE)) {
+  console.error(`Error: invalid --start-date "${START_DATE}", expected YYYY-MM-DD`)
+  process.exit(1)
+}
+if (END_DATE && !DATE_RE.test(END_DATE)) {
+  console.error(`Error: invalid --end-date "${END_DATE}", expected YYYY-MM-DD`)
+  process.exit(1)
+}
+if (START_DATE && END_DATE && START_DATE > END_DATE) {
+  console.error(`Error: --start-date (${START_DATE}) must be on or before --end-date (${END_DATE})`)
+  process.exit(1)
+}
 
 const REQUIRED_ENV_VARS = ['DATABASE_URL', 'WEARABLE_TOKEN_KEY', 'OURA_CLIENT_ID', 'OURA_CLIENT_SECRET']
 const missingEnvVars = REQUIRED_ENV_VARS.filter((name) => !process.env[name])
@@ -36,7 +65,8 @@ function toDateString(d: Date): string {
 async function backfillConnection(
   prisma: PrismaClient,
   oura: { fetchHistoricalDataWithRaw: typeof fetchHistoricalDataWithRaw; refreshToken: typeof refreshToken },
-  connection: { id: string; userId: string; accessToken: string }
+  connection: { id: string; userId: string; accessToken: string },
+  overrideRange?: { startDate: string; endDate: string }
 ) {
   const existingRows = await prisma.wearableDailyMetric.findMany({
     where: { userId: connection.userId, provider: 'oura' },
@@ -50,8 +80,8 @@ async function backfillConnection(
 
   const existingDates = new Set(existingRows.map((r) => toDateString(r.metricDate)))
   const sortedDates = Array.from(existingDates).sort()
-  const startDate = sortedDates[0]
-  const endDate = sortedDates[sortedDates.length - 1]
+  const startDate = overrideRange?.startDate ?? sortedDates[0]
+  const endDate = overrideRange?.endDate ?? sortedDates[sortedDates.length - 1]
 
   let accessToken = decrypt(connection.accessToken)
   let entries: Awaited<ReturnType<typeof fetchHistoricalDataWithRaw>>
@@ -91,12 +121,14 @@ async function backfillConnection(
 async function main() {
   const { prisma } = await import('../lib/db')
   const oura = await import('../lib/wearables/providers/oura')
+  const overrideRange = START_DATE && END_DATE ? { startDate: START_DATE, endDate: END_DATE } : undefined
   try {
     const connections = await prisma.wearableConnection.findMany({
       where: { provider: 'oura', status: 'active' },
     })
 
-    console.log(`Found ${connections.length} active Oura connection(s)${DRY_RUN ? ' (dry run, no writes)' : ''}`)
+    const rangeNote = overrideRange ? ` (date range: ${overrideRange.startDate} to ${overrideRange.endDate})` : ''
+    console.log(`Found ${connections.length} active Oura connection(s)${DRY_RUN ? ' (dry run, no writes)' : ''}${rangeNote}`)
 
     let totalUpdated = 0
     let totalSkipped = 0
@@ -105,8 +137,9 @@ async function main() {
     for (const connection of connections) {
       console.log(`Processing user ${connection.userId}...`)
       try {
-        const { updated, skipped } = await backfillConnection(prisma, oura, connection)
-        console.log(`  updated ${updated} row(s), skipped ${skipped} date(s) with no existing row`)
+        const { updated, skipped } = await backfillConnection(prisma, oura, connection, overrideRange)
+        const updatedMsg = DRY_RUN ? `[dry-run] would update ${updated} row(s)` : `updated ${updated} row(s)`
+        console.log(`  ${updatedMsg}, skipped ${skipped} date(s) with no existing row`)
         totalUpdated += updated
         totalSkipped += skipped
       } catch (err) {
@@ -116,7 +149,11 @@ async function main() {
     }
 
     console.log('---')
-    console.log(`Done. ${totalUpdated} row(s) updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    if (DRY_RUN) {
+      console.log(`Done (dry run, no writes). ${totalUpdated} row(s) would be updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    } else {
+      console.log(`Done. ${totalUpdated} row(s) updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    }
   } finally {
     await prisma.$disconnect()
   }
