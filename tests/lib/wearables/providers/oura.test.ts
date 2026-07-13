@@ -155,6 +155,40 @@ describe('lib/wearables/providers/oura', () => {
       vi.mocked(Sentry.captureMessage).mockReset()
     })
 
+    test('queries the sleep endpoint with start_date set to the day before the check-in date to capture overnight sleep', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [FULL_READINESS] }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [FULL_DAILY_SLEEP] }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+      vi.stubGlobal('fetch', fetchMock)
+
+      await fetchTodayData('fake-token', '2026-07-10')
+
+      const sleepCall = fetchMock.mock.calls.find((call) => String(call[0]).includes('/usercollection/sleep?'))
+      expect(sleepCall).toBeDefined()
+      const sleepUrl = new URL(String(sleepCall![0]))
+      expect(sleepUrl.searchParams.get('start_date')).toBe('2026-07-09')
+      expect(sleepUrl.searchParams.get('end_date')).toBe('2026-07-10')
+    })
+
+    test('excludes sleep periods returned from the extended range whose day does not match the check-in date', async () => {
+      const previousDaySleepPeriod = { ...MAIN_SLEEP_PERIOD, day: '2026-07-09' }
+      const todaySleepPeriod = { ...NAP_PERIOD, day: '2026-07-10' }
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [FULL_READINESS] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [FULL_DAILY_SLEEP] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [previousDaySleepPeriod, todaySleepPeriod] }) }),
+      )
+
+      const result = await fetchTodayData('fake-token', '2026-07-10')
+      expect(result?.raw.sleepPeriods).toEqual([todaySleepPeriod])
+      expect(result?.metrics.sleepDurationMinutes).toBe(90)
+    })
+
     test('requests daily_readiness, daily_sleep, and sleep endpoints for the given date', async () => {
       const fetchMock = vi
         .fn()
@@ -283,6 +317,42 @@ describe('lib/wearables/providers/oura', () => {
   })
 
   describe('fetchHistoricalData', () => {
+    test('queries the sleep endpoint with start_date set to the day before startDate to capture overnight sleep on the first date', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+      vi.stubGlobal('fetch', fetchMock)
+
+      await fetchHistoricalData('token', '2026-01-05', '2026-01-07')
+
+      const sleepCall = fetchMock.mock.calls.find((call) => String(call[0]).includes('/usercollection/sleep?'))
+      expect(sleepCall).toBeDefined()
+      const sleepUrl = new URL(String(sleepCall![0]))
+      expect(sleepUrl.searchParams.get('start_date')).toBe('2026-01-04')
+      expect(sleepUrl.searchParams.get('end_date')).toBe('2026-01-07')
+    })
+
+    test('excludes sleep periods returned from the extended range whose day is before startDate', async () => {
+      const prevDaySleep = { ...MAIN_SLEEP_PERIOD, day: '2026-01-04' }
+      const firstDaySleep = { ...NAP_PERIOD, day: '2026-01-05' }
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ day: '2026-01-05', score: 80 }] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [prevDaySleep, firstDaySleep] }) }),
+      )
+
+      const result = await fetchHistoricalData('token', '2026-01-05', '2026-01-05')
+
+      const jan05 = result.find((r) => r.date === '2026-01-05')
+      expect(jan05?.sleepDurationMinutes).toBe(90)
+      expect(result.find((r) => r.date === '2026-01-04')).toBeUndefined()
+    })
+
     test('error thrown when readiness returns 401 includes the Oura response body', async () => {
       vi.stubGlobal(
         'fetch',
