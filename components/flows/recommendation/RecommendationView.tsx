@@ -95,12 +95,12 @@ function ExpandableRow({
       <span
         data-testid={testId}
         className={`font-medium text-[#2C2C2A] text-right max-w-[58%] ${
-          expanded && isTruncatable
+          expanded
             ? 'whitespace-normal'
             : 'overflow-hidden text-ellipsis whitespace-nowrap'
         }`}
       >
-        {expanded && isTruncatable ? value : isTruncatable ? truncate(value, EXPANDABLE_TRUNCATE_LEN) : value}
+        {expanded ? value : isTruncatable ? truncate(value, EXPANDABLE_TRUNCATE_LEN) : value}
       </span>
     </div>
   )
@@ -172,7 +172,16 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
 
         <div
           data-testid="check-in-card"
-          onClick={() => setCardExpanded((e) => !e)}
+          role="button"
+          tabIndex={0}
+          aria-expanded={cardExpanded}
+          onClick={() => setCardExpanded((prev) => !prev)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCardExpanded((prev) => !prev)
+            }
+          }}
           className="bg-white border border-[#D3D1C7] rounded-[16px] px-4 py-[14px] mb-auto cursor-pointer"
         >
           <div className="font-sans text-[10px] font-medium uppercase tracking-[0.08em] text-[#B4B2A9] mb-[10px]">

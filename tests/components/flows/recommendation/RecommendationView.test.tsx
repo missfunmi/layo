@@ -357,6 +357,50 @@ describe('RecommendationView — card-level expand/collapse', () => {
     expect(row).not.toHaveClass('flex-col')
     expect(valueEl).toHaveClass('text-right')
   })
+
+  test('expanding the card applies whitespace-normal even when value is 40 chars or fewer', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: 'Short workout' }}
+      />
+    )
+    fireEvent.click(screen.getByTestId('check-in-card'))
+    expect(screen.getByTestId('planned-workout-value')).toHaveClass('whitespace-normal')
+  })
+
+  test('check-in card has aria-expanded=false when collapsed', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    expect(screen.getByTestId('check-in-card')).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('check-in card has aria-expanded=true when expanded', () => {
+    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
+    fireEvent.click(screen.getByTestId('check-in-card'))
+    expect(screen.getByTestId('check-in-card')).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  test('pressing Enter on the check-in card expands the planned workout text', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: LONG_WORKOUT }}
+      />
+    )
+    fireEvent.keyDown(screen.getByTestId('check-in-card'), { key: 'Enter' })
+    expect(screen.getByTestId('planned-workout-value')).toHaveTextContent(LONG_WORKOUT)
+  })
+
+  test('pressing Space on the check-in card expands the planned workout text', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: LONG_WORKOUT }}
+      />
+    )
+    fireEvent.keyDown(screen.getByTestId('check-in-card'), { key: ' ' })
+    expect(screen.getByTestId('planned-workout-value')).toHaveTextContent(LONG_WORKOUT)
+  })
 })
 
 // ─── Redo link ────────────────────────────────────────────────────────────────
