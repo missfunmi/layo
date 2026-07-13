@@ -7,10 +7,34 @@ import { resolveUser } from '@/lib/api'
 import { calculateCycleDay } from '@/lib/cycle'
 import { generateRecommendation } from '@/lib/llm/index'
 import { fetchAndStoreTodayMetrics, computeBaseline, formatLLMContext } from '@/lib/wearables/index'
-import type { WearableThresholds } from '@/lib/wearables/types'
+import type { NormalizedDailyMetric, WearableThresholds } from '@/lib/wearables/types'
 import { logCtx, logErrorCtx, startRequest, endRequest, type RequestContext } from '@/lib/logger'
 
 const VALID_YESTERDAY_TYPES = ['planned', 'suggested', 'other']
+
+function extractMetricsFromRow(row: {
+  readinessScore: number | null
+  hrvAvg: number | null
+  restingHeartRate: number | null
+  sleepScore: number | null
+  sleepDurationMinutes: number | null
+  deepSleepMinutes: number | null
+  remSleepMinutes: number | null
+  sleepEfficiency: number | null
+  bodyTempDeviation: number | null
+}): NormalizedDailyMetric {
+  const m: NormalizedDailyMetric = {}
+  if (row.readinessScore !== null) m.readinessScore = row.readinessScore
+  if (row.hrvAvg !== null) m.hrvAvg = row.hrvAvg
+  if (row.restingHeartRate !== null) m.restingHeartRate = row.restingHeartRate
+  if (row.sleepScore !== null) m.sleepScore = row.sleepScore
+  if (row.sleepDurationMinutes !== null) m.sleepDurationMinutes = row.sleepDurationMinutes
+  if (row.deepSleepMinutes !== null) m.deepSleepMinutes = row.deepSleepMinutes
+  if (row.remSleepMinutes !== null) m.remSleepMinutes = row.remSleepMinutes
+  if (row.sleepEfficiency !== null) m.sleepEfficiency = row.sleepEfficiency
+  if (row.bodyTempDeviation !== null) m.bodyTempDeviation = row.bodyTempDeviation
+  return m
+}
 
 function bad(ctx: RequestContext, message: string) {
   return endRequest(NextResponse.json({ error: message }, { status: 400 }), ctx)
@@ -202,17 +226,41 @@ export async function POST(request: NextRequest) {
   if (activeConnection) {
     const ouraStart = performance.now()
     try {
-      const todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
-      logCtx(ctx, {
-        event: 'oura_fetch',
-        fetchSkipped: false,
-        dataAvailable: todayMetrics !== null,
-        latencyMs: Math.round(performance.now() - ouraStart),
-      })
       const promptConfig = await prisma.promptConfig.findFirst({ orderBy: { createdAt: 'desc' } })
-      const thresholds = (
-        (promptConfig?.additionalParams as Record<string, unknown> | null)?.wearable_thresholds ?? {}
-      ) as WearableThresholds
+      const additionalParams = (promptConfig?.additionalParams as Record<string, unknown> | null) ?? {}
+      const thresholds = (additionalParams.wearable_thresholds ?? {}) as WearableThresholds
+      const refetchThresholdMs =
+        typeof additionalParams.wearable_refetch_threshold_minutes === 'number'
+          ? additionalParams.wearable_refetch_threshold_minutes * 60 * 1000
+          : 120 * 60 * 1000
+
+      const metricDate = new Date(checkInDate)
+      const existingMetric = await prisma.wearableDailyMetric.findUnique({
+        where: { userId_provider_metricDate: { userId: user.id, provider: activeConnection.provider, metricDate } },
+      })
+      const rowFound = existingMetric !== null
+      const withinThreshold = rowFound && (Date.now() - existingMetric!.createdAt.getTime()) < refetchThresholdMs
+      logCtx(ctx, { event: 'oura_freshness_check', rowFound, withinThreshold })
+
+      let todayMetrics: NormalizedDailyMetric | null
+      if (withinThreshold) {
+        todayMetrics = extractMetricsFromRow(existingMetric!)
+        logCtx(ctx, {
+          event: 'oura_fetch',
+          fetchSkipped: true,
+          dataAvailable: true,
+          latencyMs: Math.round(performance.now() - ouraStart),
+        })
+      } else {
+        todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
+        logCtx(ctx, {
+          event: 'oura_fetch',
+          fetchSkipped: false,
+          dataAvailable: todayMetrics !== null,
+          latencyMs: Math.round(performance.now() - ouraStart),
+        })
+      }
+
       const baseline = await computeBaseline(user.id, activeConnection.provider)
       const baselineValues = Object.values(baseline)
       logCtx(ctx, {

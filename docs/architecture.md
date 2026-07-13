@@ -469,7 +469,7 @@ Submits today's check-in, calculates cycle day, fetches and processes wearable d
 1. Resolve user from `X-Device-ID`
 2. Validate inputs (see Input validation)
 3. Calculate `cycleDay`
-4. If user has an active wearable connection: call the Oura API for today's metrics and upsert the result to `wearable_daily_metrics`. If the Oura API returns no data for today (not yet synced) or fails, store null for use in step 6. The entire wearable enrichment block (steps 4 and 6) is wrapped in a single try/catch; any error is logged to Sentry and the check-in proceeds without wearable context.
+4. If user has an active wearable connection: check whether a `wearable_daily_metrics` row already exists for today within the freshness threshold (`wearable_refetch_threshold_minutes` from prompt config `additional_params`, default 120 minutes). If a fresh row exists, use its stored metrics and skip the live fetch. Otherwise, call the Oura API and upsert the result. If the API returns no data or fails, store null for use in step 6. The entire wearable enrichment block (steps 4 and 6) is wrapped in a single try/catch; any error is logged to Sentry and the check-in proceeds without wearable context.
 5. Fetch active prompt config (latest by `created_at`)
 6. If user has an active wearable connection: compute 90-day baseline from stored rows using `computeBaseline`, then call `formatLLMContext` with the baseline and `wearable_thresholds` from the prompt config's `additional_params`. Append the formatted context to the LLM user message. If today's metrics were unavailable (null from step 4), pass fallback context (baseline only). See `docs/specs/wearable-integration.md` for full fallback behavior.
 7. Fetch rolling history (last 14 check-ins) for LLM context
