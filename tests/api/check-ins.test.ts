@@ -564,6 +564,101 @@ describe('POST /api/check-ins', () => {
       expect(vi.mocked(formatLLMContext)).not.toHaveBeenCalled()
       expect(vi.mocked(generateRecommendation)).toHaveBeenCalledOnce()
     })
+
+    describe('wearable freshness check', () => {
+      async function seedFreshMetricRow(userId: string, connectionId: string, ageMinutes: number): Promise<void> {
+        const createdAt = new Date(Date.now() - ageMinutes * 60 * 1000)
+        await getTestClient().wearableDailyMetric.create({
+          data: {
+            userId,
+            connectionId,
+            provider: 'oura',
+            metricDate: new Date(TODAY),
+            rawData: {},
+            readinessScore: 85,
+            hrvAvg: 62,
+            createdAt,
+          },
+        })
+      }
+
+      test('row exists within threshold: fetchAndStoreTodayMetrics is not called, stored row is passed to formatLLMContext, computeBaseline still runs', async () => {
+        const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+        const conn = await getTestClient().wearableConnection.findFirstOrThrow({ where: { userId: user.id } })
+        await seedFreshMetricRow(user.id, conn.id, 10)
+
+        const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+          'X-Device-ID': DEVICE_ID,
+        })
+        expect(response.status).toBe(201)
+        expect(vi.mocked(fetchAndStoreTodayMetrics)).not.toHaveBeenCalled()
+        expect(vi.mocked(computeBaseline)).toHaveBeenCalledOnce()
+        expect(vi.mocked(formatLLMContext)).toHaveBeenCalledOnce()
+        expect(vi.mocked(formatLLMContext)).toHaveBeenCalledWith(
+          expect.objectContaining({ readinessScore: 85, hrvAvg: 62 }),
+          expect.anything(),
+          expect.anything(),
+        )
+      })
+
+      test('row exists beyond threshold: fetchAndStoreTodayMetrics is called', async () => {
+        const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+        const conn = await getTestClient().wearableConnection.findFirstOrThrow({ where: { userId: user.id } })
+        await seedFreshMetricRow(user.id, conn.id, 130)
+
+        const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+          'X-Device-ID': DEVICE_ID,
+        })
+        expect(response.status).toBe(201)
+        expect(vi.mocked(fetchAndStoreTodayMetrics)).toHaveBeenCalledOnce()
+      })
+
+      test('no row exists: fetchAndStoreTodayMetrics is called', async () => {
+        const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+          'X-Device-ID': DEVICE_ID,
+        })
+        expect(response.status).toBe(201)
+        expect(vi.mocked(fetchAndStoreTodayMetrics)).toHaveBeenCalledOnce()
+      })
+
+      test('wearable_refetch_threshold_minutes absent from additional_params: falls back to 120 minute default', async () => {
+        await getTestClient().promptConfig.create({
+          data: {
+            version: 'test-no-threshold',
+            systemPrompt: 'Test prompt',
+            temperature: 0.7,
+            maxTokens: 1000,
+            additionalParams: { wearable_thresholds: {} },
+          },
+        })
+        const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+        const conn = await getTestClient().wearableConnection.findFirstOrThrow({ where: { userId: user.id } })
+        await seedFreshMetricRow(user.id, conn.id, 10)
+
+        const response = await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, {
+          'X-Device-ID': DEVICE_ID,
+        })
+        expect(response.status).toBe(201)
+        expect(vi.mocked(fetchAndStoreTodayMetrics)).not.toHaveBeenCalled()
+      })
+
+      test('oura_freshness_check log event emitted with rowFound and withinThreshold', async () => {
+        const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })
+        const conn = await getTestClient().wearableConnection.findFirstOrThrow({ where: { userId: user.id } })
+        await seedFreshMetricRow(user.id, conn.id, 10)
+
+        await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+        const events = loggedEvents(consoleLogSpy)
+        const freshnessEvent = events.find((e) => e.event === 'oura_freshness_check')
+        consoleLogSpy.mockRestore()
+
+        expect(freshnessEvent).toBeDefined()
+        expect(freshnessEvent?.rowFound).toBe(true)
+        expect(freshnessEvent?.withinThreshold).toBe(true)
+      })
+    })
   })
 })
 
