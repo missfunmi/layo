@@ -74,50 +74,41 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-const PLANNED_WORKOUT_TRUNCATE_LEN = 40
+const EXPANDABLE_TRUNCATE_LEN = 40
 
-function PlannedWorkoutRow({ value }: { value: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const isTruncatable = value.length > PLANNED_WORKOUT_TRUNCATE_LEN
-
-  if (!isTruncatable) {
-    return (
-      <div className="flex justify-between items-baseline font-sans text-[12px] text-[#888780] py-1 border-b border-[#F1EFE8] last:border-b-0">
-        <span>Planned workout</span>
-        <span
-          data-testid="planned-workout-value"
-          className="font-medium text-[#2C2C2A] text-right max-w-[58%] overflow-hidden text-ellipsis whitespace-nowrap"
-        >
-          {value}
-        </span>
-      </div>
-    )
-  }
+function ExpandableRow({
+  label,
+  value,
+  expanded,
+  testId,
+}: {
+  label: string
+  value: string
+  expanded: boolean
+  testId?: string
+}) {
+  const isTruncatable = value.length > EXPANDABLE_TRUNCATE_LEN
 
   return (
-    <div
-      className={`flex font-sans text-[12px] text-[#888780] py-1 border-b border-[#F1EFE8] last:border-b-0 ${
-        expanded ? 'flex-col items-start gap-1' : 'justify-between items-baseline'
-      }`}
-    >
-      <span>Planned workout</span>
-      <button
-        type="button"
-        data-testid="planned-workout-value"
-        aria-label={expanded ? 'Collapse planned workout' : 'Expand planned workout'}
-        onClick={() => setExpanded((e) => !e)}
-        className={`font-sans text-[12px] font-medium text-[#2C2C2A] bg-transparent border-0 p-0 cursor-pointer ${
-          expanded ? 'text-left whitespace-normal w-full' : 'text-right max-w-[58%] overflow-hidden text-ellipsis whitespace-nowrap'
+    <div className="flex justify-between items-start font-sans text-[12px] text-[#888780] py-1 border-b border-[#F1EFE8] last:border-b-0">
+      <span>{label}</span>
+      <span
+        data-testid={testId}
+        className={`font-medium text-[#2C2C2A] text-right max-w-[58%] ${
+          expanded
+            ? 'whitespace-normal'
+            : 'overflow-hidden text-ellipsis whitespace-nowrap'
         }`}
       >
-        {expanded ? value : truncate(value, PLANNED_WORKOUT_TRUNCATE_LEN)}
-      </button>
+        {expanded ? value : isTruncatable ? truncate(value, EXPANDABLE_TRUNCATE_LEN) : value}
+      </span>
     </div>
   )
 }
 
 export function RecommendationView({ recommendation, checkIn, onRedo, isError, onRetry }: RecommendationViewProps) {
   const [showRedoModal, setShowRedoModal] = useState(false)
+  const [cardExpanded, setCardExpanded] = useState(false)
 
   if (isError) {
     return (
@@ -179,7 +170,20 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
           {rationale}
         </p>
 
-        <div className="bg-white border border-[#D3D1C7] rounded-[16px] px-4 py-[14px] mb-auto">
+        <div
+          data-testid="check-in-card"
+          role="button"
+          tabIndex={0}
+          aria-expanded={cardExpanded}
+          onClick={() => setCardExpanded((prev) => !prev)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setCardExpanded((prev) => !prev)
+            }
+          }}
+          className="bg-white border border-[#D3D1C7] rounded-[16px] px-4 py-[14px] mb-auto cursor-pointer"
+        >
           <div className="font-sans text-[10px] font-medium uppercase tracking-[0.08em] text-[#B4B2A9] mb-[10px]">
             Today&apos;s check-in
           </div>
@@ -188,7 +192,12 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
           {safeCheckIn.cycleDay != null && (
             <SummaryRow label="Cycle day" value={String(safeCheckIn.cycleDay)} />
           )}
-          <PlannedWorkoutRow value={safeCheckIn.todaysPlannedWorkout} />
+          <ExpandableRow
+            label="Planned workout"
+            value={safeCheckIn.todaysPlannedWorkout}
+            expanded={cardExpanded}
+            testId="planned-workout-value"
+          />
           {safeCheckIn.yesterdayWorkoutType != null && (
             <SummaryRow
               label="Yesterday"
@@ -196,7 +205,12 @@ export function RecommendationView({ recommendation, checkIn, onRedo, isError, o
             />
           )}
           {safeCheckIn.stressors != null && (
-            <SummaryRow label="Stressors" value={safeCheckIn.stressors} />
+            <ExpandableRow
+              label="Stressors"
+              value={safeCheckIn.stressors}
+              expanded={cardExpanded}
+              testId="stressors-value"
+            />
           )}
         </div>
 
