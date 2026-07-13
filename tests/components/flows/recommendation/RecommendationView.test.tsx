@@ -191,7 +191,7 @@ describe('RecommendationView — check-in summary card', () => {
     expect(screen.queryByText(longWorkout)).not.toBeInTheDocument()
   })
 
-  test('planned workout value renders as a button when text is truncated', () => {
+  test('planned workout value is not a button (card-level tap handles expand)', () => {
     const longWorkout = 'A very long workout description that exceeds forty characters'
     render(
       <RecommendationView
@@ -199,20 +199,7 @@ describe('RecommendationView — check-in summary card', () => {
         checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
       />
     )
-    const toggle = screen.getByTestId('planned-workout-value')
-    expect(toggle.tagName).toBe('BUTTON')
-  })
-
-  test('planned workout value renders as plain text, not a button, when it fits without truncation', () => {
-    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
-    const value = screen.getByTestId('planned-workout-value')
-    expect(value.tagName).not.toBe('BUTTON')
-  })
-
-  test('tapping a non-truncated planned workout value does nothing (no button to click)', () => {
-    render(<RecommendationView recommendation={AS_WRITTEN_REC} checkIn={BASE_CHECK_IN} />)
-    fireEvent.click(screen.getByTestId('planned-workout-value'))
-    expect(screen.getByText('10mi tempo run')).toBeInTheDocument()
+    expect(screen.getByTestId('planned-workout-value').tagName).not.toBe('BUTTON')
   })
 
   test('planned workout row has no bottom border on the last row (last:border-b-0)', () => {
@@ -220,18 +207,6 @@ describe('RecommendationView — check-in summary card', () => {
     const value = screen.getByTestId('planned-workout-value')
     const row = value.closest('div')
     expect(row).toHaveClass('last:border-b-0')
-  })
-
-  test('planned workout button spans full width when expanded', () => {
-    const longWorkout = 'A very long workout description that exceeds forty characters'
-    render(
-      <RecommendationView
-        recommendation={AS_WRITTEN_REC}
-        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: longWorkout }}
-      />
-    )
-    fireEvent.click(screen.getByTestId('planned-workout-value'))
-    expect(screen.getByTestId('planned-workout-value')).toHaveClass('w-full')
   })
 
   test('shows yesterday row with "Planned workout" when type is planned', () => {
@@ -296,6 +271,91 @@ describe('RecommendationView — check-in summary card', () => {
       />
     )
     expect(screen.queryByText('Stressors')).not.toBeInTheDocument()
+  })
+})
+
+// ─── Card-level expand / collapse ────────────────────────────────────────────
+
+describe('RecommendationView — card-level expand/collapse', () => {
+  const LONG_WORKOUT = 'A very long workout description that exceeds forty characters'
+  const LONG_STRESSORS = 'A very long stressor description that exceeds forty characters'
+
+  test('tapping anywhere on the check-in card expands the planned workout text', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: LONG_WORKOUT }}
+      />
+    )
+    fireEvent.click(screen.getByTestId('check-in-card'))
+    expect(screen.getByTestId('planned-workout-value')).toHaveTextContent(LONG_WORKOUT)
+  })
+
+  test('tapping the check-in card again collapses the planned workout text', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: LONG_WORKOUT }}
+      />
+    )
+    const card = screen.getByTestId('check-in-card')
+    fireEvent.click(card)
+    fireEvent.click(card)
+    expect(screen.getByTestId('planned-workout-value')).toHaveTextContent(
+      'A very long workout description that exc...'
+    )
+  })
+
+  test('stressors text is truncated at 40 chars with ellipsis when the card is collapsed', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, stressors: LONG_STRESSORS }}
+      />
+    )
+    expect(screen.getByTestId('stressors-value')).toHaveTextContent(
+      'A very long stressor description that ex...'
+    )
+  })
+
+  test('tapping the check-in card expands stressors to show full text', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, stressors: LONG_STRESSORS }}
+      />
+    )
+    fireEvent.click(screen.getByTestId('check-in-card'))
+    expect(screen.getByTestId('stressors-value')).toHaveTextContent(LONG_STRESSORS)
+  })
+
+  test('tapping the check-in card again collapses stressors back to truncated text', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, stressors: LONG_STRESSORS }}
+      />
+    )
+    const card = screen.getByTestId('check-in-card')
+    fireEvent.click(card)
+    fireEvent.click(card)
+    expect(screen.getByTestId('stressors-value')).toHaveTextContent(
+      'A very long stressor description that ex...'
+    )
+  })
+
+  test('expanded planned workout text stays on the right side of its label', () => {
+    render(
+      <RecommendationView
+        recommendation={AS_WRITTEN_REC}
+        checkIn={{ ...BASE_CHECK_IN, todaysPlannedWorkout: LONG_WORKOUT }}
+      />
+    )
+    fireEvent.click(screen.getByTestId('check-in-card'))
+    const valueEl = screen.getByTestId('planned-workout-value')
+    const row = valueEl.closest('div')
+    expect(row).not.toHaveClass('flex-col')
+    expect(valueEl).toHaveClass('text-right')
   })
 })
 
