@@ -138,7 +138,8 @@ async function main() {
       console.log(`Processing user ${connection.userId}...`)
       try {
         const { updated, skipped } = await backfillConnection(prisma, oura, connection, overrideRange)
-        console.log(`  updated ${updated} row(s), skipped ${skipped} date(s) with no existing row`)
+        const updatedMsg = DRY_RUN ? `[dry-run] would update ${updated} row(s)` : `updated ${updated} row(s)`
+        console.log(`  ${updatedMsg}, skipped ${skipped} date(s) with no existing row`)
         totalUpdated += updated
         totalSkipped += skipped
       } catch (err) {
@@ -148,7 +149,11 @@ async function main() {
     }
 
     console.log('---')
-    console.log(`Done. ${totalUpdated} row(s) updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    if (DRY_RUN) {
+      console.log(`Done (dry run, no writes). ${totalUpdated} row(s) would be updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    } else {
+      console.log(`Done. ${totalUpdated} row(s) updated, ${totalSkipped} skipped, ${totalErrors} connection(s) errored.`)
+    }
   } finally {
     await prisma.$disconnect()
   }
