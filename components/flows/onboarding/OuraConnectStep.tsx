@@ -25,21 +25,9 @@ export function OuraConnectStep({ onBack, onClose, onContinue, active, total }: 
     const wearable = params.get('wearable')
     if (wearable === 'connected') {
       setConnectionState('connected')
-      return
-    }
-    if (wearable === 'error') {
+    } else if (wearable === 'error') {
       setConnectionState('error')
-      return
     }
-    const deviceId = getOrCreateDeviceId()
-    fetch('/api/wearables', { headers: { 'X-Device-ID': deviceId } })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.connections?.some((c: { status: string }) => c.status === 'active')) {
-          setConnectionState('connected')
-        }
-      })
-      .catch(() => {})
   }, [])
 
   async function handleConnect() {

@@ -80,6 +80,14 @@ describe('OuraConnectStep — default state', () => {
     expect(flexContainer.children[4].className).toContain('w-[18px]')
     expect(flexContainer.children[0].className).not.toContain('w-[18px]')
   })
+
+  test('does not call GET /api/wearables on mount', () => {
+    render(<OuraConnectStep {...makeProps()} />)
+    const wearablesCalls = vi.mocked(global.fetch).mock.calls.filter(
+      ([url]) => typeof url === 'string' && url.includes('/api/wearables')
+    )
+    expect(wearablesCalls).toHaveLength(0)
+  })
 })
 
 // ─── Connected state (via URL param) ─────────────────────────────────────────
