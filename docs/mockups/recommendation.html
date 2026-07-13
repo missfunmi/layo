@@ -120,6 +120,7 @@
         border-radius: 16px;
         padding: 14px 16px;
         margin-bottom: auto;
+        cursor: pointer;
       }
       .summary-label {
         font-family: "Inter", sans-serif;
@@ -153,13 +154,9 @@
         text-overflow: ellipsis;
       }
       .summary-row.expanded {
-        flex-direction: column;
         align-items: flex-start;
-        gap: 4px;
       }
       .summary-val.expanded {
-        text-align: left;
-        max-width: 100%;
         white-space: normal;
         overflow: visible;
         text-overflow: unset;
@@ -350,9 +347,9 @@
         </div>
       </div>
 
-      <!-- As written, planned workout expanded -->
+      <!-- As written — card expanded (long planned workout) -->
       <div class="screen-col">
-        <div class="screen-name">As written, planned workout expanded</div>
+        <div class="screen-name">As written — card expanded</div>
         <div class="phone">
           <div class="ph">
             <div class="wm">láyo</div>
@@ -515,6 +512,72 @@
               <div class="summary-row">
                 <span>Stressors</span
                 ><span class="summary-val">Fighting a cold</span>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="redo-link">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+                Redo today's check-in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rest — card expanded (planned workout + stressors both expanded) -->
+      <div class="screen-col">
+        <div class="screen-name">Rest — card expanded</div>
+        <div class="phone">
+          <div class="ph">
+            <div class="wm">láyo</div>
+            <div class="dt">Thu Jun 25</div>
+          </div>
+          <div class="pb">
+            <div class="verdict-label" style="color: #993c1d">
+              Today's recommendation
+            </div>
+            <div class="verdict-heading">Take a rest day today.</div>
+            <div class="verdict-divider" style="background: #f0997b"></div>
+            <div class="rationale">
+              Poor sleep, a 2 on feel, and you mentioned you've been fighting a
+              cold since yesterday. You're on cycle day 2 as well, so your body
+              is already under load. One day off now is worth three lost later.
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Today's check-in</div>
+              <div class="summary-row">
+                <span>Sleep</span><span class="summary-val">2 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Feel</span><span class="summary-val">2 / 5</span>
+              </div>
+              <div class="summary-row">
+                <span>Cycle day</span><span class="summary-val">2</span>
+              </div>
+              <div class="summary-row expanded">
+                <span>Planned workout</span
+                ><span class="summary-val expanded"
+                  >Subthreshold run: 10' wu, 10x3' @ threshold pace w/ 90s jog
+                  recovery, 10' cd</span
+                >
+              </div>
+              <div class="summary-row expanded">
+                <span>Stressors</span
+                ><span class="summary-val expanded"
+                  >Fighting a cold, poor sleep all week, high work stress</span
+                >
               </div>
             </div>
             <div class="footer">
