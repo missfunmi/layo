@@ -125,6 +125,28 @@ describe('generateRecommendation', () => {
     expect(result.readinessScore).toBe(85)
   })
 
+  test('parses JSON when closing code fence is missing (truncated response)', async () => {
+    vi.mocked(anthropicProvider.complete).mockResolvedValue({
+      ...MOCK_RAW_RESPONSE,
+      content: `\`\`\`json\n${JSON.stringify(VALID_LLM_RESPONSE)}`,
+    })
+
+    const result = await generateRecommendation('Test user message', TEST_CTX)
+    expect(result.recommendationType).toBe('as_written')
+    expect(result.readinessScore).toBe(85)
+  })
+
+  test('parses JSON when opening fence has leading newlines and closing fence is missing', async () => {
+    vi.mocked(anthropicProvider.complete).mockResolvedValue({
+      ...MOCK_RAW_RESPONSE,
+      content: `\n\n\`\`\`json\n${JSON.stringify(VALID_LLM_RESPONSE)}`,
+    })
+
+    const result = await generateRecommendation('Test user message', TEST_CTX)
+    expect(result.recommendationType).toBe('as_written')
+    expect(result.readinessScore).toBe(85)
+  })
+
   test('throws when modification_detail is null but recommendation_type is modify', async () => {
     vi.mocked(anthropicProvider.complete).mockResolvedValue({
       ...MOCK_RAW_RESPONSE,
