@@ -53,24 +53,21 @@ describe('anthropic provider complete()', () => {
     expect(callArgs.top_p).toBe(0.9)
   })
 
-  test('includes assistant prefill of { in the messages array', async () => {
+  test('sends only the user message in the messages array (no assistant prefill)', async () => {
     await complete('System prompt.', 'User message.', BASE_PARAMS)
 
     const callArgs = mockMessagesCreate.mock.calls[0][0]
-    expect(callArgs.messages).toEqual([
-      { role: 'user', content: 'User message.' },
-      { role: 'assistant', content: '{' },
-    ])
+    expect(callArgs.messages).toEqual([{ role: 'user', content: 'User message.' }])
   })
 
-  test('returns content with the prefill brace prepended when API omits it', async () => {
+  test('returns content exactly as returned by the API without modification', async () => {
     mockMessagesCreate.mockResolvedValue({
-      content: [{ type: 'text', text: '"recommendation_type": "as_written"}' }],
+      content: [{ type: 'text', text: '{"recommendation_type": "as_written"}' }],
       usage: { input_tokens: 100, output_tokens: 50 },
     })
 
     const result = await complete('System prompt.', 'User message.', BASE_PARAMS)
-    expect(result.content.startsWith('{')).toBe(true)
+    expect(result.content).toBe('{"recommendation_type": "as_written"}')
   })
 
   test('ignores unknown keys even when mixed with recognized params', async () => {

@@ -30,18 +30,13 @@ export async function complete(
     max_tokens: params.maxTokens,
     temperature: params.temperature,
     system: systemPrompt,
-    messages: [
-      { role: 'user', content: userMessage },
-      { role: 'assistant', content: '{' },
-    ],
+    messages: [{ role: 'user', content: userMessage }],
     ...allowedAdditional,
   })
 
   const latencyMs = Math.round(performance.now() - start)
   const block = response.content?.[0]
-  const rawText = block?.type === 'text' ? block.text : ''
-  // Prepend the prefill brace; the API returns only the continuation after it
-  const content = '{' + rawText
+  const content = block?.type === 'text' ? block.text : ''
 
   return {
     content,
