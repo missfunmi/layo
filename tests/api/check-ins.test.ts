@@ -642,6 +642,19 @@ describe('POST /api/check-ins', () => {
         expect(vi.mocked(fetchAndStoreTodayMetrics)).not.toHaveBeenCalled()
       })
 
+      test('baseline_computed log event includes latencyMs', async () => {
+        const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+        await makeRequest(handler, 'POST', '/api/check-ins', BASE_BODY, { 'X-Device-ID': DEVICE_ID })
+
+        const events = loggedEvents(consoleLogSpy)
+        consoleLogSpy.mockRestore()
+
+        const baselineEvent = events.find((e) => e.event === 'baseline_computed')
+        expect(baselineEvent).toBeDefined()
+        expect(typeof baselineEvent?.latencyMs).toBe('number')
+      })
+
       test('oura_freshness_check log event emitted with rowFound and withinThreshold', async () => {
         const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
         const user = await getTestClient().user.findFirstOrThrow({ where: { deviceId: DEVICE_ID } })

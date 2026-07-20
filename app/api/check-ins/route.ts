@@ -194,20 +194,27 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const priorCheckIns = await prisma.checkIn.findMany({
-    where: { userId: user.id, checkInDate: { lt: new Date(checkInDate) }, status: 'active' },
-    orderBy: { checkInDate: 'desc' },
-    take: 14,
-    select: {
-      checkInDate: true,
-      periodStartedToday: true,
-      sleepSatisfaction: true,
-      feelScore: true,
-      todaysPlannedWorkout: true,
-      yesterdayWorkoutType: true,
-      stressors: true,
-    },
-  })
+  const dataFetchStart = performance.now()
+  const [priorCheckIns, activeConnection] = await Promise.all([
+    prisma.checkIn.findMany({
+      where: { userId: user.id, checkInDate: { lt: new Date(checkInDate) }, status: 'active' },
+      orderBy: { checkInDate: 'desc' },
+      take: 14,
+      select: {
+        checkInDate: true,
+        periodStartedToday: true,
+        sleepSatisfaction: true,
+        feelScore: true,
+        todaysPlannedWorkout: true,
+        yesterdayWorkoutType: true,
+        stressors: true,
+      },
+    }),
+    prisma.wearableConnection.findFirst({
+      where: { userId: user.id, status: 'active' },
+    }),
+  ])
+  logCtx(ctx, { event: 'data_fetch', latencyMs: Math.round(performance.now() - dataFetchStart) })
 
   const cycleDay = calculateCycleDay(
     (periodStartedToday as boolean | null) ?? null,
@@ -220,13 +227,16 @@ export async function POST(request: NextRequest) {
   logCtx(ctx, { event: 'cycle_day_calculated', cycleDay })
 
   let wearableContext: string | null = null
-  const activeConnection = await prisma.wearableConnection.findFirst({
-    where: { userId: user.id, status: 'active' },
-  })
   if (activeConnection) {
     const ouraStart = performance.now()
     try {
-      const promptConfig = await prisma.promptConfig.findFirst({ orderBy: { createdAt: 'desc' } })
+      const metricDate = new Date(checkInDate)
+      const [promptConfig, existingMetric] = await Promise.all([
+        prisma.promptConfig.findFirst({ orderBy: { createdAt: 'desc' } }),
+        prisma.wearableDailyMetric.findUnique({
+          where: { userId_provider_metricDate: { userId: user.id, provider: activeConnection.provider, metricDate } },
+        }),
+      ])
       const additionalParams = (promptConfig?.additionalParams as Record<string, unknown> | null) ?? {}
       const thresholds = (additionalParams.wearable_thresholds ?? {}) as WearableThresholds
       const refetchThresholdMs =
@@ -234,41 +244,53 @@ export async function POST(request: NextRequest) {
           ? additionalParams.wearable_refetch_threshold_minutes * 60 * 1000
           : 120 * 60 * 1000
 
-      const metricDate = new Date(checkInDate)
-      const existingMetric = await prisma.wearableDailyMetric.findUnique({
-        where: { userId_provider_metricDate: { userId: user.id, provider: activeConnection.provider, metricDate } },
-      })
       const rowFound = existingMetric !== null
       const withinThreshold = rowFound && (Date.now() - existingMetric!.createdAt.getTime()) < refetchThresholdMs
       logCtx(ctx, { event: 'oura_freshness_check', rowFound, withinThreshold })
 
       let todayMetrics: NormalizedDailyMetric | null
       if (withinThreshold) {
+        const fetchStart = performance.now()
         todayMetrics = extractMetricsFromRow(existingMetric!)
+        const baselineStart = performance.now()
+        const baseline = await computeBaseline(user.id, activeConnection.provider)
+        const baselineValues = Object.values(baseline)
         logCtx(ctx, {
           event: 'oura_fetch',
           fetchSkipped: true,
           dataAvailable: true,
-          latencyMs: Math.round(performance.now() - ouraStart),
+          latencyMs: Math.round(performance.now() - fetchStart),
         })
+        logCtx(ctx, {
+          event: 'baseline_computed',
+          metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
+          metricsOmitted: baselineValues.filter((v) => v === undefined).length,
+          latencyMs: Math.round(performance.now() - baselineStart),
+        })
+        wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
       } else {
-        todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
+        const fetchStart = performance.now()
+        const baselineStart = performance.now()
+        const [fetchedMetrics, baseline] = await Promise.all([
+          fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate),
+          computeBaseline(user.id, activeConnection.provider),
+        ])
+        todayMetrics = fetchedMetrics
         logCtx(ctx, {
           event: 'oura_fetch',
           fetchSkipped: false,
           dataAvailable: todayMetrics !== null,
-          latencyMs: Math.round(performance.now() - ouraStart),
+          latencyMs: Math.round(performance.now() - fetchStart),
         })
+        const baselineValues = Object.values(baseline)
+        logCtx(ctx, {
+          event: 'baseline_computed',
+          metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
+          metricsOmitted: baselineValues.filter((v) => v === undefined).length,
+          latencyMs: Math.round(performance.now() - baselineStart),
+        })
+        wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
       }
-
-      const baseline = await computeBaseline(user.id, activeConnection.provider)
-      const baselineValues = Object.values(baseline)
-      logCtx(ctx, {
-        event: 'baseline_computed',
-        metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
-        metricsOmitted: baselineValues.filter((v) => v === undefined).length,
-      })
-      wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
     } catch (err) {
       Sentry.captureException(err)
       logErrorCtx(ctx, { event: 'wearable_enrichment_error' })
