@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
       if (withinThreshold) {
         const fetchStart = performance.now()
         todayMetrics = extractMetricsFromRow(existingMetric!)
+        const fetchLatencyMs = Math.round(performance.now() - fetchStart)
         const baselineStart = performance.now()
         const baseline = await computeBaseline(user.id, activeConnection.provider)
         const baselineValues = Object.values(baseline)
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest) {
           event: 'oura_fetch',
           fetchSkipped: true,
           dataAvailable: true,
-          latencyMs: Math.round(performance.now() - fetchStart),
+          latencyMs: fetchLatencyMs,
         })
         logCtx(ctx, {
           event: 'baseline_computed',
