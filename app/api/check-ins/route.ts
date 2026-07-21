@@ -228,7 +228,6 @@ export async function POST(request: NextRequest) {
 
   let wearableContext: string | null = null
   if (activeConnection) {
-    const ouraStart = performance.now()
     try {
       const metricDate = new Date(checkInDate)
       const [promptConfig, existingMetric] = await Promise.all([
@@ -250,48 +249,33 @@ export async function POST(request: NextRequest) {
 
       let todayMetrics: NormalizedDailyMetric | null
       if (withinThreshold) {
-        const fetchStart = performance.now()
         todayMetrics = extractMetricsFromRow(existingMetric!)
-        const fetchLatencyMs = Math.round(performance.now() - fetchStart)
-        const baselineStart = performance.now()
-        const baseline = await computeBaseline(user.id, activeConnection.provider)
-        const baselineValues = Object.values(baseline)
         logCtx(ctx, {
           event: 'oura_fetch',
           fetchSkipped: true,
           dataAvailable: true,
-          latencyMs: fetchLatencyMs,
+          latencyMs: 0,
         })
-        logCtx(ctx, {
-          event: 'baseline_computed',
-          metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
-          metricsOmitted: baselineValues.filter((v) => v === undefined).length,
-          latencyMs: Math.round(performance.now() - baselineStart),
-        })
-        wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
       } else {
         const fetchStart = performance.now()
-        const baselineStart = performance.now()
-        const [fetchedMetrics, baseline] = await Promise.all([
-          fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate),
-          computeBaseline(user.id, activeConnection.provider),
-        ])
-        todayMetrics = fetchedMetrics
+        todayMetrics = await fetchAndStoreTodayMetrics(user.id, activeConnection.provider, checkInDate)
         logCtx(ctx, {
           event: 'oura_fetch',
           fetchSkipped: false,
           dataAvailable: todayMetrics !== null,
           latencyMs: Math.round(performance.now() - fetchStart),
         })
-        const baselineValues = Object.values(baseline)
-        logCtx(ctx, {
-          event: 'baseline_computed',
-          metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
-          metricsOmitted: baselineValues.filter((v) => v === undefined).length,
-          latencyMs: Math.round(performance.now() - baselineStart),
-        })
-        wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
       }
+      const baselineStart = performance.now()
+      const baseline = await computeBaseline(user.id, activeConnection.provider)
+      const baselineValues = Object.values(baseline)
+      logCtx(ctx, {
+        event: 'baseline_computed',
+        metricsWithBaseline: baselineValues.filter((v) => v !== undefined).length,
+        metricsOmitted: baselineValues.filter((v) => v === undefined).length,
+        latencyMs: Math.round(performance.now() - baselineStart),
+      })
+      wearableContext = formatLLMContext(todayMetrics, baseline, thresholds)
     } catch (err) {
       Sentry.captureException(err)
       logErrorCtx(ctx, { event: 'wearable_enrichment_error' })
