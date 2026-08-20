@@ -15,14 +15,8 @@ export function calculateCycleDay(
   if (!anchor) return null
 
   const msPerDay = 1000 * 60 * 60 * 24
-  const anchorDate = anchor.periodStartedYesterday === true
-    ? (() => {
-        const d = new Date(anchor.checkInDate.slice(0, 10))
-        d.setUTCDate(d.getUTCDate() - 1)
-        return d.toISOString().slice(0, 10)
-      })()
-    : anchor.checkInDate.slice(0, 10)
-  const anchorMs = new Date(anchorDate).getTime()
+  const anchorMs = new Date(anchor.checkInDate.slice(0, 10)).getTime()
+    - (anchor.periodStartedYesterday === true ? msPerDay : 0)
   const checkInMs = new Date(checkInDate.slice(0, 10)).getTime()
 
   return Math.round((checkInMs - anchorMs) / msPerDay) + 1

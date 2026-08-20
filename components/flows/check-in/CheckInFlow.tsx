@@ -46,6 +46,20 @@ const WORKOUT_TYPE_MAP: Record<string, string> = {
   something_else: 'other',
 }
 
+const PERIOD_OPTIONS = ['Yesterday', 'Today', 'Not yet']
+
+const PERIOD_OPTION_TO_KEY: Record<string, 'yesterday' | 'today' | 'not_yet'> = {
+  Yesterday: 'yesterday',
+  Today: 'today',
+  'Not yet': 'not_yet',
+}
+
+const PERIOD_KEY_TO_OPTION: Record<string, string> = {
+  yesterday: 'Yesterday',
+  today: 'Today',
+  not_yet: 'Not yet',
+}
+
 function getGreeting(hour: number): string {
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
@@ -363,17 +377,6 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
 
   if (step === 'cycle_tracking') {
     const isCycleValid = periodStartedOption !== null
-    const PERIOD_OPTIONS = ['Yesterday', 'Today', 'Not yet']
-    const optionToKey: Record<string, 'yesterday' | 'today' | 'not_yet'> = {
-      Yesterday: 'yesterday',
-      Today: 'today',
-      'Not yet': 'not_yet',
-    }
-    const keyToOption: Record<string, string> = {
-      yesterday: 'Yesterday',
-      today: 'Today',
-      not_yet: 'Not yet',
-    }
     return (
       <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('sleep_feel')} active={4} onClose={onClose} headerDate={headerDate} />
@@ -387,8 +390,8 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
           <div className="mb-6">
             <SingleSelect
               options={PERIOD_OPTIONS}
-              selected={periodStartedOption ? keyToOption[periodStartedOption] : null}
-              onChange={(val) => setPeriodStartedOption(optionToKey[val])}
+              selected={periodStartedOption ? PERIOD_KEY_TO_OPTION[periodStartedOption] : null}
+              onChange={(val) => setPeriodStartedOption(PERIOD_OPTION_TO_KEY[val])}
             />
           </div>
           <Button onClick={() => setStep('stressors')} disabled={!isCycleValid}>
