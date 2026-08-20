@@ -140,12 +140,12 @@ describe('CheckInFlow smoke — cycle_tracking: conditional rendering', () => {
 
   test('cycle tracking screen is shown when hormonalLifeStage includes "menstruating"', () => {
     navigateToSleepFeelContinue(true)
-    expect(screen.getByText(/did your period start today/i)).toBeInTheDocument()
+    expect(screen.getByText(/did your period start recently/i)).toBeInTheDocument()
   })
 
   test('cycle tracking screen is not shown when hormonalLifeStage does not include "menstruating"', () => {
     navigateToSleepFeelContinue(false)
-    expect(screen.queryByText(/did your period start today/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/did your period start recently/i)).not.toBeInTheDocument()
   })
 })
 
@@ -221,7 +221,7 @@ describe('CheckInFlow smoke — question screens: CloseButton and BackButton pre
     fireEvent.click(scaleButtons[7])
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     if (step === 4) return
-    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^today$/i }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   }
 

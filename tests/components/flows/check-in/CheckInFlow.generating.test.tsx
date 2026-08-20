@@ -42,8 +42,8 @@ beforeEach(() => {
   global.fetch = vi.fn()
 })
 
-function navigateToGenerating(opts: { menstruating?: boolean } = {}) {
-  const { menstruating = false } = opts
+function navigateToGenerating(opts: { menstruating?: boolean; periodOption?: 'Yesterday' | 'Today' | 'Not yet' } = {}) {
+  const { menstruating = false, periodOption = 'Today' } = opts
   const hormonalLifeStage = menstruating ? ['menstruating'] : ['post_menopausal']
 
   render(
@@ -67,7 +67,7 @@ function navigateToGenerating(opts: { menstruating?: boolean } = {}) {
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 
   if (menstruating) {
-    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${periodOption}$`, 'i') }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   }
 
@@ -192,6 +192,26 @@ describe('CheckInFlow — generating screen: API submission', () => {
     const [, opts] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit]
     const body = JSON.parse(opts.body as string)
     expect(typeof body.periodStartedToday).toBe('boolean')
+  })
+
+  test('selecting Yesterday sends periodStartedToday: false and periodStartedYesterday: true', async () => {
+    vi.mocked(global.fetch).mockResolvedValue(new Response('{}', { status: 201 }))
+    navigateToGenerating({ menstruating: true, periodOption: 'Yesterday' })
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled())
+    const [, opts] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(opts.body as string)
+    expect(body.periodStartedToday).toBe(false)
+    expect(body.periodStartedYesterday).toBe(true)
+  })
+
+  test('selecting Not yet sends periodStartedToday: false and omits periodStartedYesterday', async () => {
+    vi.mocked(global.fetch).mockResolvedValue(new Response('{}', { status: 201 }))
+    navigateToGenerating({ menstruating: true, periodOption: 'Not yet' })
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled())
+    const [, opts] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(opts.body as string)
+    expect(body.periodStartedToday).toBe(false)
+    expect(body.periodStartedYesterday).toBeUndefined()
   })
 
   test('omits periodStartedToday when user is not menstruating', async () => {

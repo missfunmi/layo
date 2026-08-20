@@ -585,7 +585,7 @@ function navigateToCycleTracking(previousCheckIn = PREV) {
 describe('CheckInFlow — step cycle_tracking: entry', () => {
   test('sleep_feel Continue navigates to cycle_tracking when hormonalLifeStage includes menstruating', () => {
     navigateToCycleTracking()
-    expect(screen.getByText(/did your period start today/i)).toBeInTheDocument()
+    expect(screen.getByText(/did your period start recently/i)).toBeInTheDocument()
   })
 
   test('sleep_feel Continue skips cycle_tracking when hormonalLifeStage does not include menstruating', () => {
@@ -600,7 +600,7 @@ describe('CheckInFlow — step cycle_tracking: entry', () => {
     fireEvent.click(scaleButtons[3])
     fireEvent.click(scaleButtons[7])
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(screen.queryByText(/did your period start today/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/did your period start recently/i)).not.toBeInTheDocument()
   })
 
   test('sleep_feel Continue skips cycle_tracking when hormonalLifeStage is not provided', () => {
@@ -609,14 +609,14 @@ describe('CheckInFlow — step cycle_tracking: entry', () => {
     fireEvent.click(scaleButtons[3])
     fireEvent.click(scaleButtons[7])
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(screen.queryByText(/did your period start today/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/did your period start recently/i)).not.toBeInTheDocument()
   })
 })
 
 describe('CheckInFlow — step cycle_tracking: layout', () => {
-  test('shows heading "Did your period start today?"', () => {
+  test('shows heading "Did your period start recently?"', () => {
     navigateToCycleTracking()
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/did your period start today\?/i)
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/did your period start recently\?/i)
   })
 
   test('shows subtext about cycle tracking', () => {
@@ -624,14 +624,19 @@ describe('CheckInFlow — step cycle_tracking: layout', () => {
     expect(screen.getByText(/láyo uses this to track where you are in your cycle/i)).toBeInTheDocument()
   })
 
-  test('shows "Yes" button', () => {
+  test('shows "Yesterday" button', () => {
     navigateToCycleTracking()
-    expect(screen.getByRole('button', { name: /^yes$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^yesterday$/i })).toBeInTheDocument()
   })
 
-  test('shows "No" button', () => {
+  test('shows "Today" button', () => {
     navigateToCycleTracking()
-    expect(screen.getByRole('button', { name: /^no$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^today$/i })).toBeInTheDocument()
+  })
+
+  test('shows "Not yet" button', () => {
+    navigateToCycleTracking()
+    expect(screen.getByRole('button', { name: /^not yet$/i })).toBeInTheDocument()
   })
 
   test('shows progress dots', () => {
@@ -661,15 +666,21 @@ describe('CheckInFlow — step cycle_tracking: Continue validation', () => {
     expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
   })
 
-  test('Continue is enabled after selecting Yes', () => {
+  test('Continue is enabled after selecting Yesterday', () => {
     navigateToCycleTracking()
-    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^yesterday$/i }))
     expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
   })
 
-  test('Continue is enabled after selecting No', () => {
+  test('Continue is enabled after selecting Today', () => {
     navigateToCycleTracking()
-    fireEvent.click(screen.getByRole('button', { name: /^no$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^today$/i }))
+    expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+  })
+
+  test('Continue is enabled after selecting Not yet', () => {
+    navigateToCycleTracking()
+    fireEvent.click(screen.getByRole('button', { name: /^not yet$/i }))
     expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
   })
 })
@@ -713,7 +724,7 @@ function navigateToStressors(previousCheckIn = PREV) {
   fireEvent.click(scaleButtons[3])
   fireEvent.click(scaleButtons[7])
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-  fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+  fireEvent.click(screen.getByRole('button', { name: /^today$/i }))
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 }
 
@@ -817,7 +828,7 @@ describe('CheckInFlow — step stressors: back navigation', () => {
   test('back button navigates to cycle_tracking when hormonalLifeStage includes menstruating', () => {
     navigateToStressors()
     fireEvent.click(screen.getByRole('button', { name: /go back/i }))
-    expect(screen.getByText(/did your period start today/i)).toBeInTheDocument()
+    expect(screen.getByText(/did your period start recently/i)).toBeInTheDocument()
   })
 
   test('back button navigates to sleep_feel when hormonalLifeStage does not include menstruating', () => {
@@ -849,7 +860,7 @@ describe('CheckInFlow — step stressors: back navigation', () => {
     fireEvent.click(scaleButtons[3])
     fireEvent.click(scaleButtons[7])
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^today$/i }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalledOnce()

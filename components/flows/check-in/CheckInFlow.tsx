@@ -8,7 +8,7 @@ import { ProgressDots } from '@/components/ui/ProgressDots'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { TextArea } from '@/components/ui/TextArea'
 import { ScaleInput } from '@/components/ui/ScaleInput'
-import { YesNoSelector } from '@/components/ui/YesNoSelector'
+import { SingleSelect } from '@/components/ui/SingleSelect'
 import { getOrCreateDeviceId, generateCorrelationId } from '@/lib/device'
 import { type RecommendationType } from '@/lib/recommendation'
 
@@ -44,6 +44,20 @@ const WORKOUT_TYPE_MAP: Record<string, string> = {
   planned: 'planned',
   suggested: 'suggested',
   something_else: 'other',
+}
+
+const PERIOD_OPTIONS = ['Yesterday', 'Today', 'Not yet']
+
+const PERIOD_OPTION_TO_KEY: Record<string, 'yesterday' | 'today' | 'not_yet'> = {
+  Yesterday: 'yesterday',
+  Today: 'today',
+  'Not yet': 'not_yet',
+}
+
+const PERIOD_KEY_TO_OPTION: Record<string, string> = {
+  yesterday: 'Yesterday',
+  today: 'Today',
+  not_yet: 'Not yet',
 }
 
 function getGreeting(hour: number): string {
@@ -104,7 +118,7 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   const [todayWorkout, setTodayWorkout] = useState('')
   const [sleepSatisfaction, setSleepSatisfaction] = useState<number | null>(null)
   const [feelScore, setFeelScore] = useState<number | null>(null)
-  const [periodStartedToday, setPeriodStartedToday] = useState<boolean | null>(null)
+  const [periodStartedOption, setPeriodStartedOption] = useState<'today' | 'yesterday' | 'not_yet' | null>(null)
   const [stressorsText, setStressorsText] = useState('')
   const [submissionError, setSubmissionError] = useState<SubmissionError>(null)
   const [generatingHeader, setGeneratingHeader] = useState(
@@ -134,8 +148,11 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
         if (yesterdayFeedback) {
           payload.yesterdayWorkoutFeedback = yesterdayFeedback
         }
-        if (hormonalLifeStage?.includes('menstruating')) {
-          payload.periodStartedToday = periodStartedToday
+        if (hormonalLifeStage?.includes('menstruating') && periodStartedOption !== null) {
+          payload.periodStartedToday = periodStartedOption === 'today'
+          if (periodStartedOption === 'yesterday') {
+            payload.periodStartedYesterday = true
+          }
         }
         if (stressorsText) {
           payload.stressors = stressorsText
@@ -359,19 +376,23 @@ export function CheckInFlow({ name, previousCheckIn, hormonalLifeStage, onClose,
   }
 
   if (step === 'cycle_tracking') {
-    const isCycleValid = periodStartedToday !== null
+    const isCycleValid = periodStartedOption !== null
     return (
       <div className="flex flex-col min-h-dvh bg-layo-bg">
         <StepHeader onBack={() => setStep('sleep_feel')} active={4} onClose={onClose} headerDate={headerDate} />
         <div className="flex flex-col flex-1 px-6 pb-7">
           <h2 className="font-display font-bold text-[#2C2C2A] text-[22px] leading-[1.25] mb-2">
-            Did your period start today?
+            Did your period start recently?
           </h2>
           <p className="font-sans text-[#888780] text-[14px] leading-[1.55] mb-5">
             Láyo uses this to track where you are in your cycle. It stays private.
           </p>
           <div className="mb-6">
-            <YesNoSelector value={periodStartedToday} onChange={setPeriodStartedToday} />
+            <SingleSelect
+              options={PERIOD_OPTIONS}
+              selected={periodStartedOption ? PERIOD_KEY_TO_OPTION[periodStartedOption] : null}
+              onChange={(val) => setPeriodStartedOption(PERIOD_OPTION_TO_KEY[val])}
+            />
           </div>
           <Button onClick={() => setStep('stressors')} disabled={!isCycleValid}>
             Continue
