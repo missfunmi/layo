@@ -67,7 +67,7 @@ function navigateToGenerating(opts: { menstruating?: boolean } = {}) {
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 
   if (menstruating) {
-    fireEvent.click(screen.getByRole('button', { name: /^yes$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^today$/i }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
   }
 

@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
     sleepSatisfaction,
     feelScore,
     periodStartedToday,
+    periodStartedYesterday,
     stressors,
   } = body
 
@@ -188,6 +189,10 @@ export async function POST(request: NextRequest) {
     return bad(ctx, 'periodStartedToday must be a boolean')
   }
 
+  if (periodStartedYesterday != null && typeof periodStartedYesterday !== 'boolean') {
+    return bad(ctx, 'periodStartedYesterday must be a boolean')
+  }
+
   if (stressors != null) {
     if (typeof stressors !== 'string' || stressors.length > 280) {
       return bad(ctx, 'stressors cannot exceed 280 characters')
@@ -203,6 +208,7 @@ export async function POST(request: NextRequest) {
       select: {
         checkInDate: true,
         periodStartedToday: true,
+        periodStartedYesterday: true,
         sleepSatisfaction: true,
         feelScore: true,
         todaysPlannedWorkout: true,
@@ -218,10 +224,12 @@ export async function POST(request: NextRequest) {
 
   const cycleDay = calculateCycleDay(
     (periodStartedToday as boolean | null) ?? null,
+    (periodStartedYesterday as boolean | null) ?? null,
     checkInDate,
     priorCheckIns.map((c) => ({
       checkInDate: c.checkInDate.toISOString().slice(0, 10),
       periodStartedToday: c.periodStartedToday,
+      periodStartedYesterday: c.periodStartedYesterday,
     }))
   )
   logCtx(ctx, { event: 'cycle_day_calculated', cycleDay })
@@ -358,6 +366,7 @@ export async function POST(request: NextRequest) {
         yesterdayWorkoutDescription: yesterdayWorkoutDescription as string | undefined ?? undefined,
         yesterdayWorkoutFeedback: yesterdayWorkoutFeedback as string | undefined ?? undefined,
         periodStartedToday: periodStartedToday as boolean | undefined ?? undefined,
+        periodStartedYesterday: periodStartedYesterday as boolean | undefined ?? undefined,
         cycleDay: cycleDay ?? undefined,
         stressors: stressors as string | undefined ?? undefined,
       },

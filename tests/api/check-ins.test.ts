@@ -410,6 +410,32 @@ describe('POST /api/check-ins', () => {
     expect(response.status).toBe(400)
   })
 
+  test('returns 400 when periodStartedYesterday is a non-boolean value', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedYesterday: 'yes' },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('periodStartedYesterday true: check-in saved with periodStartedYesterday=true and cycleDay=2', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedToday: false, periodStartedYesterday: true },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(201)
+
+    const checkIn = await getTestClient().checkIn.findFirstOrThrow()
+    expect(checkIn.periodStartedYesterday).toBe(true)
+    expect(checkIn.cycleDay).toBe(2)
+  })
+
   test('LLM throws before check-in is saved: returns 503 with checkInSaved false and no row in check_ins', async () => {
     vi.mocked(generateRecommendation).mockRejectedValue(new Error('LLM timeout'))
 
