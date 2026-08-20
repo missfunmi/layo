@@ -98,6 +98,15 @@ describe('calculateCycleDay', () => {
     expect(result).toBe(2)
   })
 
+  test('anchor with both periodStartedToday and periodStartedYesterday true: does not shift the anchor date', () => {
+    // Defensive: if a malformed row somehow has both flags set, periodStartedToday=true wins
+    // and the anchor date is NOT shifted back. June 10 anchor → June 12 = cycle day 3, not 4.
+    const result = calculateCycleDay(false, null, '2026-06-12', [
+      { checkInDate: '2026-06-10', periodStartedToday: true, periodStartedYesterday: true },
+    ])
+    expect(result).toBe(3)
+  })
+
   test('mixed history: selects most recent anchor, periodStartedYesterday shifts the anchor date back by 1', () => {
     // Check-in on June 5 had periodStartedToday=true (period started June 5)
     // Check-in on June 10 had periodStartedYesterday=true (period started June 9)

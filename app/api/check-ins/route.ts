@@ -193,6 +193,14 @@ export async function POST(request: NextRequest) {
     return bad(ctx, 'periodStartedYesterday must be a boolean')
   }
 
+  if (periodStartedToday === true && periodStartedYesterday === true) {
+    return bad(ctx, 'periodStartedToday and periodStartedYesterday cannot both be true')
+  }
+
+  if (periodStartedYesterday === true && periodStartedToday == null) {
+    return bad(ctx, 'periodStartedToday is required when periodStartedYesterday is true')
+  }
+
   if (stressors != null) {
     if (typeof stressors !== 'string' || stressors.length > 280) {
       return bad(ctx, 'stressors cannot exceed 280 characters')

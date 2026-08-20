@@ -459,6 +459,7 @@ Submits today's check-in, calculates cycle day, fetches and processes wearable d
   sleepSatisfaction: number       // 1–5 (subjective satisfaction with sleep; renamed from sleepScore in v0.1.1)
   feelScore: number               // 1–5
   periodStartedToday?: boolean
+  periodStartedYesterday?: boolean  // mutually exclusive with periodStartedToday=true; requires periodStartedToday to be present
   stressors?: string
 }
 ```
@@ -645,7 +646,8 @@ Validation is applied both client-side (immediate UI feedback) and server-side (
 | `yesterdayWorkoutFeedback` | Optional, 0–280 chars | Optional, max 280 chars |
 | `sleepSatisfaction` | Required, integer 1–5 | Required, integer 1–5 |
 | `feelScore` | Required, integer 1–5 | Required, integer 1–5 |
-| `periodStartedToday` | Required if menstruating (boolean tap) | Boolean if provided, null otherwise |
+| `periodStartedToday` | Required if menstruating | Boolean if provided, null otherwise |
+| `periodStartedYesterday` | Optional; requires `periodStartedToday` to be present; cannot be `true` when `periodStartedToday` is `true` | Boolean if provided, null otherwise |
 | `stressors` | Optional, 0–280 chars | Optional, max 280 chars |
 
 ### Date handling and travel
@@ -662,9 +664,10 @@ For example: a user who checks in from New York on June 25, then opens the app f
 
 Implemented in `lib/cycle.ts`, called server-side during check-in submission.
 
-- If `periodStartedToday` is `true`: return `1`. No database lookup needed.
-- If `periodStartedToday` is `false`: query for the most recent check-in where `period_started_today = true` for this user. If found, return `(checkInDate - anchorDate) + 1`. Calculation is date-based so gap days from skipped check-ins are counted naturally.
-- If `periodStartedToday` is `null` (user is not menstruating): return `null`.
+- If `periodStartedToday` is `null` (user is not menstruating): return `null`. No database lookup.
+- If `periodStartedToday` is `true`: return `1`. No database lookup.
+- If `periodStartedYesterday` is `true` (and `periodStartedToday` is `false`): return `2`. No database lookup. The API guarantees these two flags are never both `true`.
+- Otherwise (`periodStartedToday` is `false`, `periodStartedYesterday` is not `true`): query for the most recent prior check-in where `period_started_today = true` OR `period_started_yesterday = true`. If found, compute `(checkInDate - effectiveAnchorDate) + 1`. The effective anchor date is the check-in date when `period_started_today = true`, or the check-in date minus one calendar day when `period_started_yesterday = true` (the period actually started the day before that check-in). Calculation is date-based so gap days from skipped check-ins are counted naturally.
 - If no period start has ever been recorded: return `null`.
 
 ---

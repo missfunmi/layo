@@ -421,6 +421,28 @@ describe('POST /api/check-ins', () => {
     expect(response.status).toBe(400)
   })
 
+  test('returns 400 when both periodStartedToday and periodStartedYesterday are true', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedToday: true, periodStartedYesterday: true },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test('returns 400 when periodStartedYesterday is true but periodStartedToday is not provided', async () => {
+    const response = await makeRequest(
+      handler,
+      'POST',
+      '/api/check-ins',
+      { ...BASE_BODY, periodStartedYesterday: true },
+      { 'X-Device-ID': DEVICE_ID }
+    )
+    expect(response.status).toBe(400)
+  })
+
   test('periodStartedYesterday true: check-in saved with periodStartedYesterday=true and cycleDay=2', async () => {
     const response = await makeRequest(
       handler,
