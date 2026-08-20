@@ -228,6 +228,7 @@ model CheckIn {
   sleepSatisfaction           Int                   @map("sleep_satisfaction")  // renamed from sleep_score in v0.1.1
   feelScore                   Int                   @map("feel_score")
   periodStartedToday          Boolean?              @map("period_started_today")
+  periodStartedYesterday      Boolean?              @map("period_started_yesterday")
   cycleDay                    Int?                  @map("cycle_day")
   stressors                   String?
   status                      RecordStatus          @default(active)
